@@ -1,20 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import TractorCard from '@/components/TractorCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockTractors } from '@/data/mockData';
+import { getTractorsForUI } from '@/lib/api';
+import type { Tractor } from '@/types';
 
 const Tractors = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [tractors, setTractors] = useState<Tractor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const locations = ['all', ...new Set(mockTractors.map(t => t.location))];
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getTractorsForUI();
+        setTractors(data);
+      } catch (e) {
+        setError('Failed to load tractors');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const filteredTractors = mockTractors.filter(tractor => {
+  const locations = ['all', ...new Set(tractors.map(t => t.location))];
+
+  const filteredTractors = tractors.filter(tractor => {
     const matchesSearch = tractor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          tractor.model.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLocation = locationFilter === 'all' || tractor.location === locationFilter;
@@ -76,6 +93,8 @@ const Tractors = () => {
         </div>
 
         {/* Results */}
+        {loading && <p className="text-sm text-muted-foreground">Loading tractors...</p>}
+        {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">
             Showing {filteredTractors.length} {filteredTractors.length === 1 ? 'tractor' : 'tractors'}
@@ -83,7 +102,7 @@ const Tractors = () => {
         </div>
 
         {/* Tractor Grid */}
-        {filteredTractors.length > 0 ? (
+        {!loading && !error && filteredTractors.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTractors.map((tractor) => (
               <TractorCard key={tractor.id} tractor={tractor} />

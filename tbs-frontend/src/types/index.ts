@@ -3,6 +3,7 @@ export interface Tractor {
   name: string;
   model: string;
   image: string;
+  images?: string[];
   hourlyRate: number;
   location: string;
   horsePower: number;
@@ -15,12 +16,13 @@ export interface Booking {
   id: string;
   tractorId: string;
   tractorName: string;
+  tractorImage?: string;
   userId: string;
   userName: string;
   startDate: string;
   endDate: string;
   totalCost: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_requested';
   paymentStatus: 'pending' | 'paid' | 'failed';
 }
 

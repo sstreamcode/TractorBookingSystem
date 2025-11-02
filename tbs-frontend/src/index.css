@@ -1,102 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Minimalist Professional Design System */
 
 @layer base {
   :root {
+    /* Colors - Green (#4CAF50) primary, white background, dark grey text */
     --background: 0 0% 100%;
-    --foreground: 140 8% 15%;
+    --foreground: 0 0% 20%; /* Dark grey #333 */
 
     --card: 0 0% 100%;
-    --card-foreground: 140 8% 15%;
+    --card-foreground: 0 0% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 140 8% 15%;
+    --popover-foreground: 0 0% 20%;
 
-    --primary: 142 76% 36%;
+    --primary: 122 39% 49%; /* #4CAF50 green */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 70% 50%;
+    --secondary: 0 0% 45%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 140 10% 95%;
-    --muted-foreground: 140 8% 45%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 142 65% 45%;
+    --accent: 122 39% 49%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 140 20% 90%;
-    --input: 140 20% 90%;
-    --ring: 142 76% 36%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 122 39% 49%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --success: 142 76% 36%;
+    --success: 122 39% 49%;
     --warning: 38 92% 50%;
     --info: 210 70% 50%;
 
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 65% 45%));
-    --gradient-hero: linear-gradient(135deg, hsl(142 76% 36% / 0.95), hsl(210 70% 50% / 0.95));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(140 10% 98%));
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(140 5% 99%));
-
-    --shadow-sm: 0 1px 2px 0 hsl(140 20% 20% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(140 20% 20% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(140 20% 20% / 0.1);
-    --shadow-xl: 0 20px 25px -5px hsl(140 20% 20% / 0.15);
-    --shadow-glow: 0 0 40px hsl(142 76% 36% / 0.2);
+    /* Simple shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.1);
     
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-smooth: all 0.2s ease;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variation-settings: normal;
   }
 
-  /* 3D Card Effects */
-  .card-3d {
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+  /* Remove all 3D effects - keep only simple hover */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .card-3d:hover {
-    transform: translateY(-12px) rotateX(5deg) rotateY(-5deg);
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
 
-  .card-3d-content {
-    transform: translateZ(50px);
+  /* Consistent spacing helpers */
+  .space-section {
+    @apply py-16 px-4;
   }
 
-  .card-3d::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.05), transparent);
-    border-radius: inherit;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-  }
-
-  .card-3d:hover::before {
-    opacity: 1;
-  }
-
-  .perspective-container {
-    perspective: 1000px;
+  .container-content {
+    @apply max-w-6xl mx-auto;
   }
 }

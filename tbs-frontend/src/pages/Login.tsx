@@ -50,7 +50,7 @@ const Login = () => {
           <CardHeader>
             <CardTitle>Login</CardTitle>
             <CardDescription>
-              Use admin@test.com for admin access or any other email for customer access
+              Use admin@tbs.local for admin access or any other email for customer access
             </CardDescription>
           </CardHeader>
           <CardContent>

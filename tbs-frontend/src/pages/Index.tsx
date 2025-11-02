@@ -4,43 +4,47 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Navbar from '@/components/Navbar';
 import TractorCard from '@/components/TractorCard';
-import { mockTractors } from '@/data/mockData';
+import { useEffect, useState } from 'react';
+import { getTractorsForUI } from '@/lib/api';
+import type { Tractor as TractorType } from '@/types';
 
 const Index = () => {
-  const featuredTractors = mockTractors.filter(t => t.available).slice(0, 3);
+  const [featuredTractors, setFeaturedTractors] = useState<TractorType[]>([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const all = await getTractorsForUI();
+        setFeaturedTractors(all.filter(t => t.available).slice(0, 3));
+      } catch {}
+    })();
+  }, []);
 
   return (
     <div className="min-h-screen">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative py-24 md:py-32 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero z-0" />
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80')] bg-cover bg-center z-0 opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/20 z-0" />
-        
-        <div className="container mx-auto relative z-10">
-          <div className="max-w-3xl mx-auto text-center text-white">
-            <div className="inline-block mb-6 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
-              <span className="text-sm font-medium">🚜 Nepal's Leading Tractor Rental Platform</span>
+      {/* Hero Section - Clean and Simple */}
+      <section className="relative py-16 md:py-24 px-4 bg-gray-50">
+        <div className="container mx-auto max-w-4xl">
+          <div className="text-center">
+            <div className="inline-block mb-6 px-4 py-2 bg-primary/10 rounded-full">
+              <span className="text-sm font-medium text-primary">🚜 Nepal's Leading Tractor Rental Platform</span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight drop-shadow-2xl">
-              Rent Quality Tractors,
-              <br />
-              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Grow Your Farm</span>
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight text-gray-900">
+              Rent Quality Tractors for Your Farm
             </h1>
-            <p className="text-xl md:text-2xl mb-10 text-white/90 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
               Access modern agricultural equipment on-demand. Simple booking, transparent pricing, reliable service.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/tractors">
-                <Button size="lg" variant="hero" className="text-lg px-8">
+                <Button size="lg" className="text-base px-8">
                   Browse Tractors
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/register">
-                <Button size="lg" variant="hero-outline" className="text-lg px-8">
+                <Button size="lg" variant="outline" className="text-base px-8">
                   Get Started Free
                 </Button>
               </Link>
@@ -49,49 +53,46 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-muted/30 to-background">
-        <div className="container mx-auto">
+      {/* Features Section - Simple Cards */}
+      <section className="py-16 px-4 bg-white">
+        <div className="container mx-auto max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">Why Choose TractorRent?</h2>
-            <p className="text-muted-foreground text-lg">Trusted by farmers across Nepal</p>
+            <h2 className="text-3xl font-bold mb-3 text-gray-900">Why Choose TractorRent?</h2>
+            <p className="text-gray-600">Trusted by farmers across Nepal</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto perspective-container">
-            <Card className="card-3d border-none shadow-2xl bg-gradient-card relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="p-8 text-center relative z-10">
-                <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                  <CheckCircle className="h-8 w-8 text-white" />
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="card-hover border border-gray-200 shadow-sm">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Quality Equipment</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">Quality Equipment</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Well-maintained tractors from trusted brands, regularly serviced and inspected.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="card-3d border-none shadow-2xl bg-gradient-card relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="p-8 text-center relative z-10">
-                <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                  <Clock className="h-8 w-8 text-white" />
+            <Card className="card-hover border border-gray-200 shadow-sm">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Clock className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Flexible Booking</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">Flexible Booking</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Rent by the hour or day. Simple 3-click booking process with instant confirmation.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="card-3d border-none shadow-2xl bg-gradient-card relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="p-8 text-center relative z-10">
-                <div className="w-16 h-16 bg-gradient-primary rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl transform group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-                  <Shield className="h-8 w-8 text-white" />
+            <Card className="card-hover border border-gray-200 shadow-sm">
+              <CardContent className="p-6 text-center">
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Shield className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">Secure Payment</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900">Secure Payment</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">
                   Safe and secure payments via eSewa. Transparent pricing with no hidden charges.
                 </p>
               </CardContent>
@@ -101,15 +102,15 @@ const Index = () => {
       </section>
 
       {/* Featured Tractors */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto">
-          <div className="flex items-center justify-between mb-12">
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-bold mb-2">Featured Tractors</h2>
-              <p className="text-muted-foreground">Popular choices available for rent now</p>
+              <h2 className="text-3xl font-bold mb-2 text-gray-900">Featured Tractors</h2>
+              <p className="text-gray-600">Popular choices available for rent now</p>
             </div>
             <Link to="/tractors">
-              <Button variant="outline">
+              <Button variant="outline" className="border-gray-300">
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -124,21 +125,20 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 bg-gradient-primary relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80')] bg-cover bg-center opacity-10" />
-        <div className="container mx-auto text-center relative z-10">
-          <div className="inline-block p-4 bg-white/10 backdrop-blur-sm rounded-full mb-6">
-            <Tractor className="h-16 w-16 text-white" />
+      {/* CTA Section - Simple */}
+      <section className="py-16 px-4 bg-primary">
+        <div className="container mx-auto max-w-3xl text-center">
+          <div className="inline-block p-3 bg-white/20 rounded-full mb-6">
+            <Tractor className="h-10 w-10 text-white" />
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white leading-tight">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white leading-tight">
             Ready to Start Farming Smarter?
           </h2>
-          <p className="text-xl md:text-2xl mb-10 text-white/95 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg mb-8 text-white/95 max-w-2xl mx-auto leading-relaxed">
             Join hundreds of farmers who trust TractorRent for their equipment needs.
           </p>
           <Link to="/register">
-            <Button size="lg" variant="hero" className="text-lg px-10">
+            <Button size="lg" variant="secondary" className="text-base px-10">
               Create Free Account
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -147,8 +147,8 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-4 border-t">
-        <div className="container mx-auto text-center text-sm text-muted-foreground">
+      <footer className="py-8 px-4 border-t border-gray-200 bg-white">
+        <div className="container mx-auto text-center text-sm text-gray-600">
           <p>© 2025 TractorRent. All rights reserved.</p>
         </div>
       </footer>

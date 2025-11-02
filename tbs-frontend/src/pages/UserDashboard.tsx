@@ -1,13 +1,59 @@
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Calendar, Clock, CreditCard } from 'lucide-react';
+import { Calendar, Clock, CreditCard, XCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockBookings } from '@/data/mockData';
+import { getMyBookingsForUI, requestBookingCancellation } from '@/lib/api';
+import type { Booking } from '@/types';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const UserDashboard = () => {
-  const { isAuthenticated, isAdmin, user } = useAuth();
+  const { isAuthenticated, isAdmin, user, loading: authLoading } = useAuth();
+  const [userBookings, setUserBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated || isAdmin) {
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        const bookings = await getMyBookingsForUI();
+        setUserBookings(bookings);
+      } catch (error) {
+        console.error('Failed to fetch bookings:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [isAuthenticated, isAdmin]);
+
+  // Wait for auth to finish loading before redirecting
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -17,152 +63,294 @@ const UserDashboard = () => {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
-  // Filter bookings for current user
-  const userBookings = mockBookings;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8">
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      await requestBookingCancellation(bookingId);
+      toast.success('Cancellation request submitted');
+      setCancellationBookingId(null);
+      
+      // Refresh bookings
+      const bookings = await getMyBookingsForUI();
+      setUserBookings(bookings);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to cancel booking');
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return 'default';
+        return 'outline';
       case 'pending':
         return 'secondary';
       case 'completed':
         return 'outline';
       case 'cancelled':
         return 'destructive';
+      case 'refund_requested':
+        return 'secondary';
       default:
-        return 'default';
+        return 'secondary';
     }
   };
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
       case 'paid':
-        return 'default';
+        return 'outline';
       case 'pending':
         return 'secondary';
       case 'failed':
         return 'destructive';
       default:
-        return 'default';
+        return 'secondary';
+    }
+  };
+
+  const getStatusBadgeClassName = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return '!border-green-200 !bg-green-50 !text-green-700';
+      case 'completed':
+        return '!border-blue-200 !bg-blue-50 !text-blue-700';
+      case 'cancelled':
+        return '';
+      case 'refund_requested':
+        return '!border-orange-200 !bg-orange-50 !text-orange-700';
+      default:
+        return '';
+    }
+  };
+
+  const getPaymentBadgeClassName = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return '!border-green-200 !bg-green-50 !text-green-700';
+      case 'failed':
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'confirmed':
+        return 'Confirmed';
+      case 'pending':
+        return 'Pending';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      case 'refund_requested':
+        return 'Refund Requested';
+      default:
+        return status;
+    }
+  };
+
+  const getPaymentText = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'Paid';
+      case 'pending':
+        return 'Payment Pending';
+      case 'failed':
+        return 'Payment Failed';
+      default:
+        return status;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">My Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user?.name}!</p>
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">My Dashboard</h1>
+          <p className="text-gray-600">Welcome back, {user?.name}!</p>
         </div>
 
-        {/* Stats */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8 perspective-container">
-          <Card className="card-3d border-none shadow-2xl bg-gradient-card group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardContent className="p-6 relative z-10">
+        {/* Stats - Simple Cards */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          <Card className="card-hover border border-gray-200 shadow-sm">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Bookings</p>
-                  <p className="text-4xl font-bold">{userBookings.length}</p>
+                  <p className="text-sm text-gray-600 mb-1 font-medium">Total Bookings</p>
+                  <p className="text-4xl font-bold text-gray-900">{userBookings.length}</p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
-                  <Calendar className="h-7 w-7 text-white" />
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Calendar className="h-7 w-7 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-3d border-none shadow-2xl bg-gradient-card group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardContent className="p-6 relative z-10">
+          <Card className="card-hover border border-gray-200 shadow-sm">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Active Bookings</p>
-                  <p className="text-4xl font-bold">
+                  <p className="text-sm text-gray-600 mb-1 font-medium">Active Bookings</p>
+                  <p className="text-4xl font-bold text-gray-900">
                     {userBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-secondary to-secondary/80 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
-                  <Clock className="h-7 w-7 text-white" />
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Clock className="h-7 w-7 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-3d border-none shadow-2xl bg-gradient-card group relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardContent className="p-6 relative z-10">
+          <Card className="card-hover border border-gray-200 shadow-sm">
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Spent</p>
-                  <p className="text-4xl font-bold">
+                  <p className="text-sm text-gray-600 mb-1 font-medium">Total Spent</p>
+                  <p className="text-4xl font-bold text-gray-900">
                     रू {userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-accent to-accent/80 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all">
-                  <CreditCard className="h-7 w-7 text-white" />
+                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <CreditCard className="h-7 w-7 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Bookings List */}
-        <Card className="card-3d border-none shadow-2xl bg-gradient-card">
-          <CardHeader>
-            <CardTitle>My Bookings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {userBookings.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No bookings yet</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userBookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{booking.tractorName}</h3>
-                      <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                        <span className="flex items-center">
-                          <Calendar className="mr-1 h-4 w-4" />
-                          {new Date(booking.startDate).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center">
-                          <Clock className="mr-1 h-4 w-4" />
-                          {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                          {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+        {/* Bookings Grid */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">My Bookings</h2>
+          {userBookings.length === 0 ? (
+            <Card className="border border-gray-200 shadow-sm">
+              <CardContent className="text-center py-12">
+                <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 text-lg">No bookings yet</p>
+                <p className="text-gray-500 text-sm mt-2">Start by browsing available tractors</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userBookings.map((booking) => (
+                <Card
+                  key={booking.id}
+                  className="card-hover border border-gray-200 shadow-sm overflow-hidden bg-white"
+                >
+                  {/* Tractor Image */}
+                  <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
+                    <img
+                      src={booking.tractorImage}
+                      alt={booking.tractorName}
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
+                  </div>
+                  
+                  {/* Booking Details */}
+                  <CardContent className="p-6">
+                    <h3 className="font-semibold text-lg mb-4 text-gray-900">{booking.tractorName}</h3>
+                    
+                    {/* Date and Time */}
+                    <div className="space-y-3 mb-4 text-sm">
+                      <div className="flex items-center text-gray-700">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                          <Calendar className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{new Date(booking.startDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-gray-700">
+                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
+                          <Clock className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                            {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">रू {booking.totalCost}</p>
-                      </div>
-                      <div className="flex flex-col space-y-2">
-                        <Badge variant={getStatusColor(booking.status)}>
-                          {booking.status}
-                        </Badge>
-                        <Badge variant={getPaymentStatusColor(booking.paymentStatus)}>
-                          {booking.paymentStatus}
-                        </Badge>
-                      </div>
+                    {/* Price */}
+                    <div className="border-t border-gray-200 pt-4 mb-4">
+                      <p className="text-3xl font-bold text-primary">रू {booking.totalCost}</p>
+                      <p className="text-xs text-gray-500 mt-1">Total amount</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                    {/* Status and Actions */}
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge 
+                          variant={getStatusColor(booking.status)} 
+                          className={`text-xs font-medium px-3 py-1 ${getStatusBadgeClassName(booking.status)}`}
+                        >
+                          {getStatusText(booking.status)}
+                        </Badge>
+                        <Badge 
+                          variant={getPaymentStatusColor(booking.paymentStatus)} 
+                          className={`text-xs font-medium px-3 py-1 ${getPaymentBadgeClassName(booking.paymentStatus)}`}
+                        >
+                          {getPaymentText(booking.paymentStatus)}
+                        </Badge>
+                      </div>
+                      
+                      {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                        <Button
+                          variant="destructive"
+                          size="default"
+                          className="w-full font-medium hover:opacity-90 transition-opacity"
+                          onClick={() => setCancellationBookingId(booking.id)}
+                        >
+                          Cancel Booking
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Cancellation Dialog */}
+      <AlertDialog open={cancellationBookingId !== null} onOpenChange={() => setCancellationBookingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
+            <AlertDialogDescription>
+              {userBookings.find(b => b.id === cancellationBookingId)?.paymentStatus === 'paid'
+                ? 'Are you sure you want to request a refund for this booking? A 3% fee will be deducted from your refund. This request will be reviewed by an admin.'
+                : 'Are you sure you want to cancel this booking? This action cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancellationBookingId && handleCancelBooking(cancellationBookingId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
