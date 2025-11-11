@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -15,16 +16,27 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.Tractor;
+import com.example.demo.model.Feedback;
+import com.example.demo.model.User;
 import com.example.demo.service.TractorService;
+import com.example.demo.repository.BookingRepository;
+import com.example.demo.repository.FeedbackRepository;
+import com.example.demo.repository.UserRepository;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequestMapping("/api/tractors")
 public class TractorController {
     private final TractorService tractorService;
+    private final BookingRepository bookingRepository;
+    private final FeedbackRepository feedbackRepository;
+    private final UserRepository userRepository;
 
-    public TractorController(TractorService tractorService) {
+    public TractorController(TractorService tractorService, BookingRepository bookingRepository, FeedbackRepository feedbackRepository, UserRepository userRepository) {
         this.tractorService = tractorService;
+        this.bookingRepository = bookingRepository;
+        this.feedbackRepository = feedbackRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -55,6 +67,65 @@ public class TractorController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         boolean ok = tractorService.delete(id);
         return ok ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<?> stats(@PathVariable Long id) {
+        return tractorService.getById(id)
+            .map(t -> {
+                long bookings = bookingRepository.countByTractorId(id);
+                Double avg = feedbackRepository.averageRatingForTractor(id);
+                java.util.List<Feedback> latest = feedbackRepository.findTop10ByTractorIdOrderByCreatedAtDesc(id);
+                return ResponseEntity.ok(java.util.Map.of(
+                    "tractorId", id,
+                    "totalBookings", bookings,
+                    "avgRating", avg != null ? avg : 0.0,
+                    "feedback", latest
+                ));
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/{id}/feedback")
+    public ResponseEntity<?> createFeedback(@PathVariable Long id, @RequestBody java.util.Map<String, String> body, Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            return ResponseEntity.status(401).body(java.util.Map.of("error", "Authentication required"));
+        }
+
+        User user = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(401).body(java.util.Map.of("error", "User not found"));
+        }
+
+        if (feedbackRepository.existsByTractorIdAndUserId(id, user.getId())) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", "You have already rated this tractor"));
+        }
+
+        return tractorService.getById(id)
+            .map(t -> {
+                int rating;
+                try {
+                    rating = Integer.parseInt(body.getOrDefault("rating", "0"));
+                } catch (Exception ex) {
+                    rating = 0;
+                }
+                if (rating < 1 || rating > 5) {
+                    return ResponseEntity.badRequest().body(java.util.Map.of("error", "Rating must be between 1 and 5"));
+                }
+                String comment = body.getOrDefault("comment", "");
+                Feedback f = new Feedback();
+                f.setTractor(t);
+                f.setUser(user);
+                f.setAuthorName(user.getName());
+                f.setRating(rating);
+                f.setComment(comment);
+                feedbackRepository.save(f);
+                Double avg = feedbackRepository.averageRatingForTractor(id);
+                t.setRating(avg);
+                tractorService.update(t.getId(), t);
+                return ResponseEntity.ok(java.util.Map.of("status", "OK", "avgRating", avg));
+            })
+            .orElse(ResponseEntity.notFound().build());
     }
 }
 

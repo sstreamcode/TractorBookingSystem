@@ -5,11 +5,17 @@ export interface Tractor {
   image: string;
   images?: string[];
   hourlyRate: number;
-  location: string;
-  horsePower: number;
-  fuelType: string;
+  location?: string;
+  horsePower?: number;
+  fuelType?: string;
   available: boolean;
-  description: string;
+  description?: string;
+  fuelLevel?: number;
+  rating?: number;
+  totalBookings?: number;
+  status?: string;
+  nextAvailableAt?: string;
+  category?: string;
 }
 
 export interface Booking {

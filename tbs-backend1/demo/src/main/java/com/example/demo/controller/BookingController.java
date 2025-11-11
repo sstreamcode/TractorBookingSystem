@@ -19,6 +19,7 @@ import com.example.demo.repository.TractorRepository;
 import com.example.demo.repository.UserRepository;
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequestMapping("/api/bookings")
 public class BookingController {
     private static final Logger logger = LoggerFactory.getLogger(BookingController.class);

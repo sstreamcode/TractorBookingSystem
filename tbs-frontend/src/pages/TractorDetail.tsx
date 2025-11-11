@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { getTractorForUI, createBooking, confirmCashOnDelivery, verifyEsewaPayment } from '@/lib/api';
+import { getTractorForUI, createBooking, confirmCashOnDelivery, verifyEsewaPayment, fetchTractorStats, submitFeedback } from '@/lib/api';
+import type { Feedback as FeedbackType } from '@/lib/api';
 import type { Tractor as TractorType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -24,6 +25,11 @@ const TractorDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [totalBookings, setTotalBookings] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackType[]>([]);
+  const [newRating, setNewRating] = useState<number>(5);
+  const [newComment, setNewComment] = useState<string>('');
 
   useEffect(() => {
     if (!id) return;
@@ -33,6 +39,13 @@ const TractorDetail = () => {
         setTractor(data);
         setActiveImage(data.image);
         setActiveIndex(0);
+        // fetch stats (rating, bookings, feedback)
+        try {
+          const stats = await fetchTractorStats(id);
+          setAvgRating(stats.avgRating);
+          setTotalBookings(stats.totalBookings);
+          setFeedback(stats.feedback || []);
+        } catch {}
       } catch (e) {
         setError('Tractor not found');
       } finally {
@@ -261,6 +274,18 @@ const TractorDetail = () => {
               <div>
                 <h1 className="text-3xl font-bold mb-2">{tractor.name}</h1>
                 <p className="text-lg text-muted-foreground">{tractor.model}</p>
+                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                  {avgRating != null && (
+                    <span className="inline-flex items-center gap-1">
+                      ★ <span className="font-semibold text-secondary">{avgRating.toFixed(1)}</span>
+                    </span>
+                  )}
+                  {totalBookings != null && (
+                    <span className="inline-flex items-center gap-1">
+                      Bookings <span className="font-semibold text-secondary">{totalBookings}</span>
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -429,6 +454,81 @@ const TractorDetail = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="rounded-xl border p-6">
+            <h3 className="text-lg font-semibold mb-4">Recent Feedback</h3>
+            {feedback.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No feedback yet. Be the first to rate this tractor.</p>
+            ) : (
+              <div className="space-y-4">
+                {feedback.map((f) => (
+                  <div key={f.id} className="rounded-md border p-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-secondary">{f.authorName || 'Anonymous'}</span>
+                      <span>★ {f.rating}</span>
+                    </div>
+                    {f.comment && <p className="mt-2 text-sm text-muted-foreground">{f.comment}</p>}
+                    <p className="mt-1 text-xs text-muted-foreground">{new Date(f.createdAt).toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="rounded-xl border p-6">
+            <h3 className="text-lg font-semibold mb-4">Leave a Rating</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium">Rating</Label>
+                  <select
+                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={newRating}
+                    onChange={(e)=>setNewRating(parseInt(e.target.value))}
+                  >
+                    {[5,4,3,2,1].map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Comment (optional)</Label>
+                <textarea
+                  className="mt-1 w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
+                  value={newComment}
+                  onChange={(e)=>setNewComment(e.target.value)}
+                  placeholder="Share your experience..."
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={async ()=>{
+                    if (!id) return;
+                    try {
+                      await submitFeedback(id, newRating, newComment || undefined);
+                      const stats = await fetchTractorStats(id);
+                      setAvgRating(stats.avgRating);
+                      setTotalBookings(stats.totalBookings);
+                      setFeedback(stats.feedback || []);
+                      setNewComment('');
+                      toast.success('Feedback submitted');
+                    } catch (e: any) {
+                      if (e?.message?.toLowerCase().includes('authenticate')) {
+                        toast.error('Please log in to leave feedback.');
+                        navigate('/login');
+                        return;
+                      }
+                      toast.error(e?.message || 'Failed to submit feedback');
+                    }
+                  }}
+                >
+                  Submit
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

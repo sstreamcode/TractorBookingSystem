@@ -10,6 +10,15 @@ export interface TractorApiModel {
   imageUrl?: string;
   imageUrls?: string[];
   description?: string;
+  location?: string;
+  horsePower?: number;
+  fuelType?: string;
+  fuelLevel?: number;
+  rating?: number;
+  totalBookings?: number;
+  status?: string;
+  nextAvailableAt?: string;
+  category?: string;
 }
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082';
@@ -94,12 +103,60 @@ export async function fetchTractor(id: string | number): Promise<TractorApiModel
   return res.json();
 }
 
+// Feedback & Stats
+export interface Feedback {
+  id: number;
+  authorName: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+}
+
+export async function fetchTractorStats(id: string | number): Promise<{ tractorId: number; totalBookings: number; avgRating: number; feedback: Feedback[] }> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${id}/stats`);
+  if (!res.ok) throw new Error('Failed to fetch stats');
+  return res.json();
+}
+
+export async function submitFeedback(id: string | number, rating: number, comment?: string, authorName?: string): Promise<{ status: string; avgRating: number }> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${id}/feedback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: JSON.stringify({ rating: String(rating), comment: comment || '', authorName: authorName || '' })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || 'Failed to submit feedback');
+  }
+  return res.json();
+}
+
 export async function deleteTractor(id: string | number): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/tractors/${id}`, { method: 'DELETE' });
   if (!res.ok && res.status !== 204) throw new Error('Failed to delete');
 }
 
-export async function createTractor(input: { name: string; model: string; hourlyRate: number; available?: boolean; imageUrl?: string; imageUrls?: string[]; description?: string; }): Promise<TractorApiModel> {
+export async function createTractor(input: {
+  name: string;
+  model: string;
+  hourlyRate: number;
+  available?: boolean;
+  imageUrl?: string;
+  imageUrls?: string[];
+  description?: string;
+  location?: string;
+  horsePower?: number;
+  fuelType?: string;
+  fuelLevel?: number;
+  rating?: number;
+  totalBookings?: number;
+  status?: string;
+  nextAvailableAt?: string;
+  category?: string;
+}): Promise<TractorApiModel> {
   const res = await fetch(`${BASE_URL}/api/tractors`, {
     method: 'POST',
     headers: {
@@ -113,7 +170,16 @@ export async function createTractor(input: { name: string; model: string; hourly
       available: input.available ?? true,
       imageUrl: input.imageUrl,
       imageUrls: input.imageUrls,
-      description: input.description
+      description: input.description,
+      location: input.location,
+      horsePower: input.horsePower,
+      fuelType: input.fuelType,
+      fuelLevel: input.fuelLevel,
+      rating: input.rating,
+      totalBookings: input.totalBookings,
+      status: input.status,
+      nextAvailableAt: input.nextAvailableAt,
+      category: input.category
     })
   });
   if (!res.ok) throw new Error('Failed to create tractor');
@@ -122,7 +188,24 @@ export async function createTractor(input: { name: string; model: string; hourly
 
 export async function updateTractor(
   id: string | number,
-  input: { name: string; model: string; hourlyRate: number; available: boolean; imageUrl?: string; imageUrls?: string[]; description?: string }
+  input: {
+    name: string;
+    model: string;
+    hourlyRate: number;
+    available: boolean;
+    imageUrl?: string;
+    imageUrls?: string[];
+    description?: string;
+    location?: string;
+    horsePower?: number;
+    fuelType?: string;
+    fuelLevel?: number;
+    rating?: number;
+    totalBookings?: number;
+    status?: string;
+    nextAvailableAt?: string;
+    category?: string;
+  }
 ): Promise<void> {
   const res = await fetch(`${BASE_URL}/api/tractors/${id}`, {
     method: 'PUT',
@@ -333,11 +416,17 @@ export function toUiTractor(apiTractor: TractorApiModel): Tractor {
     image: (apiTractor.imageUrls && apiTractor.imageUrls[0]) || apiTractor.imageUrl || PLACEHOLDER_IMAGE,
     images: apiTractor.imageUrls,
     hourlyRate: apiTractor.hourlyRate,
-    location: 'Kathmandu',
-    horsePower: 60,
-    fuelType: 'Diesel',
+    location: apiTractor.location || undefined,
+    horsePower: apiTractor.horsePower || undefined,
+    fuelType: apiTractor.fuelType || undefined,
     available: apiTractor.available,
-    description: apiTractor.description || 'Book this tractor now.'
+    description: apiTractor.description || undefined,
+    fuelLevel: apiTractor.fuelLevel ?? undefined,
+    rating: apiTractor.rating ?? undefined,
+    totalBookings: apiTractor.totalBookings ?? undefined,
+    status: apiTractor.status || undefined,
+    nextAvailableAt: apiTractor.nextAvailableAt || undefined,
+    category: apiTractor.category || undefined
   };
 }
 

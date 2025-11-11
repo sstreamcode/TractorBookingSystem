@@ -8,47 +8,42 @@
 
 @layer base {
   :root {
-    /* Colors - Green (#4CAF50) primary, white background, dark grey text */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 20%; /* Dark grey #333 */
+    --background: 210 20% 98%;
+    --foreground: 213 18% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 215 21% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover-foreground: 215 21% 15%;
 
-    --primary: 122 39% 49%; /* #4CAF50 green */
+    --primary: 162 73% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 210 28% 15%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 210 35% 95%;
+    --muted-foreground: 214 22% 45%;
 
-    --accent: 122 39% 49%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 198 88% 43%;
+    --accent-foreground: 210 40% 96%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 78% 57%;
+    --destructive-foreground: 210 40% 96%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 122 39% 49%;
+    --border: 210 25% 85%;
+    --input: 210 25% 85%;
+    --ring: 162 73% 36%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --success: 122 39% 49%;
-    --warning: 38 92% 50%;
-    --info: 210 70% 50%;
+    --shadow-sm: 0 5px 15px rgba(12, 182, 143, 0.08);
+    --shadow-md: 0 12px 30px rgba(6, 95, 70, 0.12);
+    --shadow-lg: 0 18px 40px rgba(7, 47, 46, 0.18);
+    --shadow-glass: 0 18px 40px rgba(12, 90, 70, 0.22);
 
-    /* Simple shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 4px 12px 0 rgba(0, 0, 0, 0.1);
-    
-    --transition-smooth: all 0.2s ease;
+    --transition-smooth: all 0.25s ease;
   }
 
   * {
@@ -62,22 +57,70 @@
     font-variation-settings: normal;
   }
 
-  /* Remove all 3D effects - keep only simple hover */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-secondary font-semibold;
+    letter-spacing: -0.02em;
+  }
+
   .card-hover {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
   }
 
   .card-hover:hover {
-    transform: translateY(-2px);
+    transform: translateY(-6px);
     box-shadow: var(--shadow-md);
   }
 
-  /* Consistent spacing helpers */
-  .space-section {
-    @apply py-16 px-4;
+  .surface-card {
+    @apply rounded-3xl border border-white/60;
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(232, 248, 242, 0.7));
+    box-shadow: var(--shadow-md);
   }
 
-  .container-content {
-    @apply max-w-6xl mx-auto;
+  .brand-gradient {
+    background: radial-gradient(circle at 15% 20%, rgba(13, 148, 136, 0.35), transparent 50%),
+      radial-gradient(circle at 80% 0%, rgba(4, 120, 87, 0.35), transparent 55%),
+      linear-gradient(120deg, rgba(11, 120, 93, 0.95) 0%, rgba(10, 63, 84, 0.98) 100%);
+    color: hsl(var(--primary-foreground));
+  }
+
+  .brand-outline {
+    background: linear-gradient(120deg, rgba(12, 182, 143, 0.16), rgba(12, 182, 143, 0));
+    border: 1px solid rgba(12, 182, 143, 0.18);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(18px);
+  }
+
+  .hero-grid {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .hero-grid::before {
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background:
+      radial-gradient(circle at top, rgba(34, 197, 94, 0.15), transparent 60%),
+      radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.18), transparent 65%);
+    opacity: 0.9;
+    z-index: -1;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-semibold text-secondary;
+  }
+
+  .section-subtitle {
+    @apply text-base md:text-lg text-muted-foreground;
   }
 }

@@ -19,6 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Tractor } from '@/types';
 import { toast } from 'sonner';
 
@@ -29,7 +30,24 @@ const AdminTractors = () => {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', model: '', hourlyRate: '', imageUrl: '', available: true, description: '' });
+  const [form, setForm] = useState({
+    name: '',
+    model: '',
+    hourlyRate: '',
+    imageUrl: '',
+    available: true,
+    description: '',
+    location: '',
+    horsePower: '',
+    fuelType: 'Diesel',
+    fuelLevel: '80',
+    rating: '4.5',
+    totalBookings: '0',
+    status: 'Available',
+    nextAvailableDate: '',
+    nextAvailableTime: '',
+    category: 'Utility',
+  });
   const [files, setFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [preview, setPreview] = useState<string>('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80');
@@ -76,6 +94,13 @@ const AdminTractors = () => {
         toast.error('Hourly rate must be a positive number');
         return;
       }
+      const horsePower = form.horsePower ? Number(form.horsePower) : undefined;
+      const fuelLevel = form.fuelLevel ? Number(form.fuelLevel) : undefined;
+      const rating = form.rating ? Number(form.rating) : undefined;
+      const totalBookings = form.totalBookings ? Number(form.totalBookings) : undefined;
+      const nextAvailableAt = form.nextAvailableDate && form.nextAvailableTime
+        ? `${form.nextAvailableDate}T${form.nextAvailableTime}`
+        : undefined;
       let finalUrl = form.imageUrl || '';
       const uploadedUrls: string[] = [];
       if (!finalUrl && files.length > 0) {
@@ -87,7 +112,24 @@ const AdminTractors = () => {
       }
       if (editingId) {
         const mergedImages = uploadedUrls.length ? uploadedUrls : existingImages;
-        await updateTractor(editingId, { name: form.name, model: form.model, hourlyRate: rate, available: form.available, imageUrl: finalUrl || mergedImages[0], imageUrls: mergedImages, description: form.description });
+        await updateTractor(editingId, {
+          name: form.name,
+          model: form.model,
+          hourlyRate: rate,
+          available: form.available,
+          imageUrl: finalUrl || mergedImages[0],
+          imageUrls: mergedImages,
+          description: form.description,
+          location: form.location || undefined,
+          horsePower,
+          fuelType: form.fuelType || undefined,
+          fuelLevel,
+          rating,
+          totalBookings,
+          status: form.status,
+          nextAvailableAt,
+          category: form.category || undefined,
+        });
         setTractors(prev => prev.map(t => t.id === editingId ? {
           ...t,
           name: form.name,
@@ -95,19 +137,80 @@ const AdminTractors = () => {
           hourlyRate: rate,
           available: form.available,
           image: finalUrl || mergedImages[0] || t.image,
-          images: mergedImages.length ? mergedImages : t.images
+          images: mergedImages.length ? mergedImages : t.images,
+          location: form.location || t.location,
+          horsePower: horsePower ?? t.horsePower,
+          fuelType: form.fuelType || t.fuelType,
+          fuelLevel: fuelLevel ?? t.fuelLevel,
+          rating: rating ?? t.rating,
+          totalBookings: totalBookings ?? t.totalBookings,
+          status: form.status || t.status,
+          nextAvailableAt: nextAvailableAt || t.nextAvailableAt,
+          category: form.category || t.category,
         } : t));
         toast.success('Tractor updated');
       } else {
-        const created = await createTractor({ name: form.name, model: form.model, hourlyRate: rate, available: form.available, imageUrl: finalUrl || undefined, imageUrls: uploadedUrls.length ? uploadedUrls : undefined, description: form.description });
+        const created = await createTractor({
+          name: form.name,
+          model: form.model,
+          hourlyRate: rate,
+          available: form.available,
+          imageUrl: finalUrl || undefined,
+          imageUrls: uploadedUrls.length ? uploadedUrls : undefined,
+          description: form.description,
+          location: form.location || undefined,
+          horsePower,
+          fuelType: form.fuelType || undefined,
+          fuelLevel,
+          rating,
+          totalBookings,
+          status: form.status,
+          nextAvailableAt,
+          category: form.category || undefined,
+        });
         setTractors(prev => [
-          { id: String(created.id), name: created.name, model: created.model, image: created.imageUrl || preview, images: created.imageUrls, hourlyRate: created.hourlyRate, location: 'Kathmandu', horsePower: 60, fuelType: 'Diesel', available: created.available, description: 'Book this tractor now. (Details coming from backend soon)' },
+          {
+            id: String(created.id),
+            name: created.name,
+            model: created.model,
+            image: created.imageUrl || preview,
+            images: created.imageUrls,
+            hourlyRate: created.hourlyRate,
+            location: created.location || 'Kathmandu',
+            horsePower: created.horsePower || 60,
+            fuelType: created.fuelType || 'Diesel',
+            available: created.available,
+            description: created.description || '',
+            fuelLevel: created.fuelLevel ?? 0,
+            rating: created.rating ?? 0,
+            totalBookings: created.totalBookings ?? 0,
+            status: created.status || (created.available ? 'Available' : 'Unavailable'),
+            nextAvailableAt: created.nextAvailableAt,
+            category: created.category || 'Utility',
+          },
           ...prev
         ]);
         toast.success('Tractor added');
       }
       setOpen(false);
-      setForm({ name: '', model: '', hourlyRate: '', imageUrl: '', available: true, description: '' });
+      setForm({
+        name: '',
+        model: '',
+        hourlyRate: '',
+        imageUrl: '',
+        available: true,
+        description: '',
+        location: '',
+        horsePower: '',
+        fuelType: 'Diesel',
+        fuelLevel: '80',
+        rating: '4.5',
+        totalBookings: '0',
+        status: 'Available',
+        nextAvailableDate: '',
+        nextAvailableTime: '',
+        category: 'Utility',
+      });
       setEditingId(null);
       setFiles([]);
       setExistingImages([]);
@@ -125,7 +228,32 @@ const AdminTractors = () => {
     setEditingId(id);
     const imgs = found.images || [];
     setExistingImages(imgs);
-    setForm({ name: found.name, model: found.model, hourlyRate: String(found.hourlyRate), imageUrl: imgs[0] || found.image, available: found.available, description: found.description });
+    // Split nextAvailableAt into date + time for better UX
+    let nextAvailableDate = '';
+    let nextAvailableTime = '';
+    if (found.nextAvailableAt && found.nextAvailableAt.includes('T')) {
+      const [d, t] = found.nextAvailableAt.split('T');
+      nextAvailableDate = d;
+      nextAvailableTime = t?.slice(0,5) || '';
+    }
+    setForm({
+      name: found.name,
+      model: found.model,
+      hourlyRate: String(found.hourlyRate),
+      imageUrl: imgs[0] || found.image,
+      available: found.available,
+      description: found.description,
+      location: found.location || '',
+      horsePower: found.horsePower ? String(found.horsePower) : '',
+      fuelType: found.fuelType || 'Diesel',
+      fuelLevel: found.fuelLevel ? String(found.fuelLevel) : '80',
+      rating: found.rating ? String(found.rating) : '4.5',
+      totalBookings: found.totalBookings ? String(found.totalBookings) : '0',
+      status: found.status || (found.available ? 'Available' : 'Unavailable'),
+      nextAvailableDate,
+      nextAvailableTime,
+      category: found.category || 'Utility',
+    });
     setPreview(imgs[0] || found.image);
     setFiles([]);
     setProgress(0);
@@ -160,7 +288,7 @@ const AdminTractors = () => {
                 Add Tractor
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Edit Tractor' : 'Add Tractor'}</DialogTitle>
               </DialogHeader>
@@ -173,8 +301,9 @@ const AdminTractors = () => {
                         <TabsTrigger value="url">URL</TabsTrigger>
                       </TabsList>
                       <TabsContent value="upload" className="mt-3">
-                        <div
-                          className="aspect-[4/3] w-full overflow-hidden rounded-md border bg-muted flex items-center justify-center"
+                        <label
+                          htmlFor="tractor-images-input"
+                          className="group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl border bg-muted hover:ring-2 hover:ring-primary/30 transition"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => {
                             e.preventDefault();
@@ -188,20 +317,33 @@ const AdminTractors = () => {
                           }}
                         >
                           <img src={form.imageUrl || preview} alt="Preview" className="h-full w-full object-cover" />
-                        </div>
+                        </label>
                         <div className="mt-3 space-y-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={(e) => {
-                              const picked = Array.from(e.target.files || []);
-                              const images = picked.filter(f => f.type.startsWith('image/')).slice(0, 6);
-                              setFiles(images);
-                              if (images[0]) setPreview(URL.createObjectURL(images[0]));
-                              setForm(s => ({ ...s, imageUrl: '' }));
-                            }}
-                          />
+                          <div className="flex flex-wrap items-center gap-3">
+                            <input
+                              id="tractor-images-input"
+                              className="sr-only"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={(e) => {
+                                const picked = Array.from(e.target.files || []);
+                                const images = picked.filter(f => f.type.startsWith('image/')).slice(0, 6);
+                                setFiles(images);
+                                if (images[0]) setPreview(URL.createObjectURL(images[0]));
+                                setForm(s => ({ ...s, imageUrl: '' }));
+                              }}
+                            />
+                            <label
+                              htmlFor="tractor-images-input"
+                              className="inline-flex cursor-pointer items-center rounded-md border bg-white px-3 py-2 text-sm font-medium text-secondary shadow-sm transition hover:bg-muted"
+                            >
+                              Choose Files
+                            </label>
+                            {files.length > 0 && (
+                              <span className="text-xs text-muted-foreground">{files.length} selected</span>
+                            )}
+                          </div>
                           {(existingImages.length > 0 || files.length > 0) && (
                             <div className="grid grid-cols-6 gap-2">
                               {existingImages.map((u, i) => (
@@ -221,11 +363,11 @@ const AdminTractors = () => {
                             </div>
                           )}
                           {progress > 0 && (
-                            <div className="w-full h-2 bg-secondary rounded">
-                              <div className="h-2 bg-primary rounded transition-[width]" style={{ width: `${progress}%` }} />
+                            <div className="w-full h-2 rounded bg-secondary">
+                              <div className="h-2 rounded bg-primary transition-[width]" style={{ width: `${progress}%` }} />
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground">Drag & drop or click to upload. JPG/PNG, under 20MB.</p>
+                          <p className="text-xs text-muted-foreground">Tip: Use multiple images to showcase different angles.</p>
                         </div>
                       </TabsContent>
                       <TabsContent value="url" className="mt-3 space-y-2">
@@ -236,7 +378,7 @@ const AdminTractors = () => {
                     </Tabs>
                   </div>
                   <div className="md:col-span-3 space-y-4">
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                       <label className="text-sm font-medium">Name</label>
                       <Input value={form.name} onChange={e => setForm(s => ({ ...s, name: e.target.value }))} placeholder="e.g. Mahindra 575" />
                     </div>
@@ -248,6 +390,72 @@ const AdminTractors = () => {
                       <label className="text-sm font-medium">Hourly Rate</label>
                       <Input type="number" value={form.hourlyRate} onChange={e => setForm(s => ({ ...s, hourlyRate: e.target.value }))} placeholder="e.g. 1500" />
                     </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Location</label>
+                    <Input value={form.location} onChange={e => setForm(s => ({ ...s, location: e.target.value }))} placeholder="e.g. Depot A" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Horsepower (HP)</label>
+                      <Input type="number" value={form.horsePower} onChange={e => setForm(s => ({ ...s, horsePower: e.target.value }))} placeholder="e.g. 80" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Fuel Type</label>
+                      <Input value={form.fuelType} onChange={e => setForm(s => ({ ...s, fuelType: e.target.value }))} placeholder="e.g. Diesel" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Fuel Level (%)</label>
+                      <Input type="number" min={0} max={100} value={form.fuelLevel} onChange={e => setForm(s => ({ ...s, fuelLevel: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Rating</label>
+                      <Input type="number" step="0.1" min={0} max={5} value={form.rating} onChange={e => setForm(s => ({ ...s, rating: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Total Bookings</label>
+                      <Input type="number" min={0} value={form.totalBookings} onChange={e => setForm(s => ({ ...s, totalBookings: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Status</label>
+                      <Select value={form.status} onValueChange={(value)=>setForm(s=>({...s,status:value}))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Available">Available</SelectItem>
+                          <SelectItem value="In Use">In Use</SelectItem>
+                          <SelectItem value="Maintenance">Maintenance</SelectItem>
+                          <SelectItem value="Unavailable">Unavailable</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Next Available Date</label>
+                      <Input
+                        type="date"
+                        value={form.nextAvailableDate}
+                        onChange={e => setForm(s => ({ ...s, nextAvailableDate: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Next Available Time</label>
+                      <Input
+                        type="time"
+                        value={form.nextAvailableTime}
+                        onChange={e => setForm(s => ({ ...s, nextAvailableTime: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Category</label>
+                      <Input value={form.category} onChange={e => setForm(s => ({ ...s, category: e.target.value }))} placeholder="e.g. Utility" />
+                    </div>
+                  </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Description</label>
                       <textarea

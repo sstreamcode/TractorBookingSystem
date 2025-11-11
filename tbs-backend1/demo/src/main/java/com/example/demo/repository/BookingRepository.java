@@ -9,6 +9,7 @@ import com.example.demo.model.User;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUser(User user);
+    long countByTractorId(Long tractorId);
 }
 
 

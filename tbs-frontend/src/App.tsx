@@ -19,6 +19,7 @@ import AdminReports from "./pages/AdminReports";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import NotFound from "./pages/NotFound";
+import Tracking from "./pages/Tracking";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="/payment/success" element={<PaymentSuccess />} />
             <Route path="/payment/failure" element={<PaymentFailure />} />
+            <Route path="/tracking" element={<Tracking />} />
             <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
             <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
             <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
