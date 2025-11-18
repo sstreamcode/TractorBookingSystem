@@ -1,12 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Zap, Fuel, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, MapPin, Zap, Fuel, Calendar, Clock, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { getTractorForUI, createBooking, confirmCashOnDelivery, verifyEsewaPayment, fetchTractorStats, submitFeedback } from '@/lib/api';
 import type { Feedback as FeedbackType } from '@/lib/api';
 import type { Tractor as TractorType } from '@/types';
@@ -14,16 +22,116 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CreditCard, Wallet } from 'lucide-react';
 import CryptoJS from 'crypto-js';
+import DeliveryMapPicker from '@/components/DeliveryMapPicker';
+
+const TractorGallery = ({ tractor }: { tractor: TractorType }) => {
+  const gallery = useMemo(() => {
+    const raw = [tractor.image, ...(tractor.images || [])].filter(Boolean) as string[];
+    return Array.from(new Set(raw));
+  }, [tractor]);
+
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeImage, setActiveImage] = useState<string | null>(gallery[0] || null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setActiveImage(gallery[0] || tractor.image || null);
+  }, [gallery, tractor.image]);
+
+  useEffect(() => {
+    if (gallery.length <= 1 || isHovered) return;
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => {
+        const next = (prev + 1) % gallery.length;
+        setActiveImage(gallery[next]);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gallery, isHovered]);
+
+  const go = (dir: number) => {
+    if (gallery.length <= 1) return;
+    setActiveIndex((prev) => {
+      const next = (prev + dir + gallery.length) % gallery.length;
+      setActiveImage(gallery[next]);
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <div
+        className="relative aspect-video rounded-lg overflow-hidden mb-6 shadow-lg"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <img
+          src={activeImage || tractor.image}
+          alt={tractor.name}
+          className="w-full h-full object-cover select-none transition-opacity duration-500"
+          draggable={false}
+        />
+        <Badge className="absolute top-4 right-4 z-10" variant={tractor.available ? 'default' : 'secondary'}>
+          {tractor.status || (tractor.available ? 'Available' : 'Unavailable')}
+        </Badge>
+        {gallery.length > 1 && (
+          <div className="absolute inset-0 pointer-events-none">
+            <button
+              type="button"
+              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10"
+              onClick={() => go(-1)}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10"
+              onClick={() => go(1)}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+      </div>
+      {gallery.length > 1 && (
+        <div className="flex items-center gap-3 overflow-x-auto pb-2">
+          {gallery.map((img, i) => (
+            <button
+              key={img + i}
+              className={`relative h-16 w-24 overflow-hidden rounded-lg border transition ${
+                i === activeIndex ? 'border-primary shadow-lg' : 'border-transparent opacity-70 hover:opacity-100'
+              }`}
+              onClick={() => {
+                setActiveIndex(i);
+                setActiveImage(img);
+              }}
+            >
+              <img src={img} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TractorDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [tractor, setTractor] = useState<TractorType | null>(null);
-  const [activeImage, setActiveImage] = useState<string | null>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deliveryLocation, setDeliveryLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
+  const [availabilityDialogData, setAvailabilityDialogData] = useState<{
+    message: string;
+    status: string;
+    nextAvailableText: string;
+    location: string;
+  } | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [totalBookings, setTotalBookings] = useState<number | null>(null);
@@ -37,8 +145,22 @@ const TractorDetail = () => {
       try {
         const data = await getTractorForUI(id);
         setTractor(data);
-        setActiveImage(data.image);
-        setActiveIndex(0);
+        if (data.latitude && data.longitude) {
+          setDeliveryLocation((prev) =>
+            prev ?? {
+              lat: data.latitude!,
+              lng: data.longitude!,
+              address: data.location || `${data.latitude?.toFixed(6)}, ${data.longitude?.toFixed(6)}`,
+            },
+          );
+        }
+        if (data.latitude && data.longitude && !deliveryLocation) {
+          setDeliveryLocation({
+            lat: data.latitude,
+            lng: data.longitude,
+            address: data.location || `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`,
+          });
+        }
         // fetch stats (rating, bookings, feedback)
         try {
           const stats = await fetchTractorStats(id);
@@ -54,6 +176,9 @@ const TractorDetail = () => {
     })();
   }, [id]);
 
+  // Get today's date in YYYY-MM-DD format for min date
+  const today = new Date().toISOString().split('T')[0];
+  
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [startTime, setStartTime] = useState('09:00');
@@ -63,7 +188,7 @@ const TractorDetail = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
         </div>
       </div>
@@ -74,7 +199,7 @@ const TractorDetail = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>{error ?? 'Tractor not found'}</p>
         </div>
       </div>
@@ -93,6 +218,61 @@ const TractorDetail = () => {
 
   const totalCost = calculateCost();
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          );
+          const data = await response.json();
+          if (data.display_name) {
+            address = data.display_name;
+          }
+        } catch {
+          // ignore reverse geocode failure, fallback to coords
+        }
+        setDeliveryLocation({ lat: latitude, lng: longitude, address });
+        toast.success('Delivery location set to your current position.');
+      },
+      () => toast.error('Unable to access your location. Please allow location permission.'),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+  const buildAvailabilityDialogData = () => {
+    if (!tractor) {
+      return {
+        message: 'This tractor is currently unavailable. Please explore other tractors or check back later.',
+        status: 'unavailable',
+        nextAvailableText: 'Not scheduled yet',
+        location: 'Not specified',
+      };
+    }
+    const statusText = tractor.status ? tractor.status.toLowerCase() : 'booked';
+    const nextAvailableDate = tractor.nextAvailableAt ? new Date(tractor.nextAvailableAt) : null;
+    const formattedDate = nextAvailableDate
+      ? nextAvailableDate.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+      : 'Not scheduled yet';
+
+    return {
+      message: `We're currently fulfilling another booking for this tractor. As soon as it returns, it'll be ready for the next dispatch.`,
+      status: statusText,
+      nextAvailableText: formattedDate,
+      location: tractor.location || 'Not specified',
+    };
+  };
+
+  const showUnavailableInfo = () => {
+    setAvailabilityDialogData(buildAvailabilityDialogData());
+    setShowAvailabilityDialog(true);
+  };
+
   const handleBooking = async () => {
     if (!isAuthenticated) {
       toast.error('Please login to book a tractor');
@@ -100,8 +280,18 @@ const TractorDetail = () => {
       return;
     }
 
+    if (!tractor?.available) {
+      showUnavailableInfo();
+      return;
+    }
+
     if (!startDate || !endDate || !startTime || !endTime) {
       toast.error('Please fill in all booking details');
+      return;
+    }
+
+    if (!deliveryLocation) {
+      toast.error('Please select a delivery location on the map');
       return;
     }
 
@@ -120,8 +310,31 @@ const TractorDetail = () => {
       const startAt = `${startDate}T${startTime}`;
       const endAt = `${endDate}T${endTime}`;
       
-      const booking = await createBooking(tractor.id, startAt, endAt);
+      const booking = await createBooking(
+        tractor.id, 
+        startAt, 
+        endAt,
+        deliveryLocation.lat,
+        deliveryLocation.lng,
+        deliveryLocation.address
+      );
       setCreatedBookingId(String(booking.id));
+      
+      // Refresh tractor data to get updated availability and booking count
+      if (id) {
+        try {
+          const updatedTractor = await getTractorForUI(id);
+          setTractor(updatedTractor);
+          // Refresh stats
+          const stats = await fetchTractorStats(id);
+          setAvgRating(stats.avgRating);
+          setTotalBookings(stats.totalBookings);
+          setFeedback(stats.feedback || []);
+        } catch (e) {
+          // Ignore refresh errors
+        }
+      }
+      
       toast.success('Booking created! Please choose a payment method.');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to create booking');
@@ -197,7 +410,7 @@ const TractorDetail = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <Button
           variant="ghost"
           className="mb-6"
@@ -210,65 +423,7 @@ const TractorDetail = () => {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left Column - Images and Details */}
           <div>
-            <div className="relative aspect-video rounded-lg overflow-hidden mb-6 shadow-lg">
-              <img
-                src={activeImage || tractor.image}
-                alt={tractor.name}
-                className="w-full h-full object-cover select-none"
-                draggable={false}
-              />
-              <Badge 
-                className="absolute top-4 right-4"
-                variant={tractor.available ? "default" : "secondary"}
-              >
-                {tractor.available ? 'Available' : 'Unavailable'}
-              </Badge>
-              {(() => {
-                const galleryRaw = [tractor.image, ...(tractor.images || [])];
-                const gallery = Array.from(new Set(galleryRaw.filter(Boolean)));
-                const total = gallery.length;
-                if (total <= 1) return null;
-
-                const go = (dir: number) => {
-                  const next = (activeIndex + dir + total) % total;
-                  setActiveIndex(next);
-                  setActiveImage(gallery[next]);
-                };
-
-                return (
-                  <div className="absolute inset-0 pointer-events-none">
-                    <button
-                      type="button"
-                      className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow"
-                      onClick={() => go(-1)}
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      type="button"
-                      className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow"
-                      onClick={() => go(1)}
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                    <div className="pointer-events-auto absolute bottom-3 left-0 right-0 flex items-center justify-center gap-2 px-3">
-                      <div className="flex gap-2 overflow-x-auto p-1 bg-background/70 rounded-md">
-                        {gallery.map((u, i) => (
-                          <button
-                            type="button"
-                            key={`${u}-${i}`}
-                            onClick={() => { setActiveIndex(i); setActiveImage(u); }}
-                            className={`rounded overflow-hidden ${activeIndex === i ? 'ring-2 ring-primary' : ''}`}
-                          >
-                            <img src={u} alt={`img-${i}`} className="h-14 w-20 object-cover" />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
+            <TractorGallery tractor={tractor} />
 
             <div className="space-y-6">
               <div>
@@ -343,8 +498,17 @@ const TractorDetail = () => {
                       id="startDate"
                       type="date"
                       value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        // If end date is before new start date, clear it
+                        if (endDate && e.target.value && endDate < e.target.value) {
+                          setEndDate('');
+                        }
+                      }}
+                      min={today}
+                      className="cursor-pointer"
+                      style={{ colorScheme: 'light' }}
+                      required
                     />
                   </div>
 
@@ -355,6 +519,7 @@ const TractorDetail = () => {
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
+                      className="cursor-pointer"
                     />
                   </div>
 
@@ -365,7 +530,11 @@ const TractorDetail = () => {
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate || new Date().toISOString().split('T')[0]}
+                      min={startDate || today}
+                      className="cursor-pointer"
+                      style={{ colorScheme: 'light' }}
+                      disabled={!startDate}
+                      required
                     />
                   </div>
 
@@ -376,8 +545,41 @@ const TractorDetail = () => {
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
+                      className="cursor-pointer"
+                      disabled={!endDate}
                     />
                   </div>
+                </div>
+
+                {/* Delivery Location Map */}
+                <div className="space-y-2">
+                  <Label>Delivery Location</Label>
+                  <div className="relative rounded-lg border border-border overflow-hidden">
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-primary shadow hover:bg-white"
+                      onClick={handleUseCurrentLocation}
+                    >
+                      Use my location
+                    </button>
+                    <DeliveryMapPicker
+                      value={deliveryLocation}
+                      onChange={(location) => setDeliveryLocation(location)}
+                      className="h-64 w-full"
+                    />
+                    {deliveryLocation && (
+                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md text-sm max-w-xs">
+                        <p className="font-semibold text-secondary">Selected Location</p>
+                        <p className="text-xs text-muted-foreground truncate">{deliveryLocation.address}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {deliveryLocation.lat.toFixed(6)}, {deliveryLocation.lng.toFixed(6)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Click on the map to select where you want the tractor delivered
+                  </p>
                 </div>
 
                 {totalCost > 0 && (
@@ -401,14 +603,29 @@ const TractorDetail = () => {
 
                 {!createdBookingId ? (
                   <>
-                    <Button 
-                      className="w-full" 
-                      size="lg"
-                      onClick={handleBooking}
-                      disabled={!tractor.available || totalCost <= 0}
-                    >
-                      {!tractor.available ? 'Currently Unavailable' : 'Proceed to Payment'}
-                    </Button>
+                    <div className="relative">
+                      {!tractor.available && (
+                        <button
+                          type="button"
+                          onClick={showUnavailableInfo}
+                          className="absolute inset-0 z-10 cursor-not-allowed bg-transparent"
+                          aria-label="Tractor unavailable"
+                        />
+                      )}
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handleBooking}
+                        disabled={!tractor.available || totalCost <= 0}
+                      >
+                        {!tractor.available ? 'Currently Unavailable' : 'Proceed to Payment'}
+                      </Button>
+                    </div>
+                    {!tractor.available && tractor.nextAvailableAt && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Booked until {new Date(tractor.nextAvailableAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                      </p>
+                    )}
 
                     {!isAuthenticated && (
                       <p className="text-sm text-center text-muted-foreground">
@@ -458,7 +675,7 @@ const TractorDetail = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="rounded-xl border p-6">
             <h3 className="text-lg font-semibold mb-4">Recent Feedback</h3>
@@ -532,6 +749,53 @@ const TractorDetail = () => {
           </div>
         </div>
       </div>
+      <AlertDialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
+        <AlertDialogContent className="max-w-lg border border-primary/20 bg-white/95 backdrop-blur-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <Clock className="h-6 w-6" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-xl font-semibold text-secondary">
+                  {tractor?.name || 'Tractor Availability'}
+                </AlertDialogTitle>
+                <p className="text-sm text-muted-foreground">Current booking status & availability</p>
+              </div>
+            </div>
+          </AlertDialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Current Status</span>
+                <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary capitalize">
+                  {availabilityDialogData?.status || 'unavailable'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Next Available</span>
+                <span className="font-medium text-secondary">{availabilityDialogData?.nextAvailableText || 'Not scheduled'}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Current Location</span>
+                <span className="font-medium text-secondary">{availabilityDialogData?.location || 'Not specified'}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
+              <Info className="h-5 w-5 text-primary" />
+              <p>{availabilityDialogData?.message || 'This tractor is currently fulfilling another booking. Please check back later or choose a different tractor.'}</p>
+            </div>
+          </div>
+
+          <AlertDialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowAvailabilityDialog(false)}>
+              Close
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

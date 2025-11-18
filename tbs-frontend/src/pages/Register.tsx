@@ -45,83 +45,95 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-emerald-50/30">
       <div className="w-full max-w-md">
+        {/* Prominent Branding Section */}
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-4">
-            <Tractor className="h-10 w-10 text-primary" />
-            <span className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              TractorRent
-            </span>
+          <Link to="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-emerald-500 to-slate-900 text-white shadow-lg group-hover:shadow-xl transition-shadow">
+              <Tractor className="h-7 w-7" />
+            </div>
+            <div className="flex flex-col items-start">
+              <span className="text-2xl font-bold leading-tight text-secondary group-hover:text-primary transition-colors">
+                Tractor Sewa
+              </span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground leading-tight">
+                Secure Rental Platform
+              </span>
+            </div>
           </Link>
-          <h1 className="text-3xl font-bold mb-2">Get Started</h1>
-          <p className="text-muted-foreground">Create your account to start renting tractors</p>
+          <h1 className="text-4xl font-bold mb-3 text-secondary">Get Started</h1>
+          <p className="text-base text-muted-foreground">Create your account to start renting tractors</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
-            <CardDescription>
+        <Card className="border border-border shadow-lg">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-2xl text-secondary">Sign Up</CardTitle>
+            <CardDescription className="text-base">
               Enter your details to create your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className="text-sm font-medium text-secondary">Full Name</Label>
                 <Input
                   id="name"
                   type="text"
                   placeholder="Your full name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className="h-11"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-secondary">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="h-11"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-secondary">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="Create a password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  className="h-11"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-secondary">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
                   placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-11"
                   required
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground pt-2">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary font-medium hover:underline">
+                <Link to="/login" className="text-primary font-semibold hover:underline transition-colors">
                   Sign in
                 </Link>
               </p>

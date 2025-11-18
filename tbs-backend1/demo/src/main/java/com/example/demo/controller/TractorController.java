@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.model.Tractor;
+import com.example.demo.model.Booking;
 import com.example.demo.model.Feedback;
 import com.example.demo.model.User;
+import com.example.demo.util.TrackingMapper;
 import com.example.demo.service.TractorService;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.FeedbackRepository;
@@ -86,6 +89,45 @@ public class TractorController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}/location")
+    public ResponseEntity<?> updateLiveLocation(@PathVariable Long id, @RequestBody Map<String, Object> body, Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+        }
+        User user = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (user == null || !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(403).body(Map.of("error", "Only admins can update live locations"));
+        }
+        Double latitude = body.get("latitude") != null ? Double.valueOf(body.get("latitude").toString()) : null;
+        Double longitude = body.get("longitude") != null ? Double.valueOf(body.get("longitude").toString()) : null;
+        String address = body.get("address") != null ? body.get("address").toString() : null;
+        if (latitude == null || longitude == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "latitude and longitude are required"));
+        }
+        return tractorService.updateLiveLocation(id, latitude, longitude, address)
+            .map(t -> ResponseEntity.ok(Map.of(
+                "status", "UPDATED",
+                "updatedAt", t.getLocationUpdatedAt(),
+                "location", Map.of(
+                    "latitude", t.getLatitude(),
+                    "longitude", t.getLongitude(),
+                    "address", t.getLocation()
+                )
+            )))
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/tracking")
+    public ResponseEntity<?> getTractorTracking(@PathVariable Long id) {
+        return tractorService.getById(id)
+            .map(tractor -> {
+                List<Booking> active = bookingRepository.findActiveTrackingBookings(tractor);
+                Booking relevant = active.isEmpty() ? null : active.get(0);
+                return ResponseEntity.ok(TrackingMapper.buildPayload(tractor, relevant));
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/{id}/feedback")
     public ResponseEntity<?> createFeedback(@PathVariable Long id, @RequestBody java.util.Map<String, String> body, Principal principal) {
         if (principal == null || principal.getName() == null) {
@@ -127,6 +169,7 @@ public class TractorController {
             })
             .orElse(ResponseEntity.notFound().build());
     }
+
 }
 
 

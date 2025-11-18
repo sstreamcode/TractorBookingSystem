@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTractorsForUI, deleteTractor, createTractor, updateTractor, uploadImageWithProgress } from '@/lib/api';
+import {
+  getTractorsForUI,
+  deleteTractor,
+  createTractor,
+  updateTractor,
+  uploadImageWithProgress,
+  getAllBookingsForUI,
+  updateTractorLocation,
+  getTractorTracking,
+  type TrackingResponse,
+} from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Tractor } from '@/types';
+import type { Tractor, Booking } from '@/types';
 import { toast } from 'sonner';
+import DeliveryMapPicker from '@/components/DeliveryMapPicker';
+import TractorTrackingMap, { TractorTrackingPoint } from '@/components/TractorTrackingMap';
+import LiveRouteMap from '@/components/LiveRouteMap';
 
 const AdminTractors = () => {
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
@@ -47,32 +60,166 @@ const AdminTractors = () => {
     nextAvailableDate: '',
     nextAvailableTime: '',
     category: 'Utility',
+    quantity: '1',
   });
   const [files, setFiles] = useState<File[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [preview, setPreview] = useState<string>('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80');
   const [progress, setProgress] = useState<number>(0);
   const [tab, setTab] = useState<'upload' | 'url'>('upload');
+  const [adminLocation, setAdminLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [trackingOpen, setTrackingOpen] = useState(false);
+  const [trackingTractor, setTrackingTractor] = useState<Tractor | null>(null);
+  const [trackingPoints, setTrackingPoints] = useState<TractorTrackingPoint[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
+  const [trackingDetails, setTrackingDetails] = useState<TrackingResponse | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    const fallback = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+      );
+      const data = await res.json();
+      return data?.display_name || fallback;
+    } catch {
+      return fallback;
+    }
+  }, []);
+  const fetchTrackingDetails = useCallback(async (tractorId: string) => {
+    try {
+      setTrackingLoading(true);
+      const data = await getTractorTracking(tractorId);
+      setTrackingDetails(data);
+      setTrackingError(null);
+    } catch (error: any) {
+      setTrackingError(error?.message || 'Unable to load tracking data');
+    } finally {
+      setTrackingLoading(false);
+    }
+  }, []);
+
+  const buildTrackingPoints = (tractorList: Tractor[], bookingList: Booking[]): TractorTrackingPoint[] => {
+    const latestBookingByTractor = new Map<string, Booking>();
+    const now = Date.now();
+
+    bookingList.forEach((booking) => {
+      const bookingEnd = new Date(booking.endDate).getTime();
+      if (Number.isNaN(bookingEnd) || bookingEnd <= now) return;
+      if (booking.deliveryLatitude == null || booking.deliveryLongitude == null) return;
+      const existing = latestBookingByTractor.get(booking.tractorId);
+      const bookingTime = new Date(booking.startDate).getTime();
+      const existingTime = existing ? new Date(existing.startDate).getTime() : 0;
+      if (!existing || bookingTime > existingTime) {
+        latestBookingByTractor.set(booking.tractorId, booking);
+      }
+    });
+
+    return tractorList
+      .map<TractorTrackingPoint | null>((tractor) => {
+        let lat = tractor.latitude ?? undefined;
+        let lng = tractor.longitude ?? undefined;
+        let owner: string | undefined;
+        let address: string | undefined;
+
+        const latestBooking = latestBookingByTractor.get(tractor.id);
+        if (latestBooking) {
+          lat = latestBooking.deliveryLatitude ?? lat;
+          lng = latestBooking.deliveryLongitude ?? lng;
+          owner = latestBooking.userName;
+          address = latestBooking.deliveryAddress;
+        }
+
+        if (lat == null || lng == null) {
+          return null;
+        }
+
+        let status: TractorTrackingPoint['status'] = tractor.available ? 'available' : 'booked';
+        if (tractor.available && tractor.status?.includes('Available (')) {
+          const match = tractor.status.match(/Available \((\d+)\/(\d+)\)/i);
+          if (match) {
+            const availableCount = Number(match[1]);
+            const totalCount = Number(match[2]);
+            if (availableCount > 0 && availableCount < totalCount) {
+              status = 'partial';
+            }
+          }
+        }
+
+        if (!tractor.available) {
+          status = 'booked';
+        }
+
+        return {
+          id: tractor.id,
+          name: tractor.name,
+          lat,
+          lng,
+          status,
+          owner,
+          address: address || tractor.location,
+        };
+      })
+      .filter((point): point is TractorTrackingPoint => Boolean(point));
+  };
+
+  // Get admin's current location when component mounts
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setAdminLocation(coords);
+          setSelectedLocation((prev) => prev ?? { ...coords, address: form.location || 'Current location' });
+        },
+        () => {
+          // Default to Kathmandu if geolocation fails
+          setAdminLocation({ lat: 27.7172, lng: 85.3240 });
+        }
+      );
+    } else {
+      // Default to Kathmandu if geolocation not supported
+      setAdminLocation({ lat: 27.7172, lng: 85.3240 });
+    }
+  }, []);
+
+  const refreshTractors = async () => {
+    try {
+      const [tractorData, bookingData] = await Promise.all([getTractorsForUI(), getAllBookingsForUI()]);
+      setTractors(tractorData);
+      setTrackingPoints(buildTrackingPoints(tractorData, bookingData));
+    } catch (e) {
+      setError('Failed to load tractors');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await getTractorsForUI();
-        setTractors(data);
-      } catch (e) {
-        setError('Failed to load tractors');
-      } finally {
-        setLoading(false);
-      }
-    })();
+    refreshTractors();
   }, []);
+
+  useEffect(() => {
+    if (!trackingOpen || !trackingTractor) {
+      setTrackingDetails(null);
+      return;
+    }
+    fetchTrackingDetails(trackingTractor.id);
+    const interval = setInterval(() => fetchTrackingDetails(trackingTractor.id), 15000);
+    return () => clearInterval(interval);
+  }, [trackingOpen, trackingTractor, fetchTrackingDetails]);
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
         </div>
       </div>
@@ -97,7 +244,11 @@ const AdminTractors = () => {
       const horsePower = form.horsePower ? Number(form.horsePower) : undefined;
       const fuelLevel = form.fuelLevel ? Number(form.fuelLevel) : undefined;
       const rating = form.rating ? Number(form.rating) : undefined;
-      const totalBookings = form.totalBookings ? Number(form.totalBookings) : undefined;
+      // totalBookings is now calculated dynamically by backend - don't send it
+      // Always parse quantity, default to 1 if empty or invalid
+      const quantity = form.quantity && form.quantity.trim() !== '' 
+        ? Number(form.quantity) 
+        : (form.quantity === '0' ? 0 : 1);
       const nextAvailableAt = form.nextAvailableDate && form.nextAvailableTime
         ? `${form.nextAvailableDate}T${form.nextAvailableTime}`
         : undefined;
@@ -110,7 +261,10 @@ const AdminTractors = () => {
         }
         finalUrl = uploadedUrls[0];
       }
-      if (editingId) {
+      const effectiveLatitude = selectedLocation?.lat ?? adminLocation?.lat;
+      const effectiveLongitude = selectedLocation?.lng ?? adminLocation?.lng;
+      const effectiveAddress = form.location || selectedLocation?.address || undefined;
+        if (editingId) {
         const mergedImages = uploadedUrls.length ? uploadedUrls : existingImages;
         await updateTractor(editingId, {
           name: form.name,
@@ -120,15 +274,18 @@ const AdminTractors = () => {
           imageUrl: finalUrl || mergedImages[0],
           imageUrls: mergedImages,
           description: form.description,
-          location: form.location || undefined,
+          location: effectiveAddress,
+          latitude: effectiveLatitude,
+          longitude: effectiveLongitude,
           horsePower,
           fuelType: form.fuelType || undefined,
           fuelLevel,
           rating,
-          totalBookings,
+          // totalBookings is calculated dynamically - don't send
           status: form.status,
           nextAvailableAt,
           category: form.category || undefined,
+          quantity,
         });
         setTractors(prev => prev.map(t => t.id === editingId ? {
           ...t,
@@ -143,12 +300,15 @@ const AdminTractors = () => {
           fuelType: form.fuelType || t.fuelType,
           fuelLevel: fuelLevel ?? t.fuelLevel,
           rating: rating ?? t.rating,
-          totalBookings: totalBookings ?? t.totalBookings,
+          totalBookings: t.totalBookings, // Keep existing value, will be updated on refresh
           status: form.status || t.status,
           nextAvailableAt: nextAvailableAt || t.nextAvailableAt,
           category: form.category || t.category,
+          quantity: quantity,
         } : t));
         toast.success('Tractor updated');
+        // Refresh to get updated booking counts
+        await refreshTractors();
       } else {
         const created = await createTractor({
           name: form.name,
@@ -158,15 +318,18 @@ const AdminTractors = () => {
           imageUrl: finalUrl || undefined,
           imageUrls: uploadedUrls.length ? uploadedUrls : undefined,
           description: form.description,
-          location: form.location || undefined,
+          location: effectiveAddress,
+          latitude: effectiveLatitude,
+          longitude: effectiveLongitude,
           horsePower,
           fuelType: form.fuelType || undefined,
           fuelLevel,
           rating,
-          totalBookings,
+          // totalBookings is calculated dynamically - don't send
           status: form.status,
           nextAvailableAt,
           category: form.category || undefined,
+          quantity,
         });
         setTractors(prev => [
           {
@@ -187,10 +350,13 @@ const AdminTractors = () => {
             status: created.status || (created.available ? 'Available' : 'Unavailable'),
             nextAvailableAt: created.nextAvailableAt,
             category: created.category || 'Utility',
+            quantity: created.quantity ?? quantity,
           },
           ...prev
         ]);
         toast.success('Tractor added');
+        // Refresh to get updated booking counts
+        await refreshTractors();
       }
       setOpen(false);
       setForm({
@@ -210,6 +376,7 @@ const AdminTractors = () => {
         nextAvailableDate: '',
         nextAvailableTime: '',
         category: 'Utility',
+        quantity: '1',
       });
       setEditingId(null);
       setFiles([]);
@@ -217,6 +384,7 @@ const AdminTractors = () => {
       setPreview('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80');
       setProgress(0);
       setTab('upload');
+      setSelectedLocation(null);
     } catch (e) {
       toast.error('Failed to add tractor');
     }
@@ -249,6 +417,7 @@ const AdminTractors = () => {
       fuelLevel: found.fuelLevel ? String(found.fuelLevel) : '80',
       rating: found.rating ? String(found.rating) : '4.5',
       totalBookings: found.totalBookings ? String(found.totalBookings) : '0',
+      quantity: found.quantity ? String(found.quantity) : '1',
       status: found.status || (found.available ? 'Available' : 'Unavailable'),
       nextAvailableDate,
       nextAvailableTime,
@@ -258,6 +427,11 @@ const AdminTractors = () => {
     setFiles([]);
     setProgress(0);
     setTab('upload');
+    setSelectedLocation(
+      found.latitude != null && found.longitude != null
+        ? { lat: found.latitude, lng: found.longitude, address: found.location || undefined }
+        : null
+    );
     setOpen(true);
   };
 
@@ -271,17 +445,78 @@ const AdminTractors = () => {
     }
   };
 
+  const handleTrack = (tractor: Tractor) => {
+    setTrackingTractor(tractor);
+    setTrackingDetails(null);
+    setTrackingOpen(true);
+  };
+
+  const handleUseMyLocationForForm = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported in this browser');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        setAdminLocation(coords);
+        const resolvedAddress = await reverseGeocode(coords.lat, coords.lng);
+        setSelectedLocation({ ...coords, address: resolvedAddress });
+        setForm((s) => ({ ...s, location: resolvedAddress }));
+      },
+      (error) => {
+        toast.error(error.message || 'Unable to fetch location');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleLiveLocationUpdate = () => {
+    if (!trackingTractor) return;
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported in this browser');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          await updateTractorLocation(trackingTractor.id, {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          toast.success('Live location updated');
+          fetchTrackingDetails(trackingTractor.id);
+          await refreshTractors();
+        } catch (error: any) {
+          toast.error(error?.message || 'Failed to update live location');
+        }
+      },
+      (error) => {
+        toast.error(error.message || 'Unable to fetch device location');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-2">Manage Tractors</h1>
             <p className="text-muted-foreground">Add, edit, or remove tractors from your fleet</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog
+            open={open}
+            onOpenChange={(value) => {
+              setOpen(value);
+              if (!value) {
+                setSelectedLocation(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
@@ -390,9 +625,36 @@ const AdminTractors = () => {
                       <label className="text-sm font-medium">Hourly Rate</label>
                       <Input type="number" value={form.hourlyRate} onChange={e => setForm(s => ({ ...s, hourlyRate: e.target.value }))} placeholder="e.g. 1500" />
                     </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Location</label>
-                    <Input value={form.location} onChange={e => setForm(s => ({ ...s, location: e.target.value }))} placeholder="e.g. Depot A" />
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium">Location</label>
+                      <Button type="button" variant="outline" size="sm" onClick={handleUseMyLocationForForm}>
+                        Use my GPS
+                      </Button>
+                    </div>
+                    <Input
+                      value={form.location}
+                      onChange={e => setForm(s => ({ ...s, location: e.target.value }))}
+                      placeholder="e.g. Depot A, Teku"
+                    />
+                    <p className="text-xs text-muted-foreground">Pick a point on the map or use your current GPS.</p>
+                    <DeliveryMapPicker
+                      value={
+                        selectedLocation
+                          ? {
+                              lat: selectedLocation.lat,
+                              lng: selectedLocation.lng,
+                              address: selectedLocation.address || form.location || '',
+                            }
+                          : undefined
+                      }
+                      onChange={(value) => {
+                        setSelectedLocation(value);
+                        setForm((s) => ({ ...s, location: value.address }));
+                      }}
+                      className="h-64 w-full rounded-lg border"
+                      mapZIndex={50}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -417,8 +679,22 @@ const AdminTractors = () => {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Total Bookings</label>
-                      <Input type="number" min={0} value={form.totalBookings} onChange={e => setForm(s => ({ ...s, totalBookings: e.target.value }))} />
+                      <Input 
+                        type="number" 
+                        min={0} 
+                        value={form.totalBookings} 
+                        disabled
+                        className="bg-muted cursor-not-allowed"
+                      />
+                      <p className="text-xs text-muted-foreground">Calculated automatically from actual bookings</p>
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Quantity</label>
+                      <Input type="number" min={1} value={form.quantity} onChange={e => setForm(s => ({ ...s, quantity: e.target.value }))} placeholder="Number of tractors" />
+                      <p className="text-xs text-muted-foreground">Number of tractors of this type available</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Status</label>
                       <Select value={form.status} onValueChange={(value)=>setForm(s=>({...s,status:value}))}>
@@ -483,6 +759,32 @@ const AdminTractors = () => {
           </Dialog>
         </div>
 
+        <Card className="mb-6">
+          <CardHeader className="flex flex-col gap-1">
+            <CardTitle className="text-xl">Fleet Tracker</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Monitor every tractor on the field in real-time with status-based color codes.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <TractorTrackingMap points={trackingPoints} mapZIndex={0} />
+            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/40"></span>
+                Available
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-orange-500 shadow-sm shadow-orange-500/40"></span>
+                Partially booked
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-red-500 shadow-sm shadow-red-500/40"></span>
+                Fully booked / In use
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>All Tractors ({tractors.length})</CardTitle>
@@ -530,6 +832,14 @@ const AdminTractors = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handleTrack(tractor)}
+                          title="Track tractor"
+                        >
+                          <MapPin className="h-4 w-4 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handleEdit(tractor.id)}
                         >
                           <Edit className="h-4 w-4" />
@@ -549,6 +859,117 @@ const AdminTractors = () => {
             </Table>
           </CardContent>
         </Card>
+        <Dialog
+          open={trackingOpen}
+          onOpenChange={(open) => {
+            setTrackingOpen(open);
+            if (!open) {
+              setTrackingTractor(null);
+              setTrackingDetails(null);
+              setTrackingError(null);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Track Tractor</DialogTitle>
+            </DialogHeader>
+            {trackingTractor ? (
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-secondary">{trackingTractor.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {trackingDetails?.currentLocation?.updatedAt
+                        ? `Last update ${new Date(trackingDetails.currentLocation.updatedAt).toLocaleString()}`
+                        : trackingTractor.location
+                        ? `Last known location: ${trackingTractor.location}`
+                        : 'Awaiting first location update'}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleLiveLocationUpdate}>
+                    Use my GPS
+                  </Button>
+                </div>
+
+                {trackingError && <p className="text-sm text-red-600">{trackingError}</p>}
+
+                <LiveRouteMap
+                  current={
+                    trackingDetails?.currentLocation
+                      ? {
+                          lat: trackingDetails.currentLocation.lat,
+                          lng: trackingDetails.currentLocation.lng,
+                          label: 'Current location',
+                        }
+                      : trackingTractor.latitude != null && trackingTractor.longitude != null
+                      ? {
+                          lat: trackingTractor.latitude,
+                          lng: trackingTractor.longitude,
+                          label: trackingTractor.location || 'Last known location',
+                        }
+                      : undefined
+                  }
+                  destination={
+                    trackingDetails?.destination
+                      ? {
+                          lat: trackingDetails.destination.lat,
+                          lng: trackingDetails.destination.lng,
+                          label: trackingDetails.destination.address || 'Destination',
+                        }
+                      : undefined
+                  }
+                  route={trackingDetails?.route}
+                  className="h-72 w-full rounded-xl border"
+                />
+
+                {trackingLoading && (
+                  <p className="text-xs text-muted-foreground">Refreshing tracking data...</p>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">ETA</p>
+                    <p className="text-2xl font-semibold text-secondary mt-1">
+                      {trackingDetails?.etaMinutes ? `${trackingDetails.etaMinutes} min` : '—'}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border p-4">
+                    <p className="text-xs text-muted-foreground">Distance</p>
+                    <p className="text-2xl font-semibold text-secondary mt-1">
+                      {trackingDetails?.distanceKm ? `${trackingDetails.distanceKm.toFixed(1)} km` : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                {trackingDetails?.destination && (
+                  <div className="rounded-lg border border-border p-4 text-sm">
+                    <p className="text-xs text-muted-foreground mb-1">Destination</p>
+                    <p className="font-medium text-secondary">
+                      {trackingDetails.destination.address || `${trackingDetails.destination.lat}, ${trackingDetails.destination.lng}`}
+                    </p>
+                    {trackingDetails.deliveryWindow && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Delivery window:{' '}
+                        {new Date(trackingDetails.deliveryWindow.startAt).toLocaleString()} -{' '}
+                        {new Date(trackingDetails.deliveryWindow.endAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Select a tractor to view its live route and destination.
+              </p>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTrackingOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

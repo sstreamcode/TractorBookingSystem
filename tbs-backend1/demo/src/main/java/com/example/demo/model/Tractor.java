@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -24,6 +25,9 @@ public class Tractor {
     private String description;
 
     private String location;
+    private Double latitude;
+    private Double longitude;
+    private LocalDateTime locationUpdatedAt;
     private Integer horsePower;
     private String fuelType;
     private Double fuelLevel;
@@ -32,8 +36,12 @@ public class Tractor {
     private String status;
     private String nextAvailableAt;
     private String category;
+    private Integer quantity; // Number of tractors available of this type
+    private Double destinationLatitude;
+    private Double destinationLongitude;
+    private String destinationAddress;
 
-    @OneToMany(mappedBy = "tractor", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "tractor", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Booking> bookings;
 
@@ -109,6 +117,30 @@ public class Tractor {
         this.location = location;
     }
 
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+    
+    public LocalDateTime getLocationUpdatedAt() {
+        return locationUpdatedAt;
+    }
+
+    public void setLocationUpdatedAt(LocalDateTime locationUpdatedAt) {
+        this.locationUpdatedAt = locationUpdatedAt;
+    }
+
     public Integer getHorsePower() {
         return horsePower;
     }
@@ -171,6 +203,38 @@ public class Tractor {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(Integer quantity) {
+        this.quantity = quantity;
+    }
+    
+    public Double getDestinationLatitude() {
+        return destinationLatitude;
+    }
+
+    public void setDestinationLatitude(Double destinationLatitude) {
+        this.destinationLatitude = destinationLatitude;
+    }
+
+    public Double getDestinationLongitude() {
+        return destinationLongitude;
+    }
+
+    public void setDestinationLongitude(Double destinationLongitude) {
+        this.destinationLongitude = destinationLongitude;
+    }
+
+    public String getDestinationAddress() {
+        return destinationAddress;
+    }
+
+    public void setDestinationAddress(String destinationAddress) {
+        this.destinationAddress = destinationAddress;
     }
 
     public List<Booking> getBookings() {

@@ -11,6 +11,9 @@ export interface TractorApiModel {
   imageUrls?: string[];
   description?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  locationUpdatedAt?: string;
   horsePower?: number;
   fuelType?: string;
   fuelLevel?: number;
@@ -19,6 +22,56 @@ export interface TractorApiModel {
   status?: string;
   nextAvailableAt?: string;
   category?: string;
+  quantity?: number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
+  destinationAddress?: string;
+}
+
+export interface TrackingLocation {
+  lat: number;
+  lng: number;
+  address?: string;
+  updatedAt?: string | null;
+}
+
+export interface TrackingResponse {
+  tractorId: number;
+  tractorName: string;
+  status?: string;
+  bookingId?: number;
+  bookingStatus?: string;
+  deliveryAddress?: string;
+  deliveryWindow?: {
+    startAt: string;
+    endAt: string;
+  };
+  currentLocation: TrackingLocation | null;
+  destination: TrackingLocation | null;
+  distanceKm?: number;
+  etaMinutes?: number;
+  route: Array<{ lat: number; lng: number }>;
+}
+
+export interface LandingMetricsResponse {
+  totalTractors: number;
+  totalBookings: number;
+  activeBookings: number;
+  districtsCovered: number;
+  avgResponseTimeMinutes: number;
+  fleetUtilization: number;
+}
+
+export interface DispatchSummaryResponse {
+  hasData?: boolean;
+  tractorName?: string;
+  status?: string;
+  distanceKm?: number;
+  etaMinutes?: number;
+  currentLocation?: TrackingLocation | null;
+  destination?: TrackingLocation | null;
+  fleetEfficiency?: string;
+  terrain?: string;
 }
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082';
@@ -148,6 +201,8 @@ export async function createTractor(input: {
   imageUrls?: string[];
   description?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   horsePower?: number;
   fuelType?: string;
   fuelLevel?: number;
@@ -156,6 +211,7 @@ export async function createTractor(input: {
   status?: string;
   nextAvailableAt?: string;
   category?: string;
+  quantity?: number;
 }): Promise<TractorApiModel> {
   const res = await fetch(`${BASE_URL}/api/tractors`, {
     method: 'POST',
@@ -172,6 +228,8 @@ export async function createTractor(input: {
       imageUrls: input.imageUrls,
       description: input.description,
       location: input.location,
+      latitude: input.latitude,
+      longitude: input.longitude,
       horsePower: input.horsePower,
       fuelType: input.fuelType,
       fuelLevel: input.fuelLevel,
@@ -179,7 +237,8 @@ export async function createTractor(input: {
       totalBookings: input.totalBookings,
       status: input.status,
       nextAvailableAt: input.nextAvailableAt,
-      category: input.category
+      category: input.category,
+      quantity: input.quantity
     })
   });
   if (!res.ok) throw new Error('Failed to create tractor');
@@ -197,17 +256,38 @@ export async function updateTractor(
     imageUrls?: string[];
     description?: string;
     location?: string;
+    latitude?: number;
+    longitude?: number;
     horsePower?: number;
     fuelType?: string;
     fuelLevel?: number;
     rating?: number;
-    totalBookings?: number;
+    totalBookings?: number; // Deprecated - calculated dynamically by backend
     status?: string;
     nextAvailableAt?: string;
     category?: string;
+    quantity?: number;
   }
 ): Promise<void> {
+  // Remove totalBookings from input as it's calculated dynamically
+  const { totalBookings, ...updateData } = input;
+  
   const res = await fetch(`${BASE_URL}/api/tractors/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: JSON.stringify(updateData)
+  });
+  if (!res.ok && res.status !== 204) throw new Error('Failed to update tractor');
+}
+
+export async function updateTractorLocation(
+  id: string | number,
+  input: { latitude: number; longitude: number; address?: string }
+): Promise<void> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${id}/location`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -215,7 +295,73 @@ export async function updateTractor(
     },
     body: JSON.stringify(input)
   });
-  if (!res.ok && res.status !== 204) throw new Error('Failed to update tractor');
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new ApiError(error.error || 'Failed to update location', res.status);
+  }
+}
+
+export async function getTractorTracking(id: string | number): Promise<TrackingResponse> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${id}/tracking`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new ApiError(error.error || 'Failed to load tracking data', res.status);
+  }
+  const data = await res.json();
+  return normalizeTrackingResponse(data);
+}
+
+export async function getBookingTracking(id: string | number): Promise<TrackingResponse> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${id}/tracking`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new ApiError(error.error || 'Failed to load booking tracking data', res.status);
+  }
+  const data = await res.json();
+  return normalizeTrackingResponse(data);
+}
+
+function normalizeTrackingResponse(payload: any): TrackingResponse {
+  return {
+    tractorId: payload.tractorId,
+    tractorName: payload.tractorName,
+    status: payload.status,
+    bookingId: payload.bookingId,
+    bookingStatus: payload.bookingStatus,
+    deliveryAddress: payload.deliveryAddress,
+    deliveryWindow: payload.deliveryWindow,
+    currentLocation: payload.currentLocation || null,
+    destination: payload.destination || null,
+    distanceKm: payload.distanceKm ?? undefined,
+    etaMinutes: payload.etaMinutes ?? undefined,
+    route: Array.isArray(payload.route)
+      ? payload.route.map((point: any) => ({ lat: point.lat, lng: point.lng }))
+      : []
+  };
+}
+
+export async function fetchLandingMetrics(): Promise<LandingMetricsResponse> {
+  const res = await fetch(`${BASE_URL}/api/metrics/landing`);
+  if (!res.ok) {
+    throw new ApiError('Failed to load landing metrics', res.status);
+  }
+  return res.json();
+}
+
+export async function fetchLatestDispatchSummary(): Promise<DispatchSummaryResponse> {
+  const res = await fetch(`${BASE_URL}/api/dispatch/latest`);
+  if (!res.ok) {
+    throw new ApiError('Failed to load dispatch summary', res.status);
+  }
+  return res.json();
 }
 
 export async function uploadImage(file: File): Promise<{ url: string }> {
@@ -295,17 +441,35 @@ export interface BookingApiModel {
   startAt: string;
   endAt: string;
   status: string;
+  adminStatus?: string;
   totalAmount?: number;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  deliveryAddress?: string;
 }
 
-export async function createBooking(tractorId: string, startAt: string, endAt: string): Promise<BookingApiModel> {
+export async function createBooking(
+  tractorId: string, 
+  startAt: string, 
+  endAt: string,
+  deliveryLatitude?: number,
+  deliveryLongitude?: number,
+  deliveryAddress?: string
+): Promise<BookingApiModel> {
   const res = await fetch(`${BASE_URL}/api/bookings`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
     },
-    body: JSON.stringify({ tractorId, startAt, endAt })
+    body: JSON.stringify({ 
+      tractorId, 
+      startAt, 
+      endAt,
+      deliveryLatitude,
+      deliveryLongitude,
+      deliveryAddress
+    })
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -405,6 +569,62 @@ export async function rejectRefund(bookingId: string): Promise<{ status: string;
   return res.json();
 }
 
+export async function markBookingPaid(bookingId: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/mark-paid`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to mark booking as paid', res.status);
+  }
+  return res.json();
+}
+
+export async function markBookingDelivered(bookingId: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/mark-delivered`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to mark booking as delivered', res.status);
+  }
+  return res.json();
+}
+
+export async function approveBooking(bookingId: string): Promise<{ adminStatus: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/approve`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to approve booking', res.status);
+  }
+  return res.json();
+}
+
+export async function denyBooking(bookingId: string): Promise<{ adminStatus: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/deny`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to deny booking', res.status);
+  }
+  return res.json();
+}
+
 // UI mapping helpers
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=800&q=80';
 
@@ -417,6 +637,9 @@ export function toUiTractor(apiTractor: TractorApiModel): Tractor {
     images: apiTractor.imageUrls,
     hourlyRate: apiTractor.hourlyRate,
     location: apiTractor.location || undefined,
+    latitude: apiTractor.latitude || undefined,
+    longitude: apiTractor.longitude || undefined,
+    locationUpdatedAt: apiTractor.locationUpdatedAt || undefined,
     horsePower: apiTractor.horsePower || undefined,
     fuelType: apiTractor.fuelType || undefined,
     available: apiTractor.available,
@@ -426,7 +649,11 @@ export function toUiTractor(apiTractor: TractorApiModel): Tractor {
     totalBookings: apiTractor.totalBookings ?? undefined,
     status: apiTractor.status || undefined,
     nextAvailableAt: apiTractor.nextAvailableAt || undefined,
-    category: apiTractor.category || undefined
+    category: apiTractor.category || undefined,
+    quantity: apiTractor.quantity || undefined,
+    destinationLatitude: apiTractor.destinationLatitude || undefined,
+    destinationLongitude: apiTractor.destinationLongitude || undefined,
+    destinationAddress: apiTractor.destinationAddress || undefined
   };
 }
 
@@ -457,6 +684,8 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
         return 'pending';
       case 'PAID':
         return 'confirmed';
+      case 'DELIVERED':
+        return 'completed';
       case 'CANCELLED':
         return 'cancelled';
       case 'REFUND_REQUESTED':
@@ -466,18 +695,38 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     }
   };
 
+  // Map backend adminStatus to frontend adminStatus
+  const mapAdminStatus = (adminStatus?: string): 'pending_approval' | 'approved' | 'denied' | undefined => {
+    if (!adminStatus) return undefined;
+    switch (adminStatus.toUpperCase()) {
+      case 'PENDING_APPROVAL':
+        return 'pending_approval';
+      case 'APPROVED':
+        return 'approved';
+      case 'DENIED':
+        return 'denied';
+      default:
+        return undefined;
+    }
+  };
+
   return {
     id: String(apiBooking.id),
     tractorId: String(apiBooking.tractor.id),
     tractorName: apiBooking.tractor.name,
     tractorImage: (apiBooking.tractor.imageUrls && apiBooking.tractor.imageUrls[0]) || apiBooking.tractor.imageUrl || PLACEHOLDER_IMAGE,
+    tractorImages: apiBooking.tractor.imageUrls || (apiBooking.tractor.imageUrl ? [apiBooking.tractor.imageUrl] : undefined),
     userId: String(apiBooking.user.id),
     userName: apiBooking.user.name,
     startDate: apiBooking.startAt,
     endDate: apiBooking.endAt,
     totalCost: totalCost,
     status: mapStatus(apiBooking.status),
-    paymentStatus: apiBooking.status === 'PAID' ? 'paid' : 'pending'
+    paymentStatus: apiBooking.status === 'PAID' || apiBooking.status === 'DELIVERED' ? 'paid' : 'pending',
+    adminStatus: mapAdminStatus(apiBooking.adminStatus),
+    deliveryLatitude: apiBooking.deliveryLatitude || undefined,
+    deliveryLongitude: apiBooking.deliveryLongitude || undefined,
+    deliveryAddress: apiBooking.deliveryAddress || undefined
   };
 }
 

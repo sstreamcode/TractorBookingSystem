@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -18,6 +19,7 @@ import AdminBookings from "./pages/AdminBookings";
 import AdminReports from "./pages/AdminReports";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
+import MapPreview from "./pages/MapPreview";
 import NotFound from "./pages/NotFound";
 import Tracking from "./pages/Tracking";
 
@@ -29,18 +31,20 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <LanguageProvider>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/tractors" element={<Tractors />} />
-            <Route path="/tractors/:id" element={<TractorDetail />} />
-            <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/tractors" element={<UserOnly><Tractors /></UserOnly>} />
+            <Route path="/tractors/:id" element={<UserOnly><TractorDetail /></UserOnly>} />
+            <Route path="/dashboard" element={<UserOnly><UserDashboard /></UserOnly>} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/payment/success" element={<PaymentSuccess />} />
-            <Route path="/payment/failure" element={<PaymentFailure />} />
-            <Route path="/tracking" element={<Tracking />} />
+            <Route path="/payment/success" element={<UserOnly><PaymentSuccess /></UserOnly>} />
+            <Route path="/payment/failure" element={<UserOnly><PaymentFailure /></UserOnly>} />
+            <Route path="/tracking" element={<UserOnly><Tracking /></UserOnly>} />
+            <Route path="/map-preview" element={<MapPreview />} />
             <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
             <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
             <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
@@ -49,6 +53,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
+        </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
@@ -56,7 +61,7 @@ const App = () => (
 
 export default App;
 
-// Admin route guard
+// Admin route guard - only admins can access
 function AdminOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   
@@ -71,5 +76,23 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+// User route guard - only regular users can access (not admins)
+function UserOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  
+  // Wait for auth to finish loading before redirecting
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
   return <>{children}</>;
 }

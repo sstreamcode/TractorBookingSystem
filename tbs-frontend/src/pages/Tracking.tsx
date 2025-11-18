@@ -1,33 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
-import { getMyBookingsForUI } from '@/lib/api';
+import { getMyBookingsForUI, getBookingTracking, type TrackingResponse } from '@/lib/api';
 import type { Booking } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import LiveRouteMap from '@/components/LiveRouteMap';
 import { toast } from 'sonner';
-
-// Leaflet runtime imports
-import L from 'leaflet';
 
 const Tracking = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [position, setPosition] = useState<{ lat: number; lng: number; accuracy?: number } | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const userMarkerRef = useRef<L.Marker | null>(null);
-  const accuracyCircleRef = useRef<L.Circle | null>(null);
-  const [geoError, setGeoError] = useState<string | null>(null);
-
-  // Find an active booking (now within start-end and not cancelled)
-  const activeBooking = useMemo(() => {
-    const now = Date.now();
-    return bookings.find((b) => {
-      const start = new Date(b.startDate).getTime();
-      const end = new Date(b.endDate).getTime();
-      const isActiveTime = start <= now && now <= end;
-      const notCancelled = b.status !== 'cancelled';
-      return isActiveTime && notCancelled;
-    });
-  }, [bookings]);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [trackingData, setTrackingData] = useState<TrackingResponse | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -36,98 +24,195 @@ const Tracking = () => {
         const data = await getMyBookingsForUI();
         setBookings(data);
       } catch (e) {
-        // Non-blocking
+        toast.error('Unable to load your bookings for tracking');
       }
     })();
   }, [isAuthenticated]);
 
-  // Initialize the leaflet map once when we have a first position
+  const trackableBookings = useMemo(
+    () => bookings.filter((booking) => booking.status !== 'cancelled'),
+    [bookings]
+  );
+
   useEffect(() => {
-    if (!position) return;
-    if (mapRef.current) return;
-
-    const map = L.map('tracking-map', {
-      center: [position.lat, position.lng],
-      zoom: 14,
-      zoomControl: true,
-    });
-    mapRef.current = map;
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
-
-    const userIcon = L.divIcon({
-      className: 'rounded-full shadow-md',
-      html: '<div style="background:#16a34a;width:14px;height:14px;border-radius:9999px;border:2px solid white;"></div>',
-      iconAnchor: [7, 7],
-    });
-    const marker = L.marker([position.lat, position.lng], { icon: userIcon }).addTo(map);
-    userMarkerRef.current = marker;
-
-    if (position.accuracy && position.accuracy > 0) {
-      const circle = L.circle([position.lat, position.lng], {
-        radius: position.accuracy,
-        color: '#16a34a',
-        fillColor: '#22c55e',
-        fillOpacity: 0.15,
-        weight: 1,
-      }).addTo(map);
-      accuracyCircleRef.current = circle;
-    }
-  }, [position]);
-
-  // Watch geolocation and update marker/circle
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    if (!('geolocation' in navigator)) {
-      setGeoError('Geolocation not supported by this browser');
+    if (trackableBookings.length === 0) {
+      setSelectedBookingId(null);
+      setSearchParams({}, { replace: true });
       return;
     }
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        setPosition({ lat: latitude, lng: longitude, accuracy });
-        if (userMarkerRef.current) {
-          userMarkerRef.current.setLatLng([latitude, longitude]);
+    const paramId = searchParams.get('bookingId');
+    const initial = paramId && trackableBookings.some((b) => b.id === paramId) ? paramId : trackableBookings[0].id;
+    setSelectedBookingId(initial);
+    setSearchParams(initial ? { bookingId: initial } : {}, { replace: true });
+  }, [trackableBookings, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!selectedBookingId) {
+      setTrackingData(null);
+      return;
+    }
+    let active = true;
+    const fetchTracking = async () => {
+      try {
+        setTrackingLoading(true);
+        const data = await getBookingTracking(selectedBookingId);
+        if (active) {
+          setTrackingData(data);
+          setTrackingError(null);
         }
-        if (accuracyCircleRef.current) {
-          accuracyCircleRef.current.setLatLng([latitude, longitude]);
-          accuracyCircleRef.current.setRadius(accuracy || 0);
+      } catch (error: any) {
+        if (active) {
+          setTrackingError(error?.message || 'Unable to load tracking data');
         }
-        if (mapRef.current) {
-          // Pan smoothly but avoid jitter with small changes
-          mapRef.current.setView([latitude, longitude], mapRef.current.getZoom(), { animate: true });
-        }
-      },
-      (err) => {
-        setGeoError(err.message || 'Unable to get location');
-        toast.error('Location permission denied or unavailable.');
-      },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      } finally {
+        if (active) setTrackingLoading(false);
+      }
+    };
+    fetchTracking();
+    const interval = setInterval(fetchTracking, 15000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [selectedBookingId]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <p>Loading...</p>
+        </div>
+      </div>
     );
-    return () => navigator.geolocation.clearWatch(id);
-  }, [isAuthenticated]);
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="mb-4">
+        <div className="mb-6 space-y-3 relative z-20">
           <h1 className="text-2xl font-semibold text-secondary">Real-Time Tractor Tracking</h1>
           <p className="text-sm text-muted-foreground">
-            {activeBooking
-              ? `Tracking your hired tractor: ${activeBooking.tractorName}`
-              : 'No active booking found. We will center on your current location if available.'}
+            View the live route, ETA, and delivery progress for your approved bookings.
           </p>
-          {geoError && <p className="mt-2 text-sm text-red-600">{geoError}</p>}
+          {trackableBookings.length > 0 ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Select booking</p>
+              <Select
+                value={selectedBookingId ?? ''}
+                onValueChange={(value) => {
+                  const normalized = value || null;
+                  setSelectedBookingId(normalized);
+                  if (normalized) {
+                    setSearchParams({ bookingId: normalized }, { replace: true });
+                  } else {
+                    setSearchParams({}, { replace: true });
+                  }
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-80">
+                  <SelectValue placeholder="Select booking" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trackableBookings.map((booking) => (
+                    <SelectItem key={booking.id} value={booking.id}>
+                      {booking.tractorName} · {new Date(booking.startDate).toLocaleDateString()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              You don’t have any bookings ready for tracking yet. Once a tractor is approved, its route will appear here.
+            </p>
+          )}
         </div>
-        <div id="tracking-map" className="h-[70vh] w-full rounded-xl border bg-muted"></div>
-        <div className="mt-3 text-xs text-muted-foreground">
-          This demo centers the tractor at your live device location during an active booking. For production-grade
-          tracking, pair an operator app or tracker device to send authenticated GPS updates to the backend and broadcast
-          to this map in real time.
-        </div>
+
+        {selectedBookingId && trackingData ? (
+          <div className="space-y-4">
+            <LiveRouteMap
+              current={
+                trackingData.currentLocation
+                  ? {
+                      lat: trackingData.currentLocation.lat,
+                      lng: trackingData.currentLocation.lng,
+                      label: trackingData.currentLocation.address || 'Current location',
+                    }
+                  : undefined
+              }
+              destination={
+                trackingData.destination
+                  ? {
+                      lat: trackingData.destination.lat,
+                      lng: trackingData.destination.lng,
+                      label: trackingData.destination.address || trackingData.deliveryAddress || 'Destination',
+                    }
+                  : undefined
+              }
+              route={trackingData.route}
+              className="h-[60vh] w-full rounded-xl border bg-muted relative z-10"
+            />
+
+            {trackingLoading && (
+              <p className="text-xs text-muted-foreground">Refreshing tracking data...</p>
+            )}
+
+            {trackingError && <p className="text-sm text-red-600">{trackingError}</p>}
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-border p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">ETA</p>
+                <p className="text-3xl font-semibold text-secondary mt-2">
+                  {trackingData.etaMinutes ? `${trackingData.etaMinutes} min` : '—'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Distance</p>
+                <p className="text-3xl font-semibold text-secondary mt-2">
+                  {trackingData.distanceKm ? `${trackingData.distanceKm.toFixed(1)} km` : '—'}
+                </p>
+              </div>
+              <div className="rounded-xl border border-border p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
+                <p className="text-lg font-semibold text-secondary mt-2">
+                  {trackingData.bookingStatus ? trackingData.bookingStatus.toUpperCase() : trackingData.status || '—'}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border p-4 space-y-2 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Current location</p>
+                <p className="text-secondary font-medium">
+                  {trackingData.currentLocation?.address || 'Awaiting live update'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Destination</p>
+                <p className="text-secondary font-medium">
+                  {trackingData.destination?.address || trackingData.deliveryAddress || 'Not assigned'}
+                </p>
+                {trackingData.deliveryWindow && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Window:{' '}
+                    {new Date(trackingData.deliveryWindow.startAt).toLocaleString()} -{' '}
+                    {new Date(trackingData.deliveryWindow.endAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : trackableBookings.length > 0 ? (
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            {trackingLoading ? 'Loading tracking data...' : 'Select a booking to view its route.'}
+          </div>
+        ) : null}
       </div>
     </div>
   );

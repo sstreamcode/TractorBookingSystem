@@ -6,6 +6,9 @@ export interface Tractor {
   images?: string[];
   hourlyRate: number;
   location?: string;
+  latitude?: number;
+  longitude?: number;
+  locationUpdatedAt?: string;
   horsePower?: number;
   fuelType?: string;
   available: boolean;
@@ -16,6 +19,10 @@ export interface Tractor {
   status?: string;
   nextAvailableAt?: string;
   category?: string;
+  quantity?: number;
+  destinationLatitude?: number;
+  destinationLongitude?: number;
+  destinationAddress?: string;
 }
 
 export interface Booking {
@@ -23,6 +30,7 @@ export interface Booking {
   tractorId: string;
   tractorName: string;
   tractorImage?: string;
+  tractorImages?: string[];
   userId: string;
   userName: string;
   startDate: string;
@@ -30,6 +38,10 @@ export interface Booking {
   totalCost: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_requested';
   paymentStatus: 'pending' | 'paid' | 'failed';
+  adminStatus?: 'pending_approval' | 'approved' | 'denied';
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  deliveryAddress?: string;
 }
 
 export interface BookingFormData {

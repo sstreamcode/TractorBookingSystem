@@ -14,11 +14,11 @@ public class Booking {
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "fk_booking_user"))
     private User user;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "tractor_id")
+    @JoinColumn(name = "tractor_id", foreignKey = @ForeignKey(name = "fk_booking_tractor"))
     private Tractor tractor;
 
     @Column(nullable = false)
@@ -30,8 +30,15 @@ public class Booking {
     @Column(nullable = false, length = 20)
     private String status; // PENDING, PAID, CANCELLED
 
+    @Column(length = 20)
+    private String adminStatus; // PENDING_APPROVAL, APPROVED, DENIED
+
     @Column(nullable = false)
     private Double totalAmount;
+
+    private Double deliveryLatitude;
+    private Double deliveryLongitude;
+    private String deliveryAddress;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.REMOVE, orphanRemoval = true)
     @JsonIgnore
@@ -49,8 +56,16 @@ public class Booking {
     public void setEndAt(LocalDateTime endAt) { this.endAt = endAt; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getAdminStatus() { return adminStatus; }
+    public void setAdminStatus(String adminStatus) { this.adminStatus = adminStatus; }
     public Double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+    public Double getDeliveryLatitude() { return deliveryLatitude; }
+    public void setDeliveryLatitude(Double deliveryLatitude) { this.deliveryLatitude = deliveryLatitude; }
+    public Double getDeliveryLongitude() { return deliveryLongitude; }
+    public void setDeliveryLongitude(Double deliveryLongitude) { this.deliveryLongitude = deliveryLongitude; }
+    public String getDeliveryAddress() { return deliveryAddress; }
+    public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
     public List<Payment> getPayments() { return payments; }
     public void setPayments(List<Payment> payments) { this.payments = payments; }
 }

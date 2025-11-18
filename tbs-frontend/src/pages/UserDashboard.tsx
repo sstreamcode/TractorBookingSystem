@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { Calendar, Clock, CreditCard, XCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,11 +20,68 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+// Reusable carousel component
+interface ImageCarouselProps {
+  id: string;
+  gallery: string[];
+  hasMultipleImages: boolean;
+  onIndexChange: (index: number) => void;
+  currentIndex: number;
+  children: React.ReactNode;
+}
+
+const ImageCarousel = ({ 
+  id, 
+  gallery, 
+  hasMultipleImages, 
+  onIndexChange,
+  currentIndex,
+  children 
+}: ImageCarouselProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (!hasMultipleImages || isHovered || gallery.length <= 1) return;
+
+    const interval = setInterval(() => {
+      onIndexChange((currentIndex + 1) % gallery.length);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [gallery.length, hasMultipleImages, isHovered, currentIndex, onIndexChange]);
+
+  return (
+    <div 
+      className="relative w-full h-full overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {children}
+      {hasMultipleImages && gallery.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+          {gallery.map((_, i) => (
+            <div
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i === currentIndex 
+                  ? 'w-6 bg-white' 
+                  : 'w-1.5 bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const UserDashboard = () => {
   const { isAuthenticated, isAdmin, user, loading: authLoading } = useAuth();
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
+  // Track active image index for each booking
+  const [bookingImageIndices, setBookingImageIndices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!isAuthenticated || isAdmin) {
@@ -48,7 +105,7 @@ const UserDashboard = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
         </div>
       </div>
@@ -67,7 +124,7 @@ const UserDashboard = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
         </div>
       </div>
@@ -123,7 +180,7 @@ const UserDashboard = () => {
       case 'confirmed':
         return '!border-green-200 !bg-green-50 !text-green-700';
       case 'completed':
-        return '!border-blue-200 !bg-blue-50 !text-blue-700';
+        return '!border-primary/20 !bg-primary/10 !text-primary';
       case 'cancelled':
         return '';
       case 'refund_requested':
@@ -175,23 +232,23 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">My Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.name}!</p>
+          <h1 className="text-3xl font-bold mb-2 text-secondary">My Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, {user?.name}!</p>
         </div>
 
         {/* Stats - Simple Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="card-hover border border-gray-200 shadow-sm">
+          <Card className="card-hover border border-border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1 font-medium">Total Bookings</p>
-                  <p className="text-4xl font-bold text-gray-900">{userBookings.length}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Bookings</p>
+                  <p className="text-4xl font-bold text-secondary">{userBookings.length}</p>
                 </div>
                 <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
                   <Calendar className="h-7 w-7 text-primary" />
@@ -200,12 +257,12 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-hover border border-gray-200 shadow-sm">
+          <Card className="card-hover border border-border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1 font-medium">Active Bookings</p>
-                  <p className="text-4xl font-bold text-gray-900">
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Active Bookings</p>
+                  <p className="text-4xl font-bold text-secondary">
                     {userBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length}
                   </p>
                 </div>
@@ -216,12 +273,12 @@ const UserDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="card-hover border border-gray-200 shadow-sm">
+          <Card className="card-hover border border-border shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1 font-medium">Total Spent</p>
-                  <p className="text-4xl font-bold text-gray-900">
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Spent</p>
+                  <p className="text-4xl font-bold text-secondary">
                     रू {userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)}
                   </p>
                 </div>
@@ -235,51 +292,71 @@ const UserDashboard = () => {
 
         {/* Bookings Grid */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">My Bookings</h2>
+          <h2 className="text-2xl font-bold mb-4 text-secondary">My Bookings</h2>
           {userBookings.length === 0 ? (
-            <Card className="border border-gray-200 shadow-sm">
+            <Card className="border border-border shadow-sm">
               <CardContent className="text-center py-12">
-                <Calendar className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 text-lg">No bookings yet</p>
-                <p className="text-gray-500 text-sm mt-2">Start by browsing available tractors</p>
+                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground text-lg">No bookings yet</p>
+                <p className="text-muted-foreground/70 text-sm mt-2">Start by browsing available tractors</p>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userBookings.map((booking) => (
-                <Card
-                  key={booking.id}
-                  className="card-hover border border-gray-200 shadow-sm overflow-hidden bg-white"
-                >
-                  {/* Tractor Image */}
-                  <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
-                    <img
-                      src={booking.tractorImage}
-                      alt={booking.tractorName}
-                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                    />
-                  </div>
+              {userBookings.map((booking) => {
+                const galleryRaw = [booking.tractorImage, ...(booking.tractorImages || [])].filter(Boolean);
+                const gallery = Array.from(new Set(galleryRaw));
+                const hasMultipleImages = gallery.length > 1;
+                const currentIndex = bookingImageIndices[booking.id] || 0;
+                const activeImage = gallery[currentIndex] || booking.tractorImage;
+
+                return (
+                  <Card
+                    key={booking.id}
+                    className="card-hover border border-border shadow-sm overflow-hidden bg-card"
+                  >
+                    {/* Tractor Image */}
+                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                      <ImageCarousel
+                        id={booking.id}
+                        gallery={gallery}
+                        hasMultipleImages={hasMultipleImages}
+                        currentIndex={currentIndex}
+                        onIndexChange={(newIndex) => {
+                          setBookingImageIndices(prev => ({
+                            ...prev,
+                            [booking.id]: newIndex
+                          }));
+                        }}
+                      >
+                        <img
+                          src={activeImage}
+                          alt={booking.tractorName}
+                          className="w-full h-full object-cover transition-opacity duration-500"
+                        />
+                      </ImageCarousel>
+                    </div>
                   
                   {/* Booking Details */}
                   <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg mb-4 text-gray-900">{booking.tractorName}</h3>
+                    <h3 className="font-semibold text-lg mb-4 text-secondary">{booking.tractorName}</h3>
                     
                     {/* Date and Time */}
                     <div className="space-y-3 mb-4 text-sm">
-                      <div className="flex items-center text-gray-700">
+                      <div className="flex items-center text-foreground">
                         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                           <Calendar className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{new Date(booking.startDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                          <p className="font-medium text-secondary">{new Date(booking.startDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>
                         </div>
                       </div>
-                      <div className="flex items-center text-gray-700">
+                      <div className="flex items-center text-foreground">
                         <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
                           <Clock className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-secondary">
                             {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
                             {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
@@ -288,9 +365,9 @@ const UserDashboard = () => {
                     </div>
 
                     {/* Price */}
-                    <div className="border-t border-gray-200 pt-4 mb-4">
+                    <div className="border-t border-border pt-4 mb-4">
                       <p className="text-3xl font-bold text-primary">रू {booking.totalCost}</p>
-                      <p className="text-xs text-gray-500 mt-1">Total amount</p>
+                      <p className="text-xs text-muted-foreground mt-1">Total amount</p>
                     </div>
 
                     {/* Status and Actions */}
@@ -320,10 +397,16 @@ const UserDashboard = () => {
                           Cancel Booking
                         </Button>
                       )}
+                      {booking.status !== 'cancelled' && (
+                        <Button variant="outline" className="w-full" asChild>
+                          <Link to={`/tracking?bookingId=${booking.id}`}>Track Tractor</Link>
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

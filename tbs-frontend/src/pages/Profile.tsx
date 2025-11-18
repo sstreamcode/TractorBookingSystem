@@ -31,9 +31,9 @@ const Profile = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
         </div>
       </div>
@@ -120,19 +120,19 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-gray-900">My Profile</h1>
-          <p className="text-gray-600">Manage your account information</p>
+          <h1 className="text-3xl font-bold mb-2 text-secondary">My Profile</h1>
+          <p className="text-muted-foreground">Manage your account information</p>
         </div>
 
         {/* Profile Card */}
-        <Card className="border border-gray-200 shadow-sm">
+        <Card className="border border-border shadow-sm">
           <CardHeader>
-            <CardTitle className="text-gray-900 flex items-center">
+            <CardTitle className="text-secondary flex items-center">
               <Settings className="mr-2 h-5 w-5" />
               Profile Information
             </CardTitle>
@@ -163,13 +163,13 @@ const Profile = () => {
                   className="hidden"
                 />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">{name}</h2>
-              <p className="text-gray-600">{email}</p>
-              {uploading && <p className="text-sm text-gray-500">Uploading...</p>}
+              <h2 className="text-2xl font-bold text-secondary">{name}</h2>
+              <p className="text-muted-foreground">{email}</p>
+              {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
             </div>
 
             {/* Divider */}
-            <div className="border-t border-gray-200"></div>
+            <div className="border-t border-border"></div>
 
             {/* Form Fields */}
             <div className="space-y-6 max-w-2xl mx-auto">
@@ -199,10 +199,10 @@ const Profile = () => {
                   id="email"
                   value={email}
                   disabled
-                  className="w-full bg-gray-50"
+                  className="w-full bg-muted"
                   placeholder="your.email@example.com"
                 />
-                <p className="text-xs text-gray-500">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
               </div>
 
               {/* Action Buttons */}
