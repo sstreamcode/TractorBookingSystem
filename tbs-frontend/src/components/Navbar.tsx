@@ -1,15 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import {
-  Tractor,
-  LogOut,
-  LayoutDashboard,
-  UserCircle,
-  Menu,
-  BarChart3,
-  Map,
-  Compass,
-} from 'lucide-react';
+import { Tractor, LogOut, LayoutDashboard, UserCircle, Menu, BarChart3, Map, Compass, Globe } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -76,43 +67,81 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
-  return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-border/50 shadow-sm">
-      <div className="brand-outline">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-2.5 text-sm">
-          <span className="flex items-center gap-2 text-secondary/90 font-medium">
-            <Compass className="h-4 w-4 text-primary" />
-            {t('brand.taglinePrimary')}
-          </span>
-          <span className="hidden sm:inline-flex text-secondary/80 font-medium">
-            {t('brand.taglineSecondary')}
-          </span>
-        </div>
-      </div>
+  const isEnglish = language === 'en';
+  const languageLabel = isEnglish ? 'EN' : 'NEP';
+  const languageFlag = isEnglish ? '🇬🇧' : '🇳🇵';
 
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+  const LanguageToggleButton = () => (
+    <button
+      type="button"
+      onClick={toggleLanguage}
+      title={isEnglish ? 'Switch to Nepali' : 'Switch to English'}
+      className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-transparent px-2.5 py-1.5 transition-all duration-200 hover:border-primary/40 hover:bg-muted/50"
+    >
+      <Globe className="h-4 w-4 text-secondary/70" />
+      <span className="text-sm font-semibold text-secondary">{languageLabel}</span>
+    </button>
+  );
+
+  const UserAvatarMenu = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="rounded-full border border-border/70 p-1.5 shadow-sm transition-all duration-200 hover:border-primary/50 hover:bg-primary/5">
+          <Avatar className="h-9 w-9 ring-2 ring-primary/10">
+            <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
+            <AvatarFallback className="bg-gradient-to-br from-primary to-cyan-500 text-white text-sm font-bold">
+              {getInitials(user?.name || 'U')}
+            </AvatarFallback>
+          </Avatar>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <div className="px-3 py-2">
+          <p className="text-sm font-semibold text-secondary">{user?.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {isAdmin ? t('nav.administrator') : t('nav.customer')}
+          </p>
+          {user?.email && <p className="text-xs text-muted-foreground mt-1">{user.email}</p>}
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+          <UserCircle className="mr-2 h-4 w-4" />
+          {t('nav.profileSettings')}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogoutClick} className="cursor-pointer text-red-600 focus:text-red-600">
+          <LogOut className="mr-2 h-4 w-4" />
+          {t('nav.logout')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  return (
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border/60 shadow-sm">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         {/* Logo Section - Left */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-emerald-500 to-slate-900 text-white shadow-lg">
-            <Tractor className="h-5 w-5" />
+        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-emerald-500 to-cyan-500 text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+            <Tractor className="h-6 w-6" />
           </div>
           <div className="flex flex-col">
-            <span className="text-lg font-semibold leading-tight text-secondary">
+            <span className="text-xl font-bold leading-tight text-secondary group-hover:text-primary transition-colors">
               Tractor Sewa
             </span>
-            <span className="text-xs uppercase tracking-[0.28em] text-muted-foreground leading-tight">
+            <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground leading-tight font-medium">
               {t('brand.subtitle')}
             </span>
           </div>
         </Link>
 
         {/* Navigation Section - Center */}
-        <div className="hidden md:flex items-center gap-6 flex-1 justify-center">
+        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
           {/* Show navigation items only for non-admin users */}
           {!isAdmin && NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const baseClasses =
-              'group flex items-center gap-2 text-sm font-medium transition-colors duration-200 px-2 py-1 rounded-md';
+              'group flex items-center gap-2 text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-xl';
 
             if (item.type === 'anchor') {
               return (
@@ -120,9 +149,9 @@ const Navbar = () => {
                   key={item.labelKey}
                   href={item.href}
                   onClick={handleLinkClick}
-                  className={`${baseClasses} text-secondary/70 hover:text-secondary hover:bg-muted/50`}
+                  className={`${baseClasses} text-secondary/70 hover:text-secondary hover:bg-primary/5 hover:shadow-sm`}
                 >
-                  {Icon && <Icon className="h-4 w-4 text-primary/70 group-hover:text-primary" />}
+                  {Icon && <Icon className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />}
                   {t(item.labelKey)}
                 </a>
               );
@@ -135,11 +164,11 @@ const Navbar = () => {
                 onClick={handleLinkClick}
                 className={`${baseClasses} ${
                   activePath === item.href 
-                    ? 'text-secondary bg-primary/5' 
-                    : 'text-secondary/70 hover:text-secondary hover:bg-muted/50'
+                    ? 'text-primary bg-primary/10 shadow-sm' 
+                    : 'text-secondary/70 hover:text-secondary hover:bg-primary/5 hover:shadow-sm'
                 }`}
               >
-                {Icon && <Icon className="h-4 w-4 text-primary/70 group-hover:text-primary" />}
+                {Icon && <Icon className={`h-4 w-4 transition-colors ${activePath === item.href ? 'text-primary' : 'text-primary/70 group-hover:text-primary'}`} />}
                 {t(item.labelKey)}
               </Link>
             );
@@ -161,36 +190,28 @@ const Navbar = () => {
 
           {/* Show Admin Panel only for admins */}
           {isAuthenticated && isAdmin && (
-            <Button 
-              variant="outline" 
-              size="default"
-              onClick={() => navigate('/admin/dashboard')}
-              className="border-primary/20 bg-primary/5 hover:bg-primary/10 hover:text-primary text-primary font-medium shadow-sm [&_svg]:text-primary [&_svg:hover]:text-primary"
+            <Link
+              to="/admin/dashboard"
+              className={`group flex items-center gap-2 text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-xl ${
+                activePath === '/admin/dashboard'
+                  ? 'text-primary bg-primary/10 shadow-sm'
+                  : 'text-primary/80 hover:text-primary hover:bg-primary/5'
+              }`}
             >
-              <LayoutDashboard className="mr-2 h-4 w-4 text-primary" />
+              <LayoutDashboard className="h-4 w-4" />
               {t('nav.adminPanel')}
-            </Button>
+            </Link>
           )}
         </div>
 
         {/* User Actions Section - Right */}
-        <div className="hidden md:flex items-center gap-4 flex-shrink-0">
-          {/* Language Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleLanguage}
-            className="border-primary/30 text-primary hover:bg-primary/5"
-          >
-            {language === 'en' ? 'नेपाली' : 'English'}
-          </Button>
-
+        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
           {/* Show Book Tractor button only for non-admin users - placed before user profile */}
           {!isAdmin && (
             <Link to="/tractors">
               <Button 
                 size="default" 
-                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 font-semibold px-5 py-2.5 rounded-lg"
+                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-bold px-6 py-2.5 rounded-xl hover:scale-105"
               >
                 <Tractor className="mr-2 h-4 w-4" />
                 {t('nav.bookTractor')}
@@ -200,35 +221,10 @@ const Navbar = () => {
           
           {/* User Profile - Rightmost position */}
           {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg bg-white border border-border px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/30">
-                  <Avatar className="h-9 w-9 ring-2 ring-primary/10">
-                    <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
-                    <AvatarFallback className="bg-primary text-white text-sm font-semibold">
-                      {getInitials(user?.name || 'U')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-left min-w-[80px]">
-                    <span className="text-sm font-semibold text-secondary leading-tight">{user?.name}</span>
-                    <span className="text-xs text-muted-foreground leading-tight">
-                      {isAdmin ? t('nav.administrator') : t('nav.customer')}
-                    </span>
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  {t('nav.profileSettings')}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="cursor-pointer text-red-600 focus:text-red-600">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {t('nav.logout')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <UserAvatarMenu />
+              <LanguageToggleButton />
+            </div>
           ) : (
             <>
               <Link to="/register">
@@ -241,6 +237,7 @@ const Navbar = () => {
                   {t('nav.login')}
                 </Button>
               </Link>
+              <LanguageToggleButton />
             </>
           )}
         </div>
@@ -258,6 +255,8 @@ const Navbar = () => {
               </Button>
             </Link>
           )}
+          {isAuthenticated && <UserAvatarMenu />}
+          <LanguageToggleButton />
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <button className="rounded-lg border border-border bg-white p-2 text-secondary shadow-sm transition-all hover:shadow-md hover:border-primary/30 focus:outline-none">
@@ -314,34 +313,6 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {isAuthenticated && (
-                  <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Avatar className="h-12 w-12 ring-2 ring-primary/10">
-                        <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
-                        <AvatarFallback className="bg-primary text-white text-sm font-semibold">
-                          {getInitials(user?.name || 'U')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-base font-semibold text-secondary">{user?.name}</p>
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                          {isAdmin ? t('nav.administrator') : t('nav.customer')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Button variant="secondary" className="w-full" onClick={handleProfileClick}>
-                        {t('nav.profileSettings')}
-                      </Button>
-                      <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50" onClick={handleLogoutClick}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        {t('nav.logout')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
                 {!isAuthenticated && (
                   <div className="grid gap-2">
                     <Link to="/register" onClick={handleLinkClick}>
@@ -364,11 +335,17 @@ const Navbar = () => {
                 )}
 
                 {isAuthenticated && isAdmin && (
-                  <Link to="/admin/dashboard" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      {t('nav.adminPanel')}
-                    </Button>
+                  <Link 
+                    to="/admin/dashboard" 
+                    onClick={handleLinkClick}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                      activePath === '/admin/dashboard'
+                        ? 'bg-primary/10 text-primary'
+                        : 'hover:bg-muted text-secondary/70'
+                    }`}
+                  >
+                    <LayoutDashboard className="h-4 w-4 text-primary" />
+                    {t('nav.adminPanel')}
                   </Link>
                 )}
 
@@ -382,8 +359,10 @@ const Navbar = () => {
                   </Link>
                 )}
 
-                <Button variant="outline" className="w-full" onClick={toggleLanguage}>
-                  {language === 'en' ? 'नेपाली' : 'English'}
+                <Button variant="outline" className="w-full justify-start" onClick={toggleLanguage}>
+                  <Globe className="mr-2 h-4 w-4" />
+                  <span className="font-semibold">{languageLabel}</span>
+                  <span className="ml-2">{languageFlag}</span>
                 </Button>
               </div>
             </SheetContent>

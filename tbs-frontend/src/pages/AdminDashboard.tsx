@@ -62,8 +62,9 @@ const AdminDashboard = () => {
   }
 
   // Calculate stats from real data
+  // Revenue includes both PAID and DELIVERED status bookings (both are paid)
   const totalRevenue = bookings
-    .filter(b => b.status === 'PAID')
+    .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
   // Sort bookings by date (most recent first) and take the 5 most recent
@@ -107,7 +108,7 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1 font-medium">Total Bookings</p>
                   <p className="text-4xl font-bold mb-1 text-secondary">{bookings.length}</p>
                   <p className="text-xs text-primary mt-1 font-semibold">
-                    {bookings.filter(b => b.status === 'PAID').length} active
+                    {bookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length} paid
                   </p>
                 </div>
                 <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">

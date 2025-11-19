@@ -39,6 +39,7 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_requested';
   paymentStatus: 'pending' | 'paid' | 'failed';
   adminStatus?: 'pending_approval' | 'approved' | 'denied';
+  paymentMethod?: 'CASH_ON_DELIVERY' | 'ESEWA' | string;
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliveryAddress?: string;

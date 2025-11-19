@@ -224,14 +224,18 @@ const Tractors = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         
-        <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mx-auto max-w-7xl px-4 py-10">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-1 text-secondary">{t('tractors.header.title')}</h1>
-            <p className="text-muted-foreground">{t('tractors.header.subtitle')}</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3 text-secondary">{t('tractors.header.title')}</h1>
+            <p className="text-lg text-muted-foreground font-medium">{t('tractors.header.subtitle')}</p>
           </div>
-          <Button variant="outline" onClick={() => setShowFilters(s => !s)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowFilters(s => !s)}
+            className="rounded-xl border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5 font-semibold shadow-sm"
+          >
             <SlidersHorizontal className="mr-2 h-4 w-4" />
             {showFilters ? t('tractors.filters.toggle.hide') : t('tractors.filters.toggle.show')}
           </Button>
@@ -239,7 +243,7 @@ const Tractors = () => {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="rounded-xl border bg-card p-4 mb-8">
+          <div className="rounded-2xl border-2 border-border/60 bg-gradient-to-br from-white to-emerald-50/30 p-6 mb-10 shadow-lg">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
                 <p className="text-sm font-medium">{t('tractors.filters.types')}</p>
@@ -344,7 +348,7 @@ const Tractors = () => {
 
         {/* Tractor Grid */}
         {!loading && !error && filteredTractors.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredTractors.map((tractor) => {
               const galleryRaw = [tractor.image, ...(tractor.images || [])].filter(Boolean);
               const gallery = Array.from(new Set(galleryRaw));

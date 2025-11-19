@@ -12,13 +12,17 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchAllBookings, fetchTractors, type TractorApiModel, type BookingApiModel } from '@/lib/api';
 import { useEffect, useState } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminReports = () => {
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
@@ -75,7 +79,8 @@ const AdminReports = () => {
 
   // Calculate all metrics
   const totalBookings = bookings.length;
-  const paidBookings = bookings.filter(b => b.status === 'PAID');
+  // Paid bookings include both PAID and DELIVERED status (both are paid)
+  const paidBookings = bookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED');
   const pendingBookings = bookings.filter(b => b.status === 'PENDING');
   const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED');
   const refundRequested = bookings.filter(b => b.status === 'REFUND_REQUESTED');
@@ -94,15 +99,15 @@ const AdminReports = () => {
   
   // Revenue trends
   const recentRevenue = recentBookings
-    .filter(b => b.status === 'PAID')
+    .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
   
   // Most popular tractors
   const tractorStats = tractors.map(tractor => {
     const tractorBookings = bookings.filter(b => b.tractor?.id === tractor.id);
-    const paidForThis = tractorBookings.filter(b => b.status === 'PAID').length;
+    const paidForThis = tractorBookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length;
     const revenue = tractorBookings
-      .filter(b => b.status === 'PAID')
+      .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
       .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
     
     return {
@@ -130,8 +135,239 @@ const AdminReports = () => {
   
   // Payment method stats (simplified - assuming most are eSewa or COD)
   const paymentMethods = {
-    eSewa: paidBookings.filter(b => b.status === 'PAID').length,
-    cod: pendingBookings.length
+    eSewa: paidBookings.filter(b => (b.status === 'PAID' || b.status === 'DELIVERED') && b.paymentMethod !== 'CASH_ON_DELIVERY').length,
+    cod: paidBookings.filter(b => (b.status === 'PAID' || b.status === 'DELIVERED') && b.paymentMethod === 'CASH_ON_DELIVERY').length
+  };
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Helper function to add a new page if needed
+    const checkPageBreak = (requiredSpace: number) => {
+      if (yPosition + requiredSpace > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
+      }
+      return false;
+    };
+
+    // Header with Tractor Sewa branding
+    doc.setFillColor(16, 185, 129); // Primary green color
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    // White text on green background
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Tractor Sewa', pageWidth / 2, 18, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('SECURE RENTAL PLATFORM', pageWidth / 2, 28, { align: 'center' });
+    
+    // Report title
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    yPosition = 55;
+    doc.text('Business Reports & Analytics', pageWidth / 2, yPosition, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    yPosition += 8;
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`, pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 15;
+
+    // Key Metrics Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Key Performance Metrics', 14, yPosition);
+    yPosition += 8;
+
+    // Metrics in a table format
+    // Using "Rs." instead of "रू" for PDF compatibility
+    const metricsData = [
+      ['Total Revenue', `Rs. ${totalRevenue.toLocaleString()}`],
+      ['Average Booking Value', `Rs. ${Math.round(averageBookingValue).toLocaleString()}`],
+      ['Total Bookings', totalBookings.toString()],
+      ['Paid Bookings', paidBookings.length.toString()],
+      ['Success Rate', `${totalBookings > 0 ? Math.round((paidBookings.length / totalBookings) * 100) : 0}%`],
+      ['Total Customers', activeUsers.toString()],
+      ['Total Tractors', totalTractors.toString()],
+      ['Available Tractors', availableTractors.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Metric', 'Value']],
+      body: metricsData,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 10, cellPadding: 3 },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Booking Status Distribution
+    checkPageBreak(60);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Booking Status Distribution', 14, yPosition);
+    yPosition += 8;
+
+    const statusData = [
+      ['Paid', paidBookings.length.toString(), `${statusDistribution.paid.toFixed(1)}%`],
+      ['Pending', pendingBookings.length.toString(), `${statusDistribution.pending.toFixed(1)}%`],
+      ['Cancelled', cancelledBookings.length.toString(), `${statusDistribution.cancelled.toFixed(1)}%`],
+      ['Refund Requested', refundRequested.length.toString(), `${statusDistribution.refundRequested.toFixed(1)}%`],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Status', 'Count', 'Percentage']],
+      body: statusData,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 10, cellPadding: 3 },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Revenue Trends
+    checkPageBreak(40);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Revenue Trends (Last 30 Days)', 14, yPosition);
+    yPosition += 8;
+
+    const revenueData = [
+      ['Period', 'Revenue', 'Bookings'],
+      ['Last 30 Days', `Rs. ${recentRevenue.toLocaleString()}`, recentBookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length.toString()],
+      ['All Time', `Rs. ${totalRevenue.toLocaleString()}`, paidBookings.length.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [revenueData[0]],
+      body: revenueData.slice(1),
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 10, cellPadding: 3 },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Payment Methods
+    checkPageBreak(40);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Payment Methods', 14, yPosition);
+    yPosition += 8;
+
+    const paymentData = [
+      ['eSewa', paymentMethods.eSewa.toString()],
+      ['Cash on Delivery (COD)', paymentMethods.cod.toString()],
+    ];
+
+    autoTable(doc, {
+      startY: yPosition,
+      head: [['Payment Method', 'Count']],
+      body: paymentData,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 10, cellPadding: 3 },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Top Tractors
+    if (popularTractors.length > 0) {
+      checkPageBreak(60);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Top Performing Tractors', 14, yPosition);
+      yPosition += 8;
+
+      const tractorData = popularTractors.map((t, idx) => [
+        (idx + 1).toString(),
+        t.name || 'N/A',
+        t.model || 'N/A',
+        t.bookingsCount.toString(),
+        `Rs. ${t.revenue.toLocaleString()}`
+      ]);
+
+      autoTable(doc, {
+        startY: yPosition,
+        head: [['Rank', 'Tractor Name', 'Model', 'Bookings', 'Revenue']],
+        body: tractorData,
+        theme: 'striped',
+        headStyles: { 
+          fillColor: [16, 185, 129],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold'
+        },
+        styles: { fontSize: 9, cellPadding: 2 },
+        margin: { left: 14, right: 14 }
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Footer on each page
+    const addFooter = (pageNum: number, totalPages: number) => {
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(
+        `Tractor Sewa - Secure Rental Platform | Page ${pageNum} of ${totalPages}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    };
+
+    // Add footer to all pages
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      addFooter(i, totalPages);
+    }
+
+    // Save the PDF
+    const fileName = `Tractor_Sewa_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
   };
 
   return (
@@ -140,9 +376,18 @@ const AdminReports = () => {
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-secondary">Reports & Insights</h1>
-          <p className="text-muted-foreground">Comprehensive analytics and business insights</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2 text-secondary">Reports & Insights</h1>
+            <p className="text-muted-foreground">Comprehensive analytics and business insights</p>
+          </div>
+          <Button
+            onClick={generatePDF}
+            className="bg-primary hover:bg-primary/90 text-white shadow-lg"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF Report
+          </Button>
         </div>
 
         {/* Key Metrics Grid */}

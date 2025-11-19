@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Calendar, Filter, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Filter, CheckCircle, XCircle, Play, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -80,6 +80,10 @@ const AdminBookings = () => {
   const [loading, setLoading] = useState(true);
   // Track active image index for each booking
   const [bookingImageIndices, setBookingImageIndices] = useState<Record<string, number>>({});
+  // Track selected action for each booking
+  const [selectedActions, setSelectedActions] = useState<Record<string, string>>({});
+  // Track which booking is currently processing (sending email)
+  const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
@@ -133,6 +137,7 @@ const AdminBookings = () => {
   });
 
   const handleApproveRefund = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       const result = await approveRefund(bookingId);
       toast.success(`Refund approved: ${result.refundAmount.toFixed(2)} refunded (3% fee applied)`);
@@ -142,10 +147,17 @@ const AdminBookings = () => {
       setAllBookings(bookings);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to approve refund');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
   const handleRejectRefund = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       await rejectRefund(bookingId);
       toast.success('Refund request rejected');
@@ -155,10 +167,17 @@ const AdminBookings = () => {
       setAllBookings(bookings);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to reject refund');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
   const handleApproveBooking = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       await approveBooking(bookingId);
       toast.success('Booking approved');
@@ -171,10 +190,17 @@ const AdminBookings = () => {
       // by the backend, so they will be updated on next fetch
     } catch (error: any) {
       toast.error(error?.message || 'Failed to approve booking');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
   const handleDenyBooking = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       await denyBooking(bookingId);
       toast.success('Booking denied');
@@ -187,10 +213,17 @@ const AdminBookings = () => {
       // by the backend, so they will be updated on next fetch
     } catch (error: any) {
       toast.error(error?.message || 'Failed to deny booking');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
   const handleMarkPaid = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       await markBookingPaid(bookingId);
       toast.success('Payment marked as paid');
@@ -199,10 +232,17 @@ const AdminBookings = () => {
       setAllBookings(bookings);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to mark as paid');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
   const handleMarkDelivered = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
     try {
       await markBookingDelivered(bookingId);
       toast.success('Booking marked as delivered');
@@ -211,6 +251,12 @@ const AdminBookings = () => {
       setAllBookings(bookings);
     } catch (error: any) {
       toast.error(error?.message || 'Failed to mark as delivered');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
     }
   };
 
@@ -419,76 +465,151 @@ const AdminBookings = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2 flex-wrap">
-                          {booking.status === 'refund_requested' && (
-                            <>
+                        {(() => {
+                          // Determine available actions based on booking status
+                          const availableActions: { value: string; label: string }[] = [];
+                          const isCOD = booking.paymentMethod === 'CASH_ON_DELIVERY';
+                          
+                          if (booking.status === 'refund_requested') {
+                            availableActions.push(
+                              { value: 'approve_refund', label: 'Approve Refund' },
+                              { value: 'reject_refund', label: 'Reject Refund' }
+                            );
+                          }
+                          
+                          if (booking.adminStatus === 'pending_approval') {
+                            availableActions.push(
+                              { value: 'approve_booking', label: 'Approve Booking' },
+                              { value: 'deny_booking', label: 'Deny Booking' }
+                            );
+                          }
+                          
+                          // For COD: Allow delivery before payment if approved
+                          // For non-COD: Require payment before delivery
+                          if (isCOD) {
+                            // COD: Can deliver if approved (even if not paid)
+                            if (booking.adminStatus === 'approved' && booking.status !== 'completed' && booking.status !== 'cancelled') {
+                              if (booking.status !== 'completed') {
+                                availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
+                              }
+                            }
+                            // COD: Can mark as paid after delivery
+                            if (booking.status === 'completed' && booking.paymentStatus !== 'paid') {
+                              availableActions.push({ value: 'mark_paid', label: 'Mark as Paid (COD Received)' });
+                            }
+                          } else {
+                            // Non-COD: Standard flow - payment first, then delivery
+                            if (booking.paymentStatus !== 'paid' && booking.status !== 'cancelled' && booking.adminStatus === 'approved') {
+                              availableActions.push({ value: 'mark_paid', label: 'Mark as Paid' });
+                            }
+                            
+                            if (booking.paymentStatus === 'paid' && booking.status !== 'completed' && booking.status !== 'cancelled') {
+                              availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
+                            }
+                          }
+                          
+                          const selectedAction = selectedActions[booking.id] || '';
+                          const isProcessing = processingBookings.has(booking.id);
+                          
+                          const handleExecuteAction = async () => {
+                            if (!selectedAction || isProcessing) {
+                              if (!selectedAction) {
+                                toast.error('Please select an action first');
+                              }
+                              return;
+                            }
+                            
+                            switch (selectedAction) {
+                              case 'approve_refund':
+                                await handleApproveRefund(booking.id);
+                                break;
+                              case 'reject_refund':
+                                await handleRejectRefund(booking.id);
+                                break;
+                              case 'approve_booking':
+                                await handleApproveBooking(booking.id);
+                                break;
+                              case 'deny_booking':
+                                await handleDenyBooking(booking.id);
+                                break;
+                              case 'mark_paid':
+                                await handleMarkPaid(booking.id);
+                                break;
+                              case 'mark_delivered':
+                                await handleMarkDelivered(booking.id);
+                                break;
+                              default:
+                                toast.error('Invalid action selected');
+                            }
+                            
+                            // Clear selection after execution
+                            setSelectedActions(prev => {
+                              const updated = { ...prev };
+                              delete updated[booking.id];
+                              return updated;
+                            });
+                          };
+                          
+                          // If no actions available, show status badge
+                          if (availableActions.length === 0) {
+                            if (booking.adminStatus === 'approved') {
+                              return (
+                                <Badge variant="outline" className="!border-green-200 !bg-green-50 !text-green-700">
+                                  Approved
+                                </Badge>
+                              );
+                            }
+                            if (booking.adminStatus === 'denied') {
+                              return (
+                                <Badge variant="destructive">
+                                  Denied
+                                </Badge>
+                              );
+                            }
+                            return <span className="text-muted-foreground text-sm">No actions</span>;
+                          }
+                          
+                          return (
+                            <div className="flex items-center gap-2 min-w-[280px]">
+                              <Select
+                                value={selectedAction}
+                                onValueChange={(value) => {
+                                  if (!isProcessing) {
+                                    setSelectedActions(prev => ({
+                                      ...prev,
+                                      [booking.id]: value
+                                    }));
+                                  }
+                                }}
+                                disabled={isProcessing}
+                              >
+                                <SelectTrigger className="flex-1 h-9 text-sm" disabled={isProcessing}>
+                                  <SelectValue placeholder="Select action..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableActions.map((action) => (
+                                    <SelectItem key={action.value} value={action.value}>
+                                      {action.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <Button
                                 size="sm"
                                 variant="default"
-                                onClick={() => handleApproveRefund(booking.id)}
+                                onClick={handleExecuteAction}
+                                disabled={!selectedAction || isProcessing}
+                                className="h-9 px-3"
                               >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve Refund
+                                {isProcessing ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Play className="h-4 w-4" />
+                                )}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleRejectRefund(booking.id)}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Reject Refund
-                              </Button>
-                            </>
-                          )}
-                          {booking.adminStatus === 'pending_approval' && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={() => handleApproveBooking(booking.id)}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDenyBooking(booking.id)}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Deny
-                              </Button>
-                            </>
-                          )}
-                          {booking.adminStatus === 'approved' && (
-                            <Badge variant="outline" className="!border-green-200 !bg-green-50 !text-green-700">
-                              Approved
-                            </Badge>
-                          )}
-                          {booking.adminStatus === 'denied' && (
-                            <Badge variant="destructive">
-                              Denied
-                            </Badge>
-                          )}
-                          {booking.paymentStatus !== 'paid' && booking.status !== 'cancelled' && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              onClick={() => handleMarkPaid(booking.id)}
-                            >
-                              Mark Paid
-                            </Button>
-                          )}
-                          {booking.paymentStatus === 'paid' && booking.status !== 'completed' && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleMarkDelivered(booking.id)}
-                            >
-                              Mark Delivered
-                            </Button>
-                          )}
-                        </div>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                     </TableRow>
                   ))}

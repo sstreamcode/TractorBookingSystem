@@ -40,9 +40,23 @@ public class Booking {
     private Double deliveryLongitude;
     private String deliveryAddress;
 
-    @OneToMany(mappedBy = "booking", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonIgnore
     private List<Payment> payments;
+    
+    // Helper method to get payment method for JSON serialization
+    @com.fasterxml.jackson.annotation.JsonProperty("paymentMethod")
+    public String getPaymentMethod() {
+        if (payments == null || payments.isEmpty()) {
+            return null;
+        }
+        // Return COD if exists, otherwise return first payment method
+        return payments.stream()
+            .filter(p -> "CASH_ON_DELIVERY".equals(p.getMethod()))
+            .findFirst()
+            .map(Payment::getMethod)
+            .orElse(payments.get(0).getMethod());
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

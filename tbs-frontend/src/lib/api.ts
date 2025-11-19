@@ -443,9 +443,15 @@ export interface BookingApiModel {
   status: string;
   adminStatus?: string;
   totalAmount?: number;
+  paymentMethod?: string;
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliveryAddress?: string;
+  payments?: Array<{
+    id: number;
+    method: string;
+    status: string;
+  }>;
 }
 
 export async function createBooking(
@@ -710,6 +716,12 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     }
   };
 
+  // Extract payment method from backend response (preferred) or payments array (fallback)
+  const paymentMethod = apiBooking.paymentMethod || 
+    (apiBooking.payments && apiBooking.payments.length > 0
+      ? apiBooking.payments.find(p => p.method === 'CASH_ON_DELIVERY')?.method || apiBooking.payments[0].method
+      : undefined);
+
   return {
     id: String(apiBooking.id),
     tractorId: String(apiBooking.tractor.id),
@@ -724,6 +736,7 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     status: mapStatus(apiBooking.status),
     paymentStatus: apiBooking.status === 'PAID' || apiBooking.status === 'DELIVERED' ? 'paid' : 'pending',
     adminStatus: mapAdminStatus(apiBooking.adminStatus),
+    paymentMethod: paymentMethod,
     deliveryLatitude: apiBooking.deliveryLatitude || undefined,
     deliveryLongitude: apiBooking.deliveryLongitude || undefined,
     deliveryAddress: apiBooking.deliveryAddress || undefined

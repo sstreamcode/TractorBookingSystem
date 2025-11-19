@@ -11,63 +11,69 @@ interface TractorCardProps {
 
 const TractorCard = ({ tractor }: TractorCardProps) => {
   return (
-    <Card className="card-hover overflow-hidden border border-gray-200 shadow-sm">
-      <div className="aspect-video relative overflow-hidden bg-gray-100">
+    <Card className="card-hover overflow-hidden border-2 border-border/60 shadow-lg bg-white rounded-2xl">
+      <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-emerald-50 to-cyan-50">
         <img
           src={tractor.image}
           alt={tractor.name}
-          className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
         {typeof tractor.rating === 'number' && (
-          <div className="absolute top-3 left-3 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-gray-800 shadow">
-              <Star className="h-3 w-3 text-amber-500" />
+          <div className="absolute top-4 left-4 flex items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-xl bg-white/95 backdrop-blur-sm px-3 py-1.5 text-sm font-bold text-secondary shadow-lg">
+              <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
               {tractor.rating.toFixed(1)}
             </span>
           </div>
         )}
         <Badge 
-          className="absolute top-3 right-3 shadow-md"
-          variant={tractor.status === 'In Use' ? "secondary" : tractor.available ? "default" : "secondary"}
+          className={`absolute top-4 right-4 shadow-lg font-bold rounded-xl ${
+            tractor.status === 'In Use' 
+              ? "bg-orange-500/90 text-white" 
+              : tractor.available 
+              ? "bg-primary text-white" 
+              : "bg-gray-500 text-white"
+          }`}
         >
           {tractor.status || (tractor.available ? 'Available' : 'Unavailable')}
         </Badge>
       </div>
     
       <CardContent className="p-6">
-        <h3 className="text-lg font-semibold mb-1 text-gray-900">{tractor.name}</h3>
-        <p className="text-sm text-gray-600 mb-4">{tractor.model}</p>
+        <h3 className="text-xl font-bold mb-1.5 text-secondary">{tractor.name}</h3>
+        <p className="text-sm text-muted-foreground mb-5 font-medium">{tractor.model}</p>
       
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="mr-2 h-4 w-4 text-primary" />
+        <div className="space-y-3 mb-5">
+          <div className="flex items-center text-sm text-secondary font-semibold">
+            <MapPin className="mr-2.5 h-4 w-4 text-primary" />
             {tractor.location || 'Location not specified'}
           </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Zap className="mr-2 h-4 w-4 text-primary" />
+          <div className="flex items-center text-sm text-secondary font-semibold">
+            <Zap className="mr-2.5 h-4 w-4 text-primary" />
             {tractor.horsePower != null ? `${tractor.horsePower} HP` : 'Power N/A'}
           </div>
           {tractor.fuelType && (
-            <div className="flex items-center text-sm text-gray-600">
-              <Fuel className="mr-2 h-4 w-4 text-primary" />
+            <div className="flex items-center text-sm text-secondary font-semibold">
+              <Fuel className="mr-2.5 h-4 w-4 text-primary" />
               {tractor.fuelType}
             </div>
           )}
           {typeof tractor.fuelLevel === 'number' && (
-            <div className="flex items-center text-sm text-gray-600">
-              <Fuel className="mr-2 h-4 w-4 text-primary" />
+            <div className="flex items-center text-sm text-secondary font-semibold">
+              <Fuel className="mr-2.5 h-4 w-4 text-primary" />
               Fuel {tractor.fuelLevel}%
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-between pt-5 border-t-2 border-border/40">
           <div>
-            <p className="text-2xl font-bold text-primary">रू {tractor.hourlyRate}</p>
-            <p className="text-sm text-gray-600">per hour</p>
+            <p className="text-3xl font-bold text-primary">रू {tractor.hourlyRate}</p>
+            <p className="text-sm text-muted-foreground font-medium">per hour</p>
           </div>
           {typeof tractor.totalBookings === 'number' && (
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1.5 rounded-lg">
               {tractor.totalBookings} bookings
             </span>
           )}
@@ -76,7 +82,11 @@ const TractorCard = ({ tractor }: TractorCardProps) => {
       
       <CardFooter className="p-6 pt-0">
         <Link to={`/tractors/${tractor.id}`} className="w-full">
-          <Button className="w-full font-medium" size="lg" disabled={!tractor.available}>
+          <Button 
+            className="w-full font-bold text-base h-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+            size="lg" 
+            disabled={!tractor.available}
+          >
             View Details & Book
           </Button>
         </Link>

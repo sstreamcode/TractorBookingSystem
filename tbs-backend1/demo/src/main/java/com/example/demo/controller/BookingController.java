@@ -12,12 +12,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.Booking;
+import com.example.demo.model.Payment;
 import com.example.demo.model.Tractor;
 import com.example.demo.model.User;
 import com.example.demo.repository.BookingRepository;
+import com.example.demo.repository.PaymentRepository;
 import com.example.demo.repository.TractorRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.util.TrackingMapper;
+import com.example.demo.util.EmailService;
+
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
@@ -27,11 +32,16 @@ public class BookingController {
     private final BookingRepository bookingRepository;
     private final TractorRepository tractorRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
+    private final EmailService emailService;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
 
-    public BookingController(BookingRepository bookingRepository, TractorRepository tractorRepository, UserRepository userRepository) {
+    public BookingController(BookingRepository bookingRepository, TractorRepository tractorRepository, UserRepository userRepository, PaymentRepository paymentRepository, EmailService emailService) {
         this.bookingRepository = bookingRepository;
         this.tractorRepository = tractorRepository;
         this.userRepository = userRepository;
+        this.paymentRepository = paymentRepository;
+        this.emailService = emailService;
     }
 
     @GetMapping
@@ -92,6 +102,10 @@ public class BookingController {
         }
 
         Booking saved = bookingRepository.save(booking);
+        
+        // Send booking confirmation email
+        sendBookingCreatedEmail(saved);
+        
         return ResponseEntity.ok(saved);
     }
 
@@ -155,12 +169,14 @@ public class BookingController {
                 booking.setStatus("CANCELLED");
                 bookingRepository.save(booking);
                 logger.info("Booking {} cancelled successfully", bookingId);
+                sendBookingCancelledEmail(booking);
                 return ResponseEntity.ok(Map.of("status", "CANCELLED", "message", "Booking cancelled successfully"));
             } else if ("PAID".equals(booking.getStatus())) {
                 // Request for refund for paid bookings
                 booking.setStatus("REFUND_REQUESTED");
                 bookingRepository.save(booking);
                 logger.info("Booking {} marked for refund request", bookingId);
+                sendRefundRequestedEmail(booking);
                 return ResponseEntity.ok(Map.of("status", "REFUND_REQUESTED", "message", "Refund request submitted for admin approval"));
             } else {
                 logger.warn("Cannot cancel booking {} with status: {}", bookingId, booking.getStatus());
@@ -192,6 +208,8 @@ public class BookingController {
 
         booking.setStatus("CANCELLED");
         bookingRepository.save(booking);
+        
+        sendRefundApprovedEmail(booking, refundAmount, totalAmount * 0.03);
 
         return ResponseEntity.ok(Map.of(
             "status", "CANCELLED", 
@@ -218,6 +236,8 @@ public class BookingController {
 
         booking.setStatus("PAID"); // Revert back to PAID
         bookingRepository.save(booking);
+        
+        sendRefundRejectedEmail(booking);
 
         return ResponseEntity.ok(Map.of("status", "PAID", "message", "Refund request rejected"));
     }
@@ -256,6 +276,8 @@ public class BookingController {
         bookingRepository.save(booking);
         applyDestinationFromBooking(tractor, booking);
         tractorRepository.save(tractor);
+        
+        sendBookingApprovedEmail(booking);
 
         return ResponseEntity.ok(Map.of("adminStatus", "APPROVED", "message", "Booking approved"));
     }
@@ -272,6 +294,8 @@ public class BookingController {
 
         booking.setAdminStatus("DENIED");
         bookingRepository.save(booking);
+        
+        sendBookingDeniedEmail(booking);
 
         return ResponseEntity.ok(Map.of("adminStatus", "DENIED", "message", "Booking denied"));
     }
@@ -290,6 +314,16 @@ public class BookingController {
             return ResponseEntity.badRequest().body(Map.of("error", "Cannot mark a cancelled booking as paid"));
         }
 
+        // Check if booking has COD payment method
+        boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+            .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+
+        // For COD, allow marking as paid even if delivered (payment received after delivery)
+        // For non-COD, require approval before payment
+        if (!isCOD && !"APPROVED".equals(booking.getAdminStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking must be approved before marking as paid"));
+        }
+
         if (!"PAID".equals(booking.getStatus())) {
             booking.setStatus("PAID");
         }
@@ -297,10 +331,22 @@ public class BookingController {
         if (!"APPROVED".equals(booking.getAdminStatus())) {
             booking.setAdminStatus("APPROVED");
         }
+        
+        // Update COD payment status to SUCCESS when marked as paid
+        if (isCOD && booking.getPayments() != null) {
+            booking.getPayments().stream()
+                .filter(p -> "CASH_ON_DELIVERY".equals(p.getMethod()) && "PENDING".equals(p.getStatus()))
+                .forEach(p -> {
+                    p.setStatus("SUCCESS");
+                    paymentRepository.save(p);
+                });
+        }
 
         bookingRepository.save(booking);
         applyDestinationFromBooking(booking.getTractor(), booking);
         tractorRepository.save(booking.getTractor());
+        
+        sendBookingPaidEmail(booking);
 
         return ResponseEntity.ok(Map.of("status", "PAID", "message", "Booking marked as paid"));
     }
@@ -315,8 +361,13 @@ public class BookingController {
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking == null) return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
 
-        if (!"PAID".equals(booking.getStatus()) && !"DELIVERED".equals(booking.getStatus())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Booking must be paid before marking as delivered"));
+        // Check if booking has COD payment method
+        boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+            .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+
+        // Allow delivery if: already paid, already delivered, or COD payment method
+        if (!"PAID".equals(booking.getStatus()) && !"DELIVERED".equals(booking.getStatus()) && !isCOD) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking must be paid before marking as delivered (unless COD)"));
         }
 
         booking.setStatus("DELIVERED");
@@ -327,6 +378,8 @@ public class BookingController {
         tractor.setAvailable(false);
         clearDestinationAfterDelivery(tractor, booking);
         tractorRepository.save(tractor);
+        
+        sendBookingDeliveredEmail(booking);
 
         return ResponseEntity.ok(Map.of("status", "DELIVERED", "message", "Booking marked as delivered"));
     }
@@ -352,6 +405,228 @@ public class BookingController {
         tractor.setDestinationLongitude(null);
         tractor.setDestinationAddress(null);
         tractor.setLocationUpdatedAt(LocalDateTime.now());
+    }
+    
+    // Email notification helper methods
+    private String formatBookingDetails(Booking booking) {
+        Tractor tractor = booking.getTractor();
+        long hours = java.time.Duration.between(booking.getStartAt(), booking.getEndAt()).toHours();
+        
+        StringBuilder details = new StringBuilder();
+        details.append("<div style='background-color: #f9fafb; border-radius: 6px; padding: 20px; margin: 20px 0;'>");
+        details.append("<table style='width: 100%%; border-collapse: collapse;'>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Booking ID:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>#").append(booking.getId()).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Tractor:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(tractor != null ? tractor.getName() : "N/A").append("</td></tr>");
+        
+        if (tractor != null && tractor.getModel() != null) {
+            details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Model:</td>");
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(tractor.getModel()).append("</td></tr>");
+        }
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Start Date:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getStartAt().format(DATE_FORMATTER)).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>End Date:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getEndAt().format(DATE_FORMATTER)).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Duration:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(hours).append(" hour(s)</td></tr>");
+        
+        if (booking.getDeliveryAddress() != null) {
+            details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Delivery Address:</td>");
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getDeliveryAddress()).append("</td></tr>");
+        }
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Total Amount:</td>");
+        details.append("<td style='padding: 8px 0; color: #059669; font-size: 16px; font-weight: 700;'>Rs. ").append(String.format("%.2f", booking.getTotalAmount())).append("</td></tr>");
+        
+        details.append("</table></div>");
+        return details.toString();
+    }
+    
+    private void sendBookingCreatedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Booking Confirmation - Tractor Sewa";
+            String message = "Thank you for your booking! Your booking request has been received and is pending admin approval. We will notify you once your booking is reviewed.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Booking Confirmation",
+                message,
+                "PENDING_APPROVAL",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking created email", e);
+        }
+    }
+    
+    private void sendBookingApprovedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Booking Approved - Tractor Sewa";
+            String message = "Great news! Your booking has been approved by our admin team. Please proceed with the payment to confirm your booking.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Booking Approved",
+                message,
+                "APPROVED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking approved email", e);
+        }
+    }
+    
+    private void sendBookingDeniedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Booking Denied - Tractor Sewa";
+            String message = "We regret to inform you that your booking request has been denied. If you have any questions, please contact our support team.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Booking Denied",
+                message,
+                "DENIED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking denied email", e);
+        }
+    }
+    
+    private void sendBookingPaidEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Payment Confirmed - Tractor Sewa";
+            String message = "Your payment has been confirmed! Your booking is now active. We will notify you when your tractor is on the way.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Payment Confirmed",
+                message,
+                "PAID",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking paid email", e);
+        }
+    }
+    
+    private void sendBookingDeliveredEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Tractor Delivered - Tractor Sewa";
+            String message = "Your tractor has been delivered to the specified location. Please ensure to return it on time. Thank you for choosing Tractor Sewa!";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Tractor Delivered",
+                message,
+                "DELIVERED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking delivered email", e);
+        }
+    }
+    
+    private void sendBookingCancelledEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Booking Cancelled - Tractor Sewa";
+            String message = "Your booking has been cancelled successfully. If you have any questions or need assistance, please contact our support team.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Booking Cancelled",
+                message,
+                "CANCELLED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking cancelled email", e);
+        }
+    }
+    
+    private void sendRefundRequestedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Refund Request Submitted - Tractor Sewa";
+            String message = "Your refund request has been submitted and is pending admin approval. We will process your request and notify you once it's reviewed.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Refund Request Submitted",
+                message,
+                "REFUND_REQUESTED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send refund requested email", e);
+        }
+    }
+    
+    private void sendRefundApprovedEmail(Booking booking, double refundAmount, double fee) {
+        try {
+            User user = booking.getUser();
+            String subject = "Refund Approved - Tractor Sewa";
+            String message = String.format(
+                "Your refund request has been approved! A refund of Rs. %.2f (after a 3%% processing fee of Rs. %.2f) will be processed to your original payment method within 5-7 business days.",
+                refundAmount, fee
+            );
+            String bookingDetails = formatBookingDetails(booking);
+            String refundInfo = String.format(
+                "<div style='background-color: #d1fae5; border-left: 4px solid #059669; padding: 15px 20px; margin: 20px 0; border-radius: 4px;'>" +
+                "<p style='margin: 0; color: #065f46; font-size: 14px;'><strong>Refund Amount:</strong> Rs. %.2f</p>" +
+                "<p style='margin: 5px 0 0 0; color: #065f46; font-size: 14px;'><strong>Processing Fee:</strong> Rs. %.2f</p>" +
+                "</div>",
+                refundAmount, fee
+            );
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Refund Approved",
+                message,
+                "CANCELLED",
+                bookingDetails + refundInfo
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send refund approved email", e);
+        }
+    }
+    
+    private void sendRefundRejectedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Refund Request Rejected - Tractor Sewa";
+            String message = "We regret to inform you that your refund request has been rejected. Your booking remains active. If you have any questions, please contact our support team.";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Refund Request Rejected",
+                message,
+                "PAID",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send refund rejected email", e);
+        }
     }
 }
 

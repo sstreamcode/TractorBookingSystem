@@ -33,69 +33,79 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-emerald-50/30">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-emerald-50/50 via-white to-cyan-50/30 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
         {/* Prominent Branding Section */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center justify-center gap-3 mb-6 group">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary via-emerald-500 to-slate-900 text-white shadow-lg group-hover:shadow-xl transition-shadow">
-              <Tractor className="h-7 w-7" />
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center justify-center gap-4 mb-8 group">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-emerald-500 to-cyan-500 text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+              <Tractor className="h-8 w-8" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-2xl font-bold leading-tight text-secondary group-hover:text-primary transition-colors">
+              <span className="text-3xl font-bold leading-tight text-secondary group-hover:text-primary transition-colors">
                 Tractor Sewa
               </span>
-              <span className="text-xs uppercase tracking-wider text-muted-foreground leading-tight">
+              <span className="text-xs uppercase tracking-wider text-muted-foreground leading-tight font-semibold">
                 Secure Rental Platform
               </span>
             </div>
           </Link>
-          <h1 className="text-4xl font-bold mb-3 text-secondary">Welcome Back</h1>
-          <p className="text-base text-muted-foreground">Sign in to your account to continue</p>
+          <h1 className="text-5xl font-bold mb-4 text-secondary">Welcome Back</h1>
+          <p className="text-lg text-muted-foreground font-medium">Sign in to your account to continue</p>
         </div>
 
-        <Card className="border border-border shadow-lg">
-          <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-2xl text-secondary">Login</CardTitle>
-            <CardDescription className="text-base">
+        <Card className="border border-border/60 shadow-2xl bg-white/95 backdrop-blur-sm">
+          <CardHeader className="space-y-2 pb-6 pt-8">
+            <CardTitle className="text-3xl font-bold text-secondary">Login</CardTitle>
+            <CardDescription className="text-base font-medium">
               Use admin@tbs.local for admin access or any other email for customer access
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
+          <CardContent className="pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-secondary">Email</Label>
+                <Label htmlFor="email" className="text-sm font-bold text-secondary">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11"
+                  className="h-12 text-base rounded-xl border-2"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-secondary">Password</Label>
+                <Label htmlFor="password" className="text-sm font-bold text-secondary">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-11"
+                  className="h-12 text-base rounded-xl border-2"
                   required
                 />
               </div>
 
-              <Button type="submit" className="w-full h-11 text-base font-semibold" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-bold rounded-xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+                disabled={isLoading}
+              >
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground pt-2">
+              <p className="text-center text-sm text-muted-foreground pt-2 font-medium">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-primary font-semibold hover:underline transition-colors">
+                <Link to="/register" className="text-primary font-bold hover:underline transition-colors">
                   Sign up
                 </Link>
               </p>
