@@ -1,7 +1,17 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useMemo, useState } from 'react';
-import { Tractor, LogOut, LayoutDashboard, UserCircle, Menu, BarChart3, Map, Compass, Globe } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import {
+  Tractor,
+  LogOut,
+  LayoutDashboard,
+  UserCircle,
+  Menu,
+  Globe,
+  ChevronDown,
+  Info,
+  Phone,
+  Shield,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -15,24 +25,15 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-type NavItem =
-  | {
-      labelKey: string;
-      href: string;
-      icon?: LucideIcon;
-      type: 'route';
-    }
-  | {
-      labelKey: string;
-      href: string;
-      icon?: LucideIcon;
-      type: 'anchor';
-    };
+const PRIMARY_NAV = [
+  { labelKey: 'nav.home', href: '/' },
+  { labelKey: 'nav.tractors', href: '/tractors' },
+];
 
-const NAV_ITEMS: NavItem[] = [
-  { labelKey: 'nav.platform', href: '/#platform', icon: Compass, type: 'anchor' },
-  { labelKey: 'nav.fleet', href: '/tractors', icon: Map, type: 'route' },
-  { labelKey: 'nav.insights', href: '/#insights', icon: BarChart3, type: 'anchor' },
+const SECONDARY_NAV = [
+  { labelKey: 'nav.about', href: '/about', icon: Info },
+  { labelKey: 'nav.contact', href: '/contact', icon: Phone },
+  { labelKey: 'nav.privacy', href: '/privacy', icon: Shield },
 ];
 
 const Navbar = () => {
@@ -47,7 +48,7 @@ const Navbar = () => {
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -68,135 +69,70 @@ const Navbar = () => {
   };
 
   const isEnglish = language === 'en';
-  const languageLabel = isEnglish ? 'EN' : 'NEP';
-  const languageFlag = isEnglish ? '🇬🇧' : '🇳🇵';
-
-  const LanguageToggleButton = () => (
-    <button
-      type="button"
-      onClick={toggleLanguage}
-      title={isEnglish ? 'Switch to Nepali' : 'Switch to English'}
-      className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-transparent px-2.5 py-1.5 transition-all duration-200 hover:border-primary/40 hover:bg-muted/50"
-    >
-      <Globe className="h-4 w-4 text-secondary/70" />
-      <span className="text-sm font-semibold text-secondary">{languageLabel}</span>
-    </button>
-  );
-
-  const UserAvatarMenu = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="rounded-full border border-border/70 p-1.5 shadow-sm transition-all duration-200 hover:border-primary/50 hover:bg-primary/5">
-          <Avatar className="h-9 w-9 ring-2 ring-primary/10">
-            <AvatarImage src={user?.profilePictureUrl} alt={user?.name} />
-            <AvatarFallback className="bg-gradient-to-br from-primary to-cyan-500 text-white text-sm font-bold">
-              {getInitials(user?.name || 'U')}
-            </AvatarFallback>
-          </Avatar>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <div className="px-3 py-2">
-          <p className="text-sm font-semibold text-secondary">{user?.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {isAdmin ? t('nav.administrator') : t('nav.customer')}
-          </p>
-          {user?.email && <p className="text-xs text-muted-foreground mt-1">{user.email}</p>}
-        </div>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-          <UserCircle className="mr-2 h-4 w-4" />
-          {t('nav.profileSettings')}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogoutClick} className="cursor-pointer text-red-600 focus:text-red-600">
-          <LogOut className="mr-2 h-4 w-4" />
-          {t('nav.logout')}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-border/60 shadow-sm">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-        {/* Logo Section - Left */}
-        <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-emerald-500 to-cyan-500 text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-            <Tractor className="h-6 w-6" />
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-6 h-16">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-105">
+            <Tractor className="h-5 w-5" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-bold leading-tight text-secondary group-hover:text-primary transition-colors">
-              Tractor Sewa
-            </span>
-            <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground leading-tight font-medium">
-              {t('brand.subtitle')}
-            </span>
-          </div>
+          <span className="text-lg font-bold text-foreground">Tractor Sewa</span>
         </Link>
 
-        {/* Navigation Section - Center */}
-        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          {/* Show navigation items only for non-admin users */}
-          {!isAdmin && NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const baseClasses =
-              'group flex items-center gap-2 text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-xl';
-
-            if (item.type === 'anchor') {
+        {/* Desktop Navigation - Clean & Minimal */}
+        <div className="hidden md:flex items-center gap-1">
+          {!isAdmin &&
+            PRIMARY_NAV.map((item) => {
+              const isActive = activePath === item.href;
               return (
-                <a
+                <Link
                   key={item.labelKey}
-                  href={item.href}
-                  onClick={handleLinkClick}
-                  className={`${baseClasses} text-secondary/70 hover:text-secondary hover:bg-primary/5 hover:shadow-sm`}
+                  to={item.href}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    }`}
                 >
-                  {Icon && <Icon className="h-4 w-4 text-primary/70 group-hover:text-primary transition-colors" />}
                   {t(item.labelKey)}
-                </a>
+                </Link>
               );
-            }
+            })}
 
-            return (
-              <Link
-                key={item.labelKey}
-                to={item.href}
-                onClick={handleLinkClick}
-                className={`${baseClasses} ${
-                  activePath === item.href 
-                    ? 'text-primary bg-primary/10 shadow-sm' 
-                    : 'text-secondary/70 hover:text-secondary hover:bg-primary/5 hover:shadow-sm'
-                }`}
-              >
-                {Icon && <Icon className={`h-4 w-4 transition-colors ${activePath === item.href ? 'text-primary' : 'text-primary/70 group-hover:text-primary'}`} />}
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
-
-          {/* Show My Bookings only for regular users */}
-          {isAuthenticated && !isAdmin && (
-            <Link
-              to="/dashboard"
-              className={`text-sm font-medium px-2 py-1 rounded-md transition-colors duration-200 ${
-                activePath === '/dashboard' 
-                  ? 'text-secondary bg-primary/5' 
-                  : 'text-secondary/70 hover:text-secondary hover:bg-muted/50'
-              }`}
-            >
-              {t('nav.myBookings')}
-            </Link>
+          {/* More dropdown for secondary links */}
+          {!isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                  {t('nav.more')}
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48">
+                {SECONDARY_NAV.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem key={item.labelKey} asChild>
+                      <Link to={item.href} className="flex items-center gap-2 cursor-pointer">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        {t(item.labelKey)}
+                      </Link>
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
-          {/* Show Admin Panel only for admins */}
+          {/* Admin Link */}
           {isAuthenticated && isAdmin && (
             <Link
               to="/admin/dashboard"
-              className={`group flex items-center gap-2 text-sm font-semibold transition-all duration-300 px-4 py-2 rounded-xl ${
-                activePath === '/admin/dashboard'
-                  ? 'text-primary bg-primary/10 shadow-sm'
-                  : 'text-primary/80 hover:text-primary hover:bg-primary/5'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activePath === '/admin/dashboard'
+                  ? 'text-primary bg-primary/10'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
             >
               <LayoutDashboard className="h-4 w-4" />
               {t('nav.adminPanel')}
@@ -204,108 +140,147 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* User Actions Section - Right */}
-        <div className="hidden md:flex items-center gap-3 flex-shrink-0">
-          {/* Show Book Tractor button only for non-admin users - placed before user profile */}
+        {/* Right Section - Actions */}
+        <div className="hidden md:flex items-center gap-3">
+          {/* My Bookings for authenticated non-admin users */}
+          {isAuthenticated && !isAdmin && (
+            <Link
+              to="/dashboard"
+              className={`text-sm font-medium transition-colors ${activePath === '/dashboard' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+                }`}
+            >
+              {t('nav.myBookings')}
+            </Link>
+          )}
+
+          {/* CTA Button */}
           {!isAdmin && (
             <Link to="/tractors">
-              <Button 
-                size="default" 
-                className="bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-bold px-6 py-2.5 rounded-xl hover:scale-105"
-              >
+              <Button className="h-9 px-4 font-medium">
                 <Tractor className="mr-2 h-4 w-4" />
                 {t('nav.bookTractor')}
               </Button>
             </Link>
           )}
-          
-          {/* User Profile - Rightmost position */}
-          {isAuthenticated ? (
-            <div className="flex items-center gap-2">
-              <UserAvatarMenu />
-              <LanguageToggleButton />
-            </div>
-          ) : (
-            <>
-              <Link to="/register">
-                <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                  {t('nav.createAccount')}
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="text-secondary/80 hover:text-secondary border-border">
-                  {t('nav.login')}
-                </Button>
-              </Link>
-              <LanguageToggleButton />
-            </>
-          )}
-        </div>
 
-        <div className="flex md:hidden items-center gap-2">
-          {/* Show Book Tractor button only for non-admin users */}
-          {!isAdmin && (
-            <Link to="/tractors">
-              <Button 
-                size="sm" 
-                className="bg-primary hover:bg-primary/90 text-white shadow-md font-medium rounded-lg px-4"
-              >
-                <Tractor className="mr-1.5 h-3.5 w-3.5" />
-                Book
+          {/* Divider */}
+          <div className="h-6 w-px bg-border" />
+
+          {/* Language Toggle */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
+          >
+            <Globe className="h-4 w-4" />
+            <span>{isEnglish ? 'EN' : 'NE'}</span>
+          </button>
+
+          {/* User Menu or Login */}
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profilePictureUrl || '/placeholder.svg'} alt={user?.name} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                      {getInitials(user?.name || 'U')}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground">{isAdmin ? t('nav.administrator') : user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  {t('nav.profileSettings')}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogoutClick}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t('nav.logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" size="sm" className="h-9">
+                {t('nav.login')}
               </Button>
             </Link>
           )}
-          {isAuthenticated && <UserAvatarMenu />}
-          <LanguageToggleButton />
+        </div>
+
+        {/* Mobile Menu */}
+        <div className="flex md:hidden items-center gap-2">
+          {!isAdmin && (
+            <Link to="/tractors">
+              <Button size="sm" className="h-8 px-3 text-xs">
+                {t('nav.bookTractor')}
+              </Button>
+            </Link>
+          )}
+
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <button className="rounded-lg border border-border bg-white p-2 text-secondary shadow-sm transition-all hover:shadow-md hover:border-primary/30 focus:outline-none">
-                <Menu className="h-5 w-5" />
+              <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                <Menu className="h-5 w-5 text-foreground" />
               </button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-96">
-              <SheetHeader className="text-left pb-4 border-b border-border">
-                <SheetTitle className="text-xl font-semibold text-secondary">
-                  Navigation
+            <SheetContent side="right" className="w-80 p-0">
+              <SheetHeader className="p-6 pb-4 border-b border-border">
+                <SheetTitle className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Tractor className="h-4 w-4" />
+                  </div>
+                  <span>Tractor Sewa</span>
                 </SheetTitle>
               </SheetHeader>
 
-              <div className="mt-6 space-y-6">
-                {/* Show navigation items only for non-admin users */}
+              <div className="p-4 space-y-1">
+                {/* Primary Navigation */}
+                {!isAdmin &&
+                  PRIMARY_NAV.map((item) => {
+                    const isActive = activePath === item.href;
+                    return (
+                      <Link
+                        key={item.labelKey}
+                        to={item.href}
+                        onClick={handleLinkClick}
+                        className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'
+                          }`}
+                      >
+                        {t(item.labelKey)}
+                      </Link>
+                    );
+                  })}
+
+                {/* Secondary Navigation */}
                 {!isAdmin && (
-                  <div className="grid gap-2">
-                {NAV_ITEMS.map((item) => {
+                  <div className="pt-2 mt-2 border-t border-border">
+                    <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      {t('nav.more')}
+                    </p>
+                    {SECONDARY_NAV.map((item) => {
                       const Icon = item.icon;
-                      const isActiveRoute = item.type === 'route' && activePath === item.href;
-                      const baseClass =
-                        'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition';
-
-                      if (item.type === 'anchor') {
-                        return (
-                          <a
-                            key={item.labelKey}
-                            href={item.href}
-                            onClick={handleLinkClick}
-                            className={`${baseClass} ${
-                              isActiveRoute ? 'bg-primary/10 text-secondary' : 'hover:bg-muted text-secondary/70'
-                            }`}
-                          >
-                            {Icon && <Icon className="h-4 w-4 text-primary" />}
-                            {t(item.labelKey)}
-                          </a>
-                        );
-                      }
-
+                      const isActive = activePath === item.href;
                       return (
                         <Link
                           key={item.labelKey}
                           to={item.href}
                           onClick={handleLinkClick}
-                          className={`${baseClass} ${
-                            isActiveRoute ? 'bg-primary/10 text-secondary' : 'hover:bg-muted text-secondary/70'
-                          }`}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${isActive
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
                         >
-                          {Icon && <Icon className="h-4 w-4 text-primary" />}
+                          <Icon className="h-4 w-4" />
                           {t(item.labelKey)}
                         </Link>
                       );
@@ -313,57 +288,78 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {!isAuthenticated && (
-                  <div className="grid gap-2">
-                    <Link to="/register" onClick={handleLinkClick}>
-                    <Button className="w-full">{t('nav.createAccount')}</Button>
-                    </Link>
-                    <Link to="/login" onClick={handleLinkClick}>
-                      <Button variant="outline" className="w-full">
-                        {t('nav.login')}
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-
-                {isAuthenticated && !isAdmin && (
-                  <Link to="/dashboard" onClick={handleLinkClick}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      {t('nav.myBookings')}
-                    </Button>
-                  </Link>
-                )}
-
+                {/* Admin Panel */}
                 {isAuthenticated && isAdmin && (
-                  <Link 
-                    to="/admin/dashboard" 
+                  <Link
+                    to="/admin/dashboard"
                     onClick={handleLinkClick}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                      activePath === '/admin/dashboard'
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-muted text-secondary/70'
-                    }`}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
                   >
-                    <LayoutDashboard className="h-4 w-4 text-primary" />
+                    <LayoutDashboard className="h-4 w-4" />
                     {t('nav.adminPanel')}
                   </Link>
                 )}
+              </div>
 
-                {/* Book Tractor button in mobile menu for customers */}
-                {!isAdmin && (
-                  <Link to="/tractors" onClick={handleLinkClick}>
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-white font-semibold shadow-md">
-                      <Tractor className="mr-2 h-4 w-4" />
-                      {t('nav.bookTractor')}
+              {/* Bottom Section */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-muted/30">
+                {/* Language Toggle */}
+                <button
+                  onClick={toggleLanguage}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors mb-2"
+                >
+                  <span className="flex items-center gap-3">
+                    <Globe className="h-4 w-4 text-muted-foreground" />
+                    {t('nav.language')}
+                  </span>
+                  <span className="text-muted-foreground">{isEnglish ? 'English' : 'नेपाली'}</span>
+                </button>
+
+                {/* Auth Actions */}
+                {!isAuthenticated ? (
+                  <div className="flex gap-2">
+                    <Link to="/login" onClick={handleLinkClick} className="flex-1">
+                      <Button variant="outline" className="w-full bg-transparent">
+                        {t('nav.login')}
+                      </Button>
+                    </Link>
+                    <Link to="/register" onClick={handleLinkClick} className="flex-1">
+                      <Button className="w-full">{t('nav.createAccount')}</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 px-4 py-2">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user?.profilePictureUrl || '/placeholder.svg'} alt={user?.name} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                          {getInitials(user?.name || 'U')}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{user?.name}</p>
+                        <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      </div>
+                    </div>
+
+                    {!isAdmin && (
+                      <Link to="/dashboard" onClick={handleLinkClick}>
+                        <Button variant="ghost" className="w-full justify-start">
+                          {t('nav.myBookings')}
+                        </Button>
+                      </Link>
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleLogoutClick}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {t('nav.logout')}
                     </Button>
-                  </Link>
+                  </div>
                 )}
-
-                <Button variant="outline" className="w-full justify-start" onClick={toggleLanguage}>
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span className="font-semibold">{languageLabel}</span>
-                  <span className="ml-2">{languageFlag}</span>
-                </Button>
               </div>
             </SheetContent>
           </Sheet>

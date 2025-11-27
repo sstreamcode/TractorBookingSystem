@@ -22,6 +22,9 @@ import PaymentFailure from "./pages/PaymentFailure";
 import MapPreview from "./pages/MapPreview";
 import NotFound from "./pages/NotFound";
 import Tracking from "./pages/Tracking";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
 
 const queryClient = new QueryClient();
 
@@ -32,27 +35,30 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <LanguageProvider>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/tractors" element={<UserOnly><Tractors /></UserOnly>} />
-            <Route path="/tractors/:id" element={<UserOnly><TractorDetail /></UserOnly>} />
-            <Route path="/dashboard" element={<UserOnly><UserDashboard /></UserOnly>} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/payment/success" element={<UserOnly><PaymentSuccess /></UserOnly>} />
-            <Route path="/payment/failure" element={<UserOnly><PaymentFailure /></UserOnly>} />
-            <Route path="/tracking" element={<UserOnly><Tracking /></UserOnly>} />
-            <Route path="/map-preview" element={<MapPreview />} />
-            <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
-            <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
-            <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
-            <Route path="/admin/reports" element={<AdminOnly><AdminReports /></AdminOnly>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/tractors" element={<UserOnly><Tractors /></UserOnly>} />
+              <Route path="/tractors/:id" element={<UserOnly><TractorDetail /></UserOnly>} />
+              <Route path="/dashboard" element={<UserOnly><UserDashboard /></UserOnly>} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/payment/success" element={<UserOnly><PaymentSuccess /></UserOnly>} />
+              <Route path="/payment/failure" element={<UserOnly><PaymentFailure /></UserOnly>} />
+              <Route path="/tracking" element={<UserOnly><Tracking /></UserOnly>} />
+              <Route path="/map-preview" element={<MapPreview />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
+              <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
+              <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
+              <Route path="/admin/reports" element={<AdminOnly><AdminReports /></AdminOnly>} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </LanguageProvider>
       </BrowserRouter>
     </TooltipProvider>
@@ -64,7 +70,7 @@ export default App;
 // Admin route guard - only admins can access
 function AdminOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
-  
+
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
@@ -73,7 +79,7 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -82,7 +88,7 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
 // User route guard - only regular users can access (not admins)
 function UserOnly({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
-  
+
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
@@ -91,7 +97,7 @@ function UserOnly({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
   return <>{children}</>;

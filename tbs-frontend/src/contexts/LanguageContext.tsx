@@ -16,9 +16,14 @@ const translations: Record<Language, TranslationMap> = {
     'brand.taglinePrimary': 'Reliable tractor rental with real-time tracking across Nepal',
     'brand.taglineSecondary': 'Secure bookings with location tracking for your peace of mind',
     'brand.subtitle': 'Secure Rental Platform',
-    'nav.platform': 'Platform',
-    'nav.fleet': 'Fleet',
-    'nav.insights': 'Insights',
+    'nav.home': 'Home',
+    'nav.platform': 'Features',
+    'nav.fleet': 'Tractors',
+    'nav.tractors': 'Tractors',
+    'nav.about': 'About Us',
+    'nav.contact': 'Contact',
+    'nav.privacy': 'Privacy Policy',
+    'nav.insights': 'Data',
     'nav.myBookings': 'My Bookings',
     'nav.bookTractor': 'Book Tractor',
     'nav.book': 'Book',
@@ -31,6 +36,9 @@ const translations: Record<Language, TranslationMap> = {
     'nav.administrator': 'Administrator',
     'nav.languageToggle': 'नेपाली',
     'nav.adminPanel': 'Admin Panel',
+
+    'nav.more': 'More',
+    'nav.language': 'Language',
     'landing.hero.badge': 'Trusted Tractor Rental Platform',
     'landing.hero.heading': 'Rent quality tractors with real-time location tracking.',
     'landing.hero.subtitle':
@@ -228,7 +236,6 @@ const translations: Record<Language, TranslationMap> = {
     'tractors.dialog.currentStatus': 'Current Status',
     'tractors.dialog.nextAvailable': 'Next Available',
     'tractors.dialog.currentLocation': 'Current Location',
-    'tractors.dialog.nextAvailable': 'Next Available',
     'tractors.dialog.messageUnavailable':
       'This tractor is unavailable right now. Please select another tractor or check back soon.',
     'tractors.dialog.close': 'Close',
@@ -242,8 +249,13 @@ const translations: Record<Language, TranslationMap> = {
     'brand.taglinePrimary': 'रियल-टाइम ट्र्याकिङ सहितको भरपर्दो ट्र्याक्टर भाडा सेवा',
     'brand.taglineSecondary': 'स्थान ट्र्याकिङसहित सुरक्षित बुकिङ अब सहज',
     'brand.subtitle': 'सुरक्षित भाडा प्लेटफर्म',
+    'nav.home': 'गृहपृष्ठ',
     'nav.platform': 'प्लेटफर्म',
     'nav.fleet': 'फ्लीट',
+    'nav.tractors': 'ट्र्याक्टरहरू',
+    'nav.about': 'हाम्रो बारेमा',
+    'nav.contact': 'सम्पर्क',
+    'nav.privacy': 'गोपनीयता नीति',
     'nav.insights': 'अन्तर्दृष्टि',
     'nav.myBookings': 'मेरो बुकिङ',
     'nav.bookTractor': 'ट्र्याक्टर बुक',
@@ -257,6 +269,8 @@ const translations: Record<Language, TranslationMap> = {
     'nav.administrator': 'प्रशासक',
     'nav.languageToggle': 'English',
     'nav.adminPanel': 'एडमिन प्यानल',
+    'nav.more': 'थप',
+    'nav.language': 'भाषा',
     'landing.hero.badge': 'विश्वसनीय ट्र्याक्टर भाडा प्लेटफर्म',
     'landing.hero.heading': 'रियल-टाइम लोकेशन ट्र्याकिङसहित गुणस्तरीय ट्र्याक्टर भाडामा लिऔँ।',
     'landing.hero.subtitle':
@@ -452,7 +466,6 @@ const translations: Record<Language, TranslationMap> = {
     'tractors.dialog.currentStatus': 'वर्तमान स्थिति',
     'tractors.dialog.nextAvailable': 'अर्को उपलब्ध समय',
     'tractors.dialog.currentLocation': 'हालको स्थान',
-    'tractors.dialog.nextAvailable': 'अर्को उपलब्ध समय',
     'tractors.dialog.messageUnavailable':
       'यो ट्र्याक्टर अहिले उपलब्ध छैन। कृपया अर्को ट्र्याक्टर छान्नुहोस् वा पछि पुन: प्रयास गर्नुहोस्।',
     'tractors.dialog.close': 'बन्द गर्नुहोस्',
@@ -504,4 +517,3 @@ export const useLanguage = () => {
   if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
   return ctx;
 };
-
