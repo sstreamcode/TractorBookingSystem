@@ -71,7 +71,7 @@ const SmallImageCarousel = ({
         className={className}
       />
       {hasMultipleImages && gallery.length > 1 && (
-        <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+        <div className="absolute -bottom-1 -right-1 bg-gradient-to-br from-amber-500 to-orange-600 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-semibold shadow-md">
           {gallery.length}
         </div>
       )}
@@ -360,7 +360,7 @@ const AdminBookings = () => {
       case 'delivered':
         return '!border-yellow-200 !bg-yellow-50 !text-yellow-700 justify-center';
       case 'completed':
-        return '!border-primary/20 !bg-primary/10 !text-primary justify-center';
+        return '!border-amber-200 !bg-amber-50 !text-amber-700 justify-center';
       case 'cancelled':
         return 'justify-center';
       case 'refund_requested':
@@ -513,12 +513,12 @@ const AdminBookings = () => {
           <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0">
             {selectedBooking && (
               <>
-                <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10 relative pr-20">
+                <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-amber-50/50 to-orange-50/30 relative pr-20">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <DialogTitle className="flex items-center gap-3 text-2xl mb-2">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Truck className="h-6 w-6 text-primary" />
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
+                          <Truck className="h-6 w-6 text-white" />
                         </div>
                         <span>Booking #{selectedBooking.id}</span>
                       </DialogTitle>
@@ -558,13 +558,13 @@ const AdminBookings = () => {
                     <TabsContent value="overview" className="space-y-4 mt-0">
                       {/* Quick Summary Cards */}
                       <div className="grid grid-cols-3 gap-4">
-                        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                        <Card className="border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/30">
                           <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
-                              <DollarSign className="h-5 w-5 text-primary" />
+                              <DollarSign className="h-5 w-5 text-amber-600" />
                               <span className="text-xs font-medium text-muted-foreground">Total Cost</span>
                             </div>
-                            <p className="text-2xl font-bold text-primary">रू {selectedBooking.totalCost.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-amber-700">रू {selectedBooking.totalCost.toLocaleString()}</p>
                           </CardContent>
                         </Card>
                         <Card>
@@ -762,9 +762,9 @@ const AdminBookings = () => {
                                         <div key={step.key} className="flex flex-col items-center flex-1 relative">
                                           <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                                             isActive 
-                                              ? 'bg-primary border-primary text-primary-foreground' 
-                                              : 'bg-muted border-muted-foreground/30 text-muted-foreground'
-                                          } ${isCurrent ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''}`}>
+                                              ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-amber-400 text-white' 
+                                              : 'bg-gray-200 border-gray-300 text-gray-600'
+                                          } ${isCurrent ? 'ring-2 ring-amber-400 ring-offset-2 scale-110' : ''}`}>
                                             <span className="text-lg">{step.icon}</span>
                                           </div>
                                           <p className={`text-xs mt-2 text-center font-medium ${
@@ -774,7 +774,7 @@ const AdminBookings = () => {
                                           </p>
                                           {index < steps.length - 1 && (
                                             <div className={`absolute top-5 left-[60%] w-full h-0.5 ${
-                                              currentStep > (index + 1) ? 'bg-primary' : 'bg-muted'
+                                              currentStep > (index + 1) ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-gray-300'
                                             }`} style={{ width: 'calc(100% - 2.5rem)' }} />
                                           )}
                                         </div>

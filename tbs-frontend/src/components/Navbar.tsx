@@ -65,12 +65,12 @@ const Navbar = () => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-6 h-16">
-        {/* Logo */}
+        {/* Logo - Farm Themed */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-transform group-hover:scale-105">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-orange-600 text-white shadow-lg transition-transform group-hover:scale-105 group-hover:shadow-amber-500/50">
             <Tractor className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold text-foreground">Tractor Sewa</span>
+          <span className="text-lg font-bold text-gray-900 group-hover:text-amber-700 transition-colors">Tractor Sewa</span>
         </Link>
 
         {/* Desktop Navigation - Clean & Minimal */}
@@ -83,8 +83,8 @@ const Navbar = () => {
                   key={item.labelKey}
                   to={item.href}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
-                      ? 'text-primary bg-primary/10'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'text-amber-700 bg-amber-50 font-semibold'
+                      : 'text-muted-foreground hover:text-amber-700 hover:bg-amber-50/50'
                     }`}
                 >
                   {t(item.labelKey)}
@@ -122,8 +122,8 @@ const Navbar = () => {
             <Link
               to="/admin/dashboard"
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activePath === '/admin/dashboard'
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  ? 'text-amber-700 bg-amber-50 font-semibold'
+                  : 'text-muted-foreground hover:text-amber-700 hover:bg-amber-50/50'
                 }`}
             >
               <LayoutDashboard className="h-4 w-4" />
@@ -138,7 +138,7 @@ const Navbar = () => {
           {isAuthenticated && !isAdmin && (
             <Link
               to="/dashboard"
-              className={`text-sm font-medium transition-colors ${activePath === '/dashboard' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              className={`text-sm font-medium transition-colors ${activePath === '/dashboard' ? 'text-amber-700 font-semibold' : 'text-muted-foreground hover:text-amber-700'
                 }`}
             >
               {t('nav.myBookings')}
@@ -148,7 +148,7 @@ const Navbar = () => {
           {/* CTA Button */}
           {!isAdmin && (
             <Link to="/tractors">
-              <Button className="h-9 px-4 font-medium">
+              <Button className="h-9 px-4 font-medium bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-0 shadow-md hover:shadow-amber-500/50">
                 <Tractor className="mr-2 h-4 w-4" />
                 {t('nav.bookTractor')}
               </Button>
@@ -171,7 +171,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all">
+                <button className="rounded-full ring-2 ring-transparent hover:ring-amber-500/20 transition-all">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={getImageUrlWithCacheBust(user?.profilePictureUrl)} alt={user?.name} />
                     <AvatarFallback className={`${getAvatarColor(user?.name || user?.email || 'User')} text-white text-xs font-semibold`}>
@@ -228,10 +228,10 @@ const Navbar = () => {
             <SheetContent side="right" className="w-80 p-0">
               <SheetHeader className="p-6 pb-4 border-b border-border">
                 <SheetTitle className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-orange-600 text-white shadow-md">
                     <Tractor className="h-4 w-4" />
                   </div>
-                  <span>Tractor Sewa</span>
+                  <span className="text-gray-900">Tractor Sewa</span>
                 </SheetTitle>
               </SheetHeader>
 
@@ -245,7 +245,7 @@ const Navbar = () => {
                         key={item.labelKey}
                         to={item.href}
                         onClick={handleLinkClick}
-                        className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'
+                        className={`flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-foreground hover:bg-amber-50/50 hover:text-amber-700'
                           }`}
                       >
                         {t(item.labelKey)}
@@ -268,8 +268,8 @@ const Navbar = () => {
                           to={item.href}
                           onClick={handleLinkClick}
                           className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-colors ${isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                              ? 'bg-amber-50 text-amber-700 font-semibold'
+                              : 'text-muted-foreground hover:text-amber-700 hover:bg-amber-50/50'
                             }`}
                         >
                           <Icon className="h-4 w-4" />

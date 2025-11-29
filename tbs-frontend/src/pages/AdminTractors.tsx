@@ -538,7 +538,7 @@ const AdminTractors = () => {
                       <TabsContent value="upload" className="mt-3">
                         <label
                           htmlFor="tractor-images-input"
-                          className="group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl border bg-muted hover:ring-2 hover:ring-primary/30 transition"
+                          className="group relative aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl border-2 border-amber-200/50 bg-white hover:ring-2 hover:ring-amber-400/50 transition shadow-md hover:shadow-amber-500/20"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => {
                             e.preventDefault();
@@ -592,14 +592,14 @@ const AdminTractors = () => {
                               ))}
                               {files.slice(0, 6).map((f, i) => (
                                 <div key={`new-${i}`} className="relative">
-                                  <img src={URL.createObjectURL(f)} alt={`new-${i}`} className={"h-16 w-full object-cover rounded border" + (i === 0 ? ' ring-2 ring-primary' : '')} />
+                                  <img src={URL.createObjectURL(f)} alt={`new-${i}`} className={"h-16 w-full object-cover rounded border-2" + (i === 0 ? ' ring-2 ring-amber-500 border-amber-400' : ' border-amber-200')} />
                                 </div>
                               ))}
                             </div>
                           )}
                           {progress > 0 && (
                             <div className="w-full h-2 rounded bg-secondary">
-                              <div className="h-2 rounded bg-primary transition-[width]" style={{ width: `${progress}%` }} />
+                              <div className="h-2 rounded bg-gradient-to-r from-amber-500 to-orange-600 transition-[width] shadow-sm" style={{ width: `${progress}%` }} />
                             </div>
                           )}
                           <p className="text-xs text-muted-foreground">Tip: Use multiple images to showcase different angles.</p>
@@ -835,7 +835,7 @@ const AdminTractors = () => {
                           onClick={() => handleTrack(tractor)}
                           title="Track tractor"
                         >
-                          <MapPin className="h-4 w-4 text-primary" />
+                          <MapPin className="h-4 w-4 text-amber-600" />
                         </Button>
                         <Button
                           variant="ghost"

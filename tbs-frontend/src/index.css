@@ -18,8 +18,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    /* Primary - Vibrant Emerald/Teal */
-    --primary: 158 64% 52%;
+    /* Primary - Farm Themed Amber/Orange */
+    --primary: 38 92% 50%; /* amber-600 */
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Deep Slate */
@@ -30,8 +30,8 @@
     --muted: 210 20% 98%;
     --muted-foreground: 215 16% 47%;
 
-    /* Accent - Bright Cyan */
-    --accent: 188 94% 43%;
+    /* Accent - Farm Themed Orange */
+    --accent: 25 95% 53%; /* orange-600 */
     --accent-foreground: 0 0% 100%;
 
     /* Destructive - Modern Red */
@@ -41,7 +41,7 @@
     /* Borders & Inputs */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 158 64% 52%;
+    --ring: 38 92% 50%; /* amber-600 */
 
     /* Border Radius */
     --radius: 1rem;

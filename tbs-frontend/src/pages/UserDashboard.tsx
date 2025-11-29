@@ -180,7 +180,7 @@ const UserDashboard = () => {
       case 'confirmed':
         return '!border-green-200 !bg-green-50 !text-green-700';
       case 'completed':
-        return '!border-primary/20 !bg-primary/10 !text-primary';
+        return '!border-amber-200 !bg-amber-50 !text-amber-700';
       case 'cancelled':
         return '';
       case 'refund_requested':
@@ -250,8 +250,8 @@ const UserDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1 font-medium">Total Bookings</p>
                   <p className="text-4xl font-bold text-secondary">{userBookings.length}</p>
                 </div>
-                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Calendar className="h-7 w-7 text-primary" />
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Calendar className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
@@ -344,8 +344,8 @@ const UserDashboard = () => {
                     {/* Date and Time */}
                     <div className="space-y-3 mb-4 text-sm">
                       <div className="flex items-center text-foreground">
-                        <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                          <Calendar className="h-4 w-4 text-primary" />
+                        <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center mr-3 shadow-sm">
+                          <Calendar className="h-4 w-4 text-white" />
                         </div>
                         <div>
                           <p className="font-medium text-secondary">{new Date(booking.startDate).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}</p>

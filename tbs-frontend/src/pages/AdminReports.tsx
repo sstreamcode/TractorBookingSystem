@@ -383,7 +383,7 @@ const AdminReports = () => {
           </div>
           <Button
             onClick={generatePDF}
-            className="bg-primary hover:bg-primary/90 text-white shadow-lg"
+            className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg hover:shadow-amber-500/50"
           >
             <Download className="mr-2 h-4 w-4" />
             Download PDF Report
@@ -417,12 +417,12 @@ const AdminReports = () => {
                   <p className="text-sm text-muted-foreground mb-1 font-medium">Avg Booking Value</p>
                   <p className="text-3xl font-bold text-secondary">रू {Math.round(averageBookingValue).toLocaleString()}</p>
                   <div className="flex items-center mt-2 text-sm">
-                    <BarChart3 className="h-4 w-4 text-primary mr-1" />
-                    <span className="text-primary font-medium">Per transaction</span>
+                    <BarChart3 className="h-4 w-4 text-amber-600 mr-1" />
+                    <span className="text-amber-700 font-medium">Per transaction</span>
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Activity className="h-7 w-7 text-primary" />
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Activity className="h-7 w-7 text-white" />
                 </div>
               </div>
             </CardContent>
@@ -566,7 +566,7 @@ const AdminReports = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center">
-                    <Tractor className="h-5 w-5 text-primary mr-3" />
+                    <Tractor className="h-5 w-5 text-amber-600 mr-3" />
                     <div>
                       <p className="text-sm font-medium text-secondary">Total Tractors</p>
                       <p className="text-xs text-muted-foreground">In fleet</p>
@@ -599,8 +599,8 @@ const AdminReports = () => {
                   </span>
                 </div>
 
-                <div className="mt-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-sm font-semibold text-primary mb-1">Recent Activity</p>
+                <div className="mt-4 p-4 bg-gradient-to-br from-amber-50 to-orange-50/30 rounded-lg border-2 border-amber-200">
+                  <p className="text-sm font-semibold text-amber-700 mb-1">Recent Activity</p>
                   <p className="text-xs text-muted-foreground">
                     {recentBookings.length} bookings in the last 30 days
                   </p>
@@ -629,8 +629,8 @@ const AdminReports = () => {
                 {popularTractors.map((tractor, index) => (
                   <div key={tractor.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <span className="text-lg font-bold text-primary">#{index + 1}</span>
+                      <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
+                        <span className="text-lg font-bold text-white">#{index + 1}</span>
                       </div>
                       <div>
                         <p className="font-semibold text-secondary">{tractor.name}</p>
@@ -648,7 +648,7 @@ const AdminReports = () => {
                       </div>
                       <div className="text-center">
                         <p className="text-xs text-muted-foreground">Utilization</p>
-                        <p className="font-semibold text-primary">{tractor.utilizationRate.toFixed(1)}%</p>
+                        <p className="font-semibold text-amber-700">{tractor.utilizationRate.toFixed(1)}%</p>
                       </div>
                     </div>
                   </div>
@@ -702,11 +702,11 @@ const AdminReports = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Last 30 Days</span>
-                  <span className="font-semibold text-primary">रू {recentRevenue.toLocaleString()}</span>
+                  <span className="font-semibold text-amber-700">रू {recentRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Success Rate</span>
-                  <span className="font-semibold text-primary">
+                  <span className="font-semibold text-amber-700">
                     {totalBookings > 0 ? Math.round((paidBookings.length / totalBookings) * 100) : 0}%
                   </span>
                 </div>
@@ -726,7 +726,7 @@ const AdminReports = () => {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Active Fleet</span>
-                  <span className="font-semibold text-primary">{availableTractors}/{totalTractors}</span>
+                  <span className="font-semibold text-amber-700">{availableTractors}/{totalTractors}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Fleet Size</span>
