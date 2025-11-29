@@ -12,7 +12,8 @@ import {
     CarouselNext,
     CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Tractor } from '@/types/tractor';
+import { getTractorsForUI } from '@/lib/api';
+import type { Tractor } from '@/types';
 
 const Index = () => {
     const { t } = useLanguage();
@@ -26,13 +27,8 @@ const Index = () => {
 
     const fetchTractors = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/tractors');
-            if (response.ok) {
-                const data = await response.json();
-                setTractors(data);
-            } else {
-                console.error('Failed to fetch tractors');
-            }
+            const data = await getTractorsForUI();
+            setTractors(data);
         } catch (error) {
             console.error('Error fetching tractors:', error);
         } finally {
@@ -56,13 +52,6 @@ const Index = () => {
         return () => clearInterval(timer);
     }, []);
 
-    // Fallback images if no tractors are fetched or for loading state
-    const fallbackImages = [
-        "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1530267981375-f0de93fe1e91?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1517260739337-6799d239ce83?q=80&w=1000&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1605218427368-35b089b8a409?q=80&w=1000&auto=format&fit=crop"
-    ];
 
     return (
         <div className="min-h-screen bg-background flex flex-col font-sans">
@@ -141,49 +130,50 @@ const Index = () => {
                                 className="w-full"
                             >
                                 <CarouselContent>
-                                    {(tractors.length > 0 ? tractors : fallbackImages).map((item, index) => {
-                                        const isTractor = typeof item !== 'string';
-                                        const src = isTractor ? (item as Tractor).imageUrl || (item as Tractor).imageUrls?.[0] : (item as string);
-                                        const title = isTractor ? (item as Tractor).name : `Tractor ${index + 1}`;
-                                        const subtitle = isTractor ? `${(item as Tractor).model} • $${(item as Tractor).hourlyRate}/hr` : 'Premium Fleet';
-
-                                        return (
-                                            <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3 pl-4">
-                                                <div className="p-1 h-full">
-                                                    <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm hover:shadow-xl transition-all duration-300 group h-full flex flex-col">
-                                                        <div className="aspect-[4/3] relative overflow-hidden">
-                                                            <img
-                                                                src={src}
-                                                                alt={title}
-                                                                className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700"
-                                                                onError={(e) => {
-                                                                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?q=80&w=1000&auto=format&fit=crop";
-                                                                }}
-                                                            />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-                                                                <p className="text-white font-bold text-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{title}</p>
-                                                                <p className="text-white/80 text-sm transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{subtitle}</p>
+                                    {tractors.length > 0 ? (
+                                        tractors.slice(0, 6).map((tractor) => {
+                                            const imageUrl = tractor.image || tractor.images?.[0] || "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?q=80&w=1000&auto=format&fit=crop";
+                                            
+                                            return (
+                                                <CarouselItem key={tractor.id} className="md:basis-1/2 lg:basis-1/3 pl-4">
+                                                    <div className="p-1 h-full">
+                                                        <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm hover:shadow-xl transition-all duration-300 group h-full flex flex-col">
+                                                            <div className="aspect-[4/3] relative overflow-hidden">
+                                                                <img
+                                                                    src={imageUrl}
+                                                                    alt={tractor.name}
+                                                                    className="object-cover w-full h-full transform group-hover:scale-110 transition-transform duration-700"
+                                                                    onError={(e) => {
+                                                                        (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?q=80&w=1000&auto=format&fit=crop";
+                                                                    }}
+                                                                />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                                                                    <p className="text-white font-bold text-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{tractor.name}</p>
+                                                                    <p className="text-white/80 text-sm transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">{tractor.model} • ${tractor.hourlyRate}/hr</p>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                        {isTractor && (
                                                             <div className="p-4 flex-grow flex flex-col justify-between">
                                                                 <div>
-                                                                    <h3 className="font-semibold text-lg text-secondary mb-1">{title}</h3>
-                                                                    <p className="text-muted-foreground text-sm line-clamp-2">{(item as Tractor).description}</p>
+                                                                    <h3 className="font-semibold text-lg text-secondary mb-1">{tractor.name}</h3>
+                                                                    <p className="text-muted-foreground text-sm line-clamp-2">{tractor.description || `${tractor.model} - Ready for your agricultural needs`}</p>
                                                                 </div>
                                                                 <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-                                                                    <span className="text-primary font-bold">${(item as Tractor).hourlyRate}/hr</span>
-                                                                    <Link to={`/tractors/${(item as Tractor).id}`} className="text-sm font-medium text-secondary hover:text-primary transition-colors">
+                                                                    <span className="text-primary font-bold">${tractor.hourlyRate}/hr</span>
+                                                                    <Link to={`/tractors/${tractor.id}`} className="text-sm font-medium text-secondary hover:text-primary transition-colors">
                                                                         View Details &rarr;
                                                                     </Link>
                                                                 </div>
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </CarouselItem>
-                                        );
-                                    })}
+                                                </CarouselItem>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="w-full text-center py-12 text-muted-foreground">
+                                            <p>No tractors available at the moment.</p>
+                                        </div>
+                                    )}
                                 </CarouselContent>
                                 <CarouselPrevious className="-left-4 lg:-left-12 h-12 w-12 border-2 bg-white/80 backdrop-blur hover:bg-white" />
                                 <CarouselNext className="-right-4 lg:-right-12 h-12 w-12 border-2 bg-white/80 backdrop-blur hover:bg-white" />

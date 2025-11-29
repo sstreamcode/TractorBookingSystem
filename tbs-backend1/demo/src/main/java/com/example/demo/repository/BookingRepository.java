@@ -45,6 +45,20 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.endAt > :now AND b.status IN ('PENDING','PAID','DELIVERED')")
     long countOngoingBookings(@Param("now") LocalDateTime now);
+    
+    // Find bookings that need retrieval reminder (30 minutes before end, not yet sent)
+    @Query("SELECT b FROM Booking b WHERE b.adminStatus = 'APPROVED' " +
+           "AND b.status IN ('PAID', 'DELIVERED') " +
+           "AND b.retrievalReminderSent = false " +
+           "AND b.endAt BETWEEN :now AND :reminderTime")
+    List<Booking> findBookingsNeedingReminder(@Param("now") LocalDateTime now, 
+                                               @Param("reminderTime") LocalDateTime reminderTime);
+    
+    // Find completed bookings that need status update
+    @Query("SELECT b FROM Booking b WHERE b.adminStatus = 'APPROVED' " +
+           "AND b.status IN ('PAID', 'DELIVERED') " +
+           "AND b.endAt <= :now")
+    List<Booking> findCompletedBookings(@Param("now") LocalDateTime now);
 }
 
 

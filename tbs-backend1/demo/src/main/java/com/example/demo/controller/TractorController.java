@@ -79,11 +79,31 @@ public class TractorController {
                 long bookings = bookingRepository.countByTractorId(id);
                 Double avg = feedbackRepository.averageRatingForTractor(id);
                 java.util.List<Feedback> latest = feedbackRepository.findTop10ByTractorIdOrderByCreatedAtDesc(id);
+                
+                // Map feedback to include user profile picture
+                java.util.List<java.util.Map<String, Object>> feedbackList = latest.stream()
+                    .map(f -> {
+                        java.util.Map<String, Object> feedbackMap = new java.util.HashMap<>();
+                        feedbackMap.put("id", f.getId());
+                        feedbackMap.put("authorName", f.getAuthorName() != null ? f.getAuthorName() : "Anonymous");
+                        feedbackMap.put("rating", f.getRating());
+                        feedbackMap.put("comment", f.getComment() != null ? f.getComment() : "");
+                        feedbackMap.put("createdAt", f.getCreatedAt().toString());
+                        // Include user profile picture if available
+                        if (f.getUser() != null && f.getUser().getProfilePictureUrl() != null) {
+                            feedbackMap.put("profilePictureUrl", f.getUser().getProfilePictureUrl());
+                        } else {
+                            feedbackMap.put("profilePictureUrl", null);
+                        }
+                        return feedbackMap;
+                    })
+                    .collect(java.util.stream.Collectors.toList());
+                
                 return ResponseEntity.ok(java.util.Map.of(
                     "tractorId", id,
                     "totalBookings", bookings,
                     "avgRating", avg != null ? avg : 0.0,
-                    "feedback", latest
+                    "feedback", feedbackList
                 ));
             })
             .orElse(ResponseEntity.notFound().build());

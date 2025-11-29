@@ -1,11 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Calendar, Filter, CheckCircle, XCircle, Play, Loader2 } from 'lucide-react';
+import { Calendar, Filter, CheckCircle, XCircle, Play, Loader2, Eye, MapPin, Clock, DollarSign, User, Truck, Info, Settings, Activity, Package, CheckCircle2, X } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Table,
   TableBody,
@@ -15,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllBookingsForUI, approveRefund, rejectRefund, approveBooking, denyBooking, markBookingPaid, markBookingDelivered } from '@/lib/api';
+import { getAllBookingsForUI, approveRefund, rejectRefund, approveBooking, denyBooking, markBookingPaid, markBookingDelivered, markBookingCompleted, updateTractorDeliveryStatus } from '@/lib/api';
 import type { Booking } from '@/types';
 import { toast } from 'sonner';
 
@@ -84,6 +92,8 @@ const AdminBookings = () => {
   const [selectedActions, setSelectedActions] = useState<Record<string, string>>({});
   // Track which booking is currently processing (sending email)
   const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
+  // Track which booking details modal is open
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
@@ -260,12 +270,65 @@ const AdminBookings = () => {
     }
   };
 
+  const handleUpdateDeliveryStatus = async (bookingId: string, status: 'ORDERED' | 'DELIVERING' | 'DELIVERED' | 'RETURNED') => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      const statusMessages: Record<string, string> = {
+        'ORDERED': 'Tractor marked as "Ready to Deliver"',
+        'DELIVERING': 'Tractor marked as "On the Way"',
+        'DELIVERED': 'Tractor marked as "At Customer"',
+        'RETURNED': 'Tractor marked as "Back in Stock"'
+      };
+      
+      const result = await updateTractorDeliveryStatus(bookingId, status);
+      toast.success(statusMessages[status] || `Tractor status updated`);
+
+      const bookings = await getAllBookingsForUI();
+      setAllBookings(bookings);
+      if (selectedBooking && selectedBooking.id === bookingId) {
+        setSelectedBooking(bookings.find(b => b.id === bookingId) || null);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update delivery status');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
+  const handleMarkCompleted = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      await markBookingCompleted(bookingId);
+      toast.success('Booking marked as completed');
+
+      const bookings = await getAllBookingsForUI();
+      setAllBookings(bookings);
+      if (selectedBooking && selectedBooking.id === bookingId) {
+        setSelectedBooking(bookings.find(b => b.id === bookingId) || null);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to mark as completed');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
         return 'outline';
       case 'pending':
         return 'secondary';
+      case 'delivered':
+        return 'outline';
       case 'completed':
         return 'outline';
       case 'cancelled':
@@ -294,6 +357,8 @@ const AdminBookings = () => {
     switch (status) {
       case 'confirmed':
         return '!border-green-200 !bg-green-50 !text-green-700 justify-center';
+      case 'delivered':
+        return '!border-yellow-200 !bg-yellow-50 !text-yellow-700 justify-center';
       case 'completed':
         return '!border-primary/20 !bg-primary/10 !text-primary justify-center';
       case 'cancelled':
@@ -377,247 +442,566 @@ const AdminBookings = () => {
                 <p className="text-muted-foreground">No bookings found</p>
               </div>
             ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Booking ID</TableHead>
+                      <TableHead className="w-[80px]">ID</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Tractor</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead>Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Admin Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="w-[100px]">Cost</TableHead>
+                      <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[120px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBookings.map((booking) => (
-                    <TableRow key={booking.id} className="hover:bg-transparent">
-                      <TableCell className="font-mono text-sm">{booking.id}</TableCell>
-                      <TableCell>{booking.userName}</TableCell>
+                      <TableRow key={booking.id} className="hover:bg-muted/50">
+                        <TableCell className="font-mono text-sm">#{booking.id}</TableCell>
+                        <TableCell className="font-medium">{booking.userName}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {(() => {
-                            const galleryRaw = [booking.tractorImage, ...(booking.tractorImages || [])].filter(Boolean);
-                            const gallery = Array.from(new Set(galleryRaw));
-                            const hasMultipleImages = gallery.length > 1;
-                            const currentIndex = bookingImageIndices[booking.id] || 0;
-                            
-                            return (
-                              <SmallImageCarousel
-                                id={booking.id}
-                                gallery={gallery}
-                                hasMultipleImages={hasMultipleImages}
-                                currentIndex={currentIndex}
-                                onIndexChange={(newIndex) => {
-                                  setBookingImageIndices(prev => ({
-                                    ...prev,
-                                    [booking.id]: newIndex
-                                  }));
-                                }}
-                              />
-                            );
-                          })()}
-                          <span className="font-medium">{booking.tractorName}</span>
+                            <img 
+                              src={booking.tractorImage} 
+                              alt={booking.tractorName}
+                              className="w-10 h-10 rounded object-cover"
+                            />
+                            <span className="text-sm">{booking.tractorName}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <p>{new Date(booking.startDate).toLocaleDateString()}</p>
-                          <p className="text-muted-foreground">
+                            <p className="font-medium">{new Date(booking.startDate).toLocaleDateString()}</p>
+                            <p className="text-muted-foreground text-xs">
                             {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
                             {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </TableCell>
-                      <TableCell className="font-semibold">रू {booking.totalCost}</TableCell>
+                        <TableCell className="font-semibold">रू {booking.totalCost.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge 
                           variant={getStatusColor(booking.status)}
                           className={getStatusBadgeClassName(booking.status)}
                         >
-                          {booking.status === 'refund_requested' ? 'Refund Requested' : booking.status}
+                            {booking.status === 'refund_requested' ? 'Refund' : booking.status === 'delivered' ? 'Delivered' : booking.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge 
-                          variant={getPaymentColor(booking.paymentStatus)}
-                          className={getPaymentBadgeClassName(booking.paymentStatus)}
-                        >
-                          {booking.paymentStatus}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {booking.adminStatus && (
-                          <Badge 
-                            variant={booking.adminStatus === 'approved' ? 'outline' : booking.adminStatus === 'denied' ? 'destructive' : 'secondary'}
-                            className={
-                              booking.adminStatus === 'approved' 
-                                ? '!border-green-200 !bg-green-50 !text-green-700' 
-                                : booking.adminStatus === 'denied'
-                                ? ''
-                                : '!border-orange-200 !bg-orange-50 !text-orange-700'
-                            }
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedBooking(booking)}
+                            className="w-full"
                           >
-                            {booking.adminStatus === 'pending_approval' ? 'Pending Approval' : booking.adminStatus}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          // Determine available actions based on booking status
-                          const availableActions: { value: string; label: string }[] = [];
-                          const isCOD = booking.paymentMethod === 'CASH_ON_DELIVERY';
-                          
-                          if (booking.status === 'refund_requested') {
-                            availableActions.push(
-                              { value: 'approve_refund', label: 'Approve Refund' },
-                              { value: 'reject_refund', label: 'Reject Refund' }
-                            );
-                          }
-                          
-                          if (booking.adminStatus === 'pending_approval') {
-                            availableActions.push(
-                              { value: 'approve_booking', label: 'Approve Booking' },
-                              { value: 'deny_booking', label: 'Deny Booking' }
-                            );
-                          }
-                          
-                          // For COD: Allow delivery before payment if approved
-                          // For non-COD: Require payment before delivery
-                          if (isCOD) {
-                            // COD: Can deliver if approved (even if not paid)
-                            if (booking.adminStatus === 'approved' && booking.status !== 'completed' && booking.status !== 'cancelled') {
-                              if (booking.status !== 'completed') {
-                                availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
-                              }
-                            }
-                            // COD: Can mark as paid after delivery
-                            if (booking.status === 'completed' && booking.paymentStatus !== 'paid') {
-                              availableActions.push({ value: 'mark_paid', label: 'Mark as Paid (COD Received)' });
-                            }
-                          } else {
-                            // Non-COD: Standard flow - payment first, then delivery
-                            if (booking.paymentStatus !== 'paid' && booking.status !== 'cancelled' && booking.adminStatus === 'approved') {
-                              availableActions.push({ value: 'mark_paid', label: 'Mark as Paid' });
-                            }
-                            
-                            if (booking.paymentStatus === 'paid' && booking.status !== 'completed' && booking.status !== 'cancelled') {
-                              availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
-                            }
-                          }
-                          
-                          const selectedAction = selectedActions[booking.id] || '';
-                          const isProcessing = processingBookings.has(booking.id);
-                          
-                          const handleExecuteAction = async () => {
-                            if (!selectedAction || isProcessing) {
-                              if (!selectedAction) {
-                                toast.error('Please select an action first');
-                              }
-                              return;
-                            }
-                            
-                            switch (selectedAction) {
-                              case 'approve_refund':
-                                await handleApproveRefund(booking.id);
-                                break;
-                              case 'reject_refund':
-                                await handleRejectRefund(booking.id);
-                                break;
-                              case 'approve_booking':
-                                await handleApproveBooking(booking.id);
-                                break;
-                              case 'deny_booking':
-                                await handleDenyBooking(booking.id);
-                                break;
-                              case 'mark_paid':
-                                await handleMarkPaid(booking.id);
-                                break;
-                              case 'mark_delivered':
-                                await handleMarkDelivered(booking.id);
-                                break;
-                              default:
-                                toast.error('Invalid action selected');
-                            }
-                            
-                            // Clear selection after execution
-                            setSelectedActions(prev => {
-                              const updated = { ...prev };
-                              delete updated[booking.id];
-                              return updated;
-                            });
-                          };
-                          
-                          // If no actions available, show status badge
-                          if (availableActions.length === 0) {
-                            if (booking.adminStatus === 'approved') {
-                              return (
-                                <Badge variant="outline" className="!border-green-200 !bg-green-50 !text-green-700">
-                                  Approved
-                                </Badge>
-                              );
-                            }
-                            if (booking.adminStatus === 'denied') {
-                              return (
-                                <Badge variant="destructive">
-                                  Denied
-                                </Badge>
-                              );
-                            }
-                            return <span className="text-muted-foreground text-sm">No actions</span>;
-                          }
-                          
-                          return (
-                            <div className="flex items-center gap-2 min-w-[280px]">
-                              <Select
-                                value={selectedAction}
-                                onValueChange={(value) => {
-                                  if (!isProcessing) {
-                                    setSelectedActions(prev => ({
-                                      ...prev,
-                                      [booking.id]: value
-                                    }));
-                                  }
-                                }}
-                                disabled={isProcessing}
-                              >
-                                <SelectTrigger className="flex-1 h-9 text-sm" disabled={isProcessing}>
-                                  <SelectValue placeholder="Select action..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableActions.map((action) => (
-                                    <SelectItem key={action.value} value={action.value}>
-                                      {action.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                size="sm"
-                                variant="default"
-                                onClick={handleExecuteAction}
-                                disabled={!selectedAction || isProcessing}
-                                className="h-9 px-3"
-                              >
-                                {isProcessing ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Play className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </div>
-                          );
-                        })()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Booking Details Modal */}
+        <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
+          <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0">
+            {selectedBooking && (
+              <>
+                <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10 relative pr-20">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <DialogTitle className="flex items-center gap-3 text-2xl mb-2">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Truck className="h-6 w-6 text-primary" />
+                        </div>
+                        <span>Booking #{selectedBooking.id}</span>
+                      </DialogTitle>
+                      <DialogDescription className="text-base mt-1">
+                        Complete booking information and management
+                      </DialogDescription>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge 
+                        variant={getStatusColor(selectedBooking.status)}
+                        className={getStatusBadgeClassName(selectedBooking.status) + " text-sm px-3 py-1"}
+                        >
+                        {selectedBooking.status === 'refund_requested' ? 'Refund Requested' : selectedBooking.status === 'delivered' ? 'Delivered' : selectedBooking.status}
+                        </Badge>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <Tabs defaultValue="overview" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-6">
+                      <TabsTrigger value="overview" className="flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        Overview
+                      </TabsTrigger>
+                      <TabsTrigger value="status" className="flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        Status & Tracking
+                      </TabsTrigger>
+                      <TabsTrigger value="actions" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Actions
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {/* Overview Tab */}
+                    <TabsContent value="overview" className="space-y-4 mt-0">
+                      {/* Quick Summary Cards */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+                          <CardContent className="pt-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <DollarSign className="h-5 w-5 text-primary" />
+                              <span className="text-xs font-medium text-muted-foreground">Total Cost</span>
+                            </div>
+                            <p className="text-2xl font-bold text-primary">रू {selectedBooking.totalCost.toLocaleString()}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Customer</span>
+                            </div>
+                            <p className="text-lg font-semibold">{selectedBooking.userName}</p>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="pt-6">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Truck className="h-5 w-5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Tractor</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <img 
+                                src={selectedBooking.tractorImage} 
+                                alt={selectedBooking.tractorName}
+                                className="w-8 h-8 rounded object-cover border"
+                              />
+                              <p className="text-lg font-semibold">{selectedBooking.tractorName}</p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Booking Period */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            Booking Period
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Start Time</p>
+                              <p className="text-lg font-semibold">
+                                {new Date(selectedBooking.startDate).toLocaleDateString('en-US', { 
+                                  weekday: 'short', 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(selectedBooking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">End Time</p>
+                              <p className="text-lg font-semibold">
+                                {new Date(selectedBooking.endDate).toLocaleDateString('en-US', { 
+                                  weekday: 'short', 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric' 
+                                })}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(selectedBooking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Delivery Address */}
+                      {selectedBooking.deliveryAddress && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <MapPin className="h-4 w-4" />
+                              Delivery Address
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm leading-relaxed">{selectedBooking.deliveryAddress}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </TabsContent>
+
+                    {/* Status & Tracking Tab */}
+                    <TabsContent value="status" className="space-y-4 mt-0">
+                      {/* Status Overview */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Booking Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                          <Badge 
+                              variant={getStatusColor(selectedBooking.status)}
+                              className={getStatusBadgeClassName(selectedBooking.status) + " text-sm px-3 py-1.5"}
+                            >
+                              {selectedBooking.status === 'refund_requested' ? 'Refund Requested' : selectedBooking.status === 'delivered' ? 'Delivered' : selectedBooking.status}
+                            </Badge>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Payment Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <Badge 
+                              variant={getPaymentColor(selectedBooking.paymentStatus)}
+                              className={getPaymentBadgeClassName(selectedBooking.paymentStatus) + " text-sm px-3 py-1.5"}
+                            >
+                              {selectedBooking.paymentStatus}
+                            </Badge>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Admin Status</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {selectedBooking.adminStatus ? (
+                              <Badge 
+                                variant={selectedBooking.adminStatus === 'approved' ? 'outline' : selectedBooking.adminStatus === 'denied' ? 'destructive' : 'secondary'}
+                            className={
+                                  (selectedBooking.adminStatus === 'approved' 
+                                ? '!border-green-200 !bg-green-50 !text-green-700' 
+                                    : selectedBooking.adminStatus === 'denied'
+                                ? ''
+                                    : '!border-orange-200 !bg-orange-50 !text-orange-700') + " text-sm px-3 py-1.5"
+                            }
+                          >
+                                {selectedBooking.adminStatus === 'pending_approval' ? 'Pending Approval' : selectedBooking.adminStatus}
+                          </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">—</span>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Tractor Location with Timeline */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Tractor Location & Journey
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {(() => {
+                            const deliveryStatus = (selectedBooking as any).tractorDeliveryStatus;
+                            const statusConfig: Record<string, { label: string; icon: string; color: string; step: number }> = {
+                              'ORDERED': { label: 'Ready to Deliver', icon: '📦', color: '!border-blue-200 !bg-blue-50 !text-blue-700', step: 1 },
+                              'DELIVERING': { label: 'On the Way', icon: '🚚', color: '!border-yellow-200 !bg-yellow-50 !text-yellow-700', step: 2 },
+                              'DELIVERED': { label: 'At Customer', icon: '✅', color: '!border-green-200 !bg-green-50 !text-green-700', step: 3 },
+                              'RETURNED': { label: 'Back in Stock', icon: '🏠', color: '!border-gray-200 !bg-gray-50 !text-gray-700', step: 4 }
+                            };
+                            
+                            const steps = [
+                              { key: 'ORDERED', label: 'Ordered', icon: '📦' },
+                              { key: 'DELIVERING', label: 'Delivering', icon: '🚚' },
+                              { key: 'DELIVERED', label: 'Delivered', icon: '✅' },
+                              { key: 'RETURNED', label: 'Returned', icon: '🏠' }
+                            ];
+                            
+                            const currentStep = deliveryStatus ? (statusConfig[deliveryStatus]?.step || 0) : 0;
+                            
+                            return (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-2 mb-4">
+                                  {!deliveryStatus ? (
+                                    <Badge variant="secondary" className="text-sm px-3 py-1.5">
+                                      <span className="mr-1">⏳</span>
+                                      Not Started
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className={statusConfig[deliveryStatus]?.color + " text-sm px-3 py-1.5"}>
+                                      <span className="mr-1">{statusConfig[deliveryStatus]?.icon}</span>
+                                      {statusConfig[deliveryStatus]?.label}
+                                    </Badge>
+                                  )}
+                                </div>
+                                
+                                {/* Progress Timeline */}
+                                <div className="relative">
+                                  <div className="flex items-center justify-between">
+                                    {steps.map((step, index) => {
+                                      const stepConfig = statusConfig[step.key];
+                                      const isActive = currentStep >= (index + 1);
+                                      const isCurrent = deliveryStatus === step.key;
+                                      
+                                      return (
+                                        <div key={step.key} className="flex flex-col items-center flex-1 relative">
+                                          <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                                            isActive 
+                                              ? 'bg-primary border-primary text-primary-foreground' 
+                                              : 'bg-muted border-muted-foreground/30 text-muted-foreground'
+                                          } ${isCurrent ? 'ring-2 ring-primary ring-offset-2 scale-110' : ''}`}>
+                                            <span className="text-lg">{step.icon}</span>
+                                          </div>
+                                          <p className={`text-xs mt-2 text-center font-medium ${
+                                            isActive ? 'text-foreground' : 'text-muted-foreground'
+                                          }`}>
+                                            {step.label}
+                                          </p>
+                                          {index < steps.length - 1 && (
+                                            <div className={`absolute top-5 left-[60%] w-full h-0.5 ${
+                                              currentStep > (index + 1) ? 'bg-primary' : 'bg-muted'
+                                            }`} style={{ width: 'calc(100% - 2.5rem)' }} />
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+
+                    {/* Actions Tab */}
+                    <TabsContent value="actions" className="space-y-4 mt-0">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Settings className="h-5 w-5" />
+                            Manage Booking
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          {(() => {
+                            const availableActions: { value: string; label: string }[] = [];
+                            const isCOD = selectedBooking.paymentMethod === 'CASH_ON_DELIVERY';
+                            const currentDeliveryStatus = (selectedBooking as any).tractorDeliveryStatus;
+                            
+                            // If booking is already completed, no further actions
+                            if (selectedBooking.status === 'completed') {
+                              return (
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                  Booking completed. No further actions available.
+                                </p>
+                              );
+                            }
+                            
+                            if (selectedBooking.status === 'refund_requested') {
+                              availableActions.push(
+                                { value: 'approve_refund', label: 'Approve Refund' },
+                                { value: 'reject_refund', label: 'Reject Refund' }
+                              );
+                            }
+                            
+                            if (selectedBooking.adminStatus === 'pending_approval') {
+                              availableActions.push(
+                                { value: 'approve_booking', label: 'Approve Booking' },
+                                { value: 'deny_booking', label: 'Deny Booking' }
+                              );
+                            }
+                            
+                            // Payment and delivery actions (available before tractor is returned)
+                            if (currentDeliveryStatus !== 'RETURNED') {
+                              if (isCOD) {
+                                // For COD: Can mark as delivered after approval (before payment)
+                                if (selectedBooking.adminStatus === 'approved' && 
+                                    selectedBooking.status !== 'delivered' && 
+                                    selectedBooking.status !== 'completed' && 
+                                    selectedBooking.status !== 'cancelled') {
+                                  availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
+                                }
+                                // For COD: Can mark as paid after delivery (when cash is received)
+                                if (selectedBooking.status === 'delivered' && selectedBooking.paymentStatus !== 'paid') {
+                                  availableActions.push({ value: 'mark_paid', label: 'Mark as Paid (COD Received)' });
+                                }
+                              } else {
+                                // For non-COD (eSewa): Must pay first, then deliver
+                                // Only show "Mark as Paid" if payment is NOT already paid
+                                if (selectedBooking.paymentStatus !== 'paid' && 
+                                    selectedBooking.status !== 'cancelled' && 
+                                    selectedBooking.status !== 'delivered' &&
+                                    selectedBooking.status !== 'completed' &&
+                                    selectedBooking.adminStatus === 'approved') {
+                                  availableActions.push({ value: 'mark_paid', label: 'Mark as Paid' });
+                                }
+                                // Show "Mark as Delivered" if payment is paid and not yet delivered/completed
+                                if (selectedBooking.paymentStatus === 'paid' && 
+                                    selectedBooking.status !== 'delivered' && 
+                                    selectedBooking.status !== 'completed' && 
+                                    selectedBooking.status !== 'cancelled') {
+                                  availableActions.push({ value: 'mark_delivered', label: 'Mark as Delivered' });
+                                }
+                              }
+                            }
+                            
+                            // Mark as completed action (only after tractor is returned and booking time has ended)
+                            if (currentDeliveryStatus === 'RETURNED' && selectedBooking.status !== 'completed') {
+                              const bookingEndTime = new Date(selectedBooking.endDate);
+                              const now = new Date();
+                              const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+                              
+                              // Allow completion if booking end time has passed or is within 1 hour
+                              if (bookingEndTime <= oneHourFromNow) {
+                                availableActions.push({ value: 'mark_completed', label: '✅ Mark as Completed' });
+                              }
+                            }
+                            
+                            // Only allow delivery status changes if not already returned
+                            // For COD: Allow after approval (even if not paid yet)
+                            // For non-COD: Allow after payment
+                            const canChangeDeliveryStatus = selectedBooking.adminStatus === 'approved' && 
+                                selectedBooking.status !== 'cancelled' &&
+                                currentDeliveryStatus !== 'RETURNED' &&
+                                (isCOD || selectedBooking.paymentStatus === 'paid' || selectedBooking.status === 'paid' || selectedBooking.status === 'delivered');
+                            
+                            if (canChangeDeliveryStatus) {
+                              if (!currentDeliveryStatus || currentDeliveryStatus === 'ORDERED') {
+                                availableActions.push({ value: 'set_delivering', label: '🚚 Mark as "On the Way"' });
+                              }
+                              if (currentDeliveryStatus === 'DELIVERING') {
+                                availableActions.push({ value: 'set_delivered', label: '✅ Mark as "At Customer"' });
+                              }
+                              // Only allow "returned" if booking end time has passed
+                              if (currentDeliveryStatus === 'DELIVERED') {
+                                const bookingEndTime = new Date(selectedBooking.endDate);
+                                const now = new Date();
+                                
+                                if (bookingEndTime <= now) {
+                                  availableActions.push({ value: 'set_returned', label: '🏠 Mark as "Back in Stock"' });
+                                } else {
+                                  // Show when it will be available
+                                  const timeUntilEnd = Math.ceil((bookingEndTime.getTime() - now.getTime()) / (1000 * 60 * 60));
+                                  availableActions.push({ 
+                                    value: 'set_returned_disabled', 
+                                    label: `🏠 Mark as "Back in Stock" (Available in ${timeUntilEnd} hour${timeUntilEnd !== 1 ? 's' : ''})`,
+                                    disabled: true 
+                                  });
+                                }
+                              }
+                            }
+                            
+                            if (availableActions.length === 0) {
+                              return (
+                                <p className="text-sm text-muted-foreground text-center py-4">
+                                  No actions available for this booking
+                                </p>
+                              );
+                            }
+                            
+                            return (
+                              <div className="space-y-2">
+                                {availableActions.map((action) => {
+                                  const isProcessing = processingBookings.has(selectedBooking.id);
+                                  const isDisabled = (action as any).disabled || false;
+                                  const handleAction = async () => {
+                                    if (isDisabled) return;
+                                    setProcessingBookings(prev => new Set(prev).add(selectedBooking.id));
+                                    try {
+                                      switch (action.value) {
+                                        case 'approve_refund':
+                                          await handleApproveRefund(selectedBooking.id);
+                                          break;
+                                        case 'reject_refund':
+                                          await handleRejectRefund(selectedBooking.id);
+                                          break;
+                                        case 'approve_booking':
+                                          await handleApproveBooking(selectedBooking.id);
+                                          break;
+                                        case 'deny_booking':
+                                          await handleDenyBooking(selectedBooking.id);
+                                          break;
+                                        case 'mark_paid':
+                                          await handleMarkPaid(selectedBooking.id);
+                                          break;
+                                        case 'mark_delivered':
+                                          await handleMarkDelivered(selectedBooking.id);
+                                          break;
+                                        case 'set_delivering':
+                                          await handleUpdateDeliveryStatus(selectedBooking.id, 'DELIVERING');
+                                          break;
+                                        case 'set_delivered':
+                                          await handleUpdateDeliveryStatus(selectedBooking.id, 'DELIVERED');
+                                          break;
+                                        case 'set_returned':
+                                          await handleUpdateDeliveryStatus(selectedBooking.id, 'RETURNED');
+                                          break;
+                                        case 'mark_completed':
+                                          await handleMarkCompleted(selectedBooking.id);
+                                          break;
+                                        case 'set_returned_disabled':
+                                          // This action is disabled, do nothing
+                                          return;
+                                      }
+                                      const bookings = await getAllBookingsForUI();
+                                      setAllBookings(bookings);
+                                      setSelectedBooking(bookings.find(b => b.id === selectedBooking.id) || null);
+                                    } catch (error: any) {
+                                      toast.error(error?.message || 'Action failed');
+                                    } finally {
+                                      setProcessingBookings(prev => {
+                                        const updated = new Set(prev);
+                                        updated.delete(selectedBooking.id);
+                                        return updated;
+                                      });
+                                    }
+                                  };
+                                  
+                                  return (
+                              <Button
+                                      key={action.value}
+                                      variant={isDisabled ? "secondary" : "outline"}
+                                      className="w-full justify-start"
+                                      onClick={handleAction}
+                                      disabled={isProcessing || isDisabled}
+                                    >
+                                      {isProcessing ? (
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                      ) : (
+                                        <Play className="h-4 w-4 mr-2" />
+                                      )}
+                                      {action.label}
+                              </Button>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

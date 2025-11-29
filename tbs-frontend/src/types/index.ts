@@ -17,6 +17,7 @@ export interface Tractor {
   rating?: number;
   totalBookings?: number;
   status?: string;
+  deliveryStatus?: 'ORDERED' | 'DELIVERING' | 'DELIVERED' | 'RETURNED';
   nextAvailableAt?: string;
   category?: string;
   quantity?: number;
@@ -36,7 +37,7 @@ export interface Booking {
   startDate: string;
   endDate: string;
   totalCost: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_requested';
+  status: 'pending' | 'confirmed' | 'delivered' | 'completed' | 'cancelled' | 'refund_requested';
   paymentStatus: 'pending' | 'paid' | 'failed';
   adminStatus?: 'pending_approval' | 'approved' | 'denied';
   paymentMethod?: 'CASH_ON_DELIVERY' | 'ESEWA' | string;

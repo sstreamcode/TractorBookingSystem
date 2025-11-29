@@ -58,7 +58,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
               .then(async (r) => (r.ok ? r.json() : Promise.reject()))
               .then((me) => {
-                setUser({ ...parsedUser, role: me.role === 'ADMIN' ? 'admin' : 'customer', email: me.email });
+                const updatedUser: User = {
+                  id: parsedUser.id || 'self',
+                  email: me.email || parsedUser.email,
+                  name: me.name || parsedUser.name || me.email?.split('@')[0] || 'User',
+                  role: me.role === 'ADMIN' ? 'admin' : 'customer',
+                  profilePictureUrl: me.profilePictureUrl || parsedUser.profilePictureUrl
+                };
+                setUser(updatedUser);
+                // Update localStorage with fresh data from backend
+                localStorage.setItem('user', JSON.stringify(updatedUser));
               })
               .catch(() => {
                 // token invalid, clear
@@ -121,20 +130,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const { token } = await apiLogin(email, password);
-      // Decode JWT to extract role claim
-      const [, payloadBase64] = token.split('.');
-      const payloadJson = JSON.parse(atob(payloadBase64));
-      const roleFromToken = (payloadJson?.role as string | undefined)?.toLowerCase() === 'admin' ? 'admin' : 'customer';
-      const derivedUser: User = {
-        id: 'self',
-        email,
-        name: email.split('@')[0],
-        role: roleFromToken,
-      };
-      setUser(derivedUser);
-      localStorage.setItem('user', JSON.stringify(derivedUser));
       localStorage.setItem('token', token);
       localStorage.setItem('loginTime', Date.now().toString());
+      
+      // Fetch full user data from backend
+      const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+      const meResponse = await fetch(`${BASE_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!meResponse.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+      
+      const me = await meResponse.json();
+      const roleFromToken = me.role === 'ADMIN' ? 'admin' : 'customer';
+      const fullUser: User = {
+        id: 'self',
+        email: me.email || email,
+        name: me.name || email.split('@')[0],
+        role: roleFromToken,
+        profilePictureUrl: me.profilePictureUrl || undefined,
+      };
+      
+      setUser(fullUser);
+      localStorage.setItem('user', JSON.stringify(fullUser));
       toast.success('Login successful!');
       navigate(roleFromToken === 'admin' ? '/admin/dashboard' : '/tractors');
     } catch (error: any) {
@@ -150,16 +170,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string) => {
     try {
       const { token } = await apiRegister(email, password, name);
-      const derivedUser: User = {
-        id: 'self',
-        email,
-        name,
-        role: 'customer',
-      };
-      setUser(derivedUser);
-      localStorage.setItem('user', JSON.stringify(derivedUser));
       localStorage.setItem('token', token);
       localStorage.setItem('loginTime', Date.now().toString());
+      
+      // Fetch full user data from backend
+      const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+      const meResponse = await fetch(`${BASE_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!meResponse.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+      
+      const me = await meResponse.json();
+      const fullUser: User = {
+        id: 'self',
+        email: me.email || email,
+        name: me.name || name,
+        role: 'customer',
+        profilePictureUrl: me.profilePictureUrl || undefined,
+      };
+      
+      setUser(fullUser);
+      localStorage.setItem('user', JSON.stringify(fullUser));
       toast.success('Registration successful!');
       navigate('/tractors');
     } catch (error: any) {
@@ -181,14 +215,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     navigate('/');
   };
 
-  const refreshUser = () => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
       try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
+        const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+        const meResponse = await fetch(`${BASE_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (meResponse.ok) {
+          const me = await meResponse.json();
+          const updatedUser: User = {
+            id: 'self',
+            email: me.email || '',
+            name: me.name || me.email?.split('@')[0] || 'User',
+            role: me.role === 'ADMIN' ? 'admin' : 'customer',
+            profilePictureUrl: me.profilePictureUrl || undefined,
+          };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
       } catch (e) {
-        console.error('Failed to parse stored user:', e);
+        console.error('Failed to refresh user:', e);
+      }
+    } else {
+      // Fallback to stored user if no token
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (e) {
+          console.error('Failed to parse stored user:', e);
+        }
       }
     }
   };

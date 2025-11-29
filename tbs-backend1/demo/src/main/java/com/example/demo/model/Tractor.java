@@ -33,7 +33,9 @@ public class Tractor {
     private Double fuelLevel;
     private Double rating;
     private Integer totalBookings;
-    private String status;
+    private String status; // General status: Available, Booked, In Use, etc.
+    @Column(length = 20)
+    private String deliveryStatus; // ORDERED, DELIVERING, DELIVERED, RETURNED
     private String nextAvailableAt;
     private String category;
     private Integer quantity; // Number of tractors available of this type
@@ -187,6 +189,14 @@ public class Tractor {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
     }
 
     public String getNextAvailableAt() {

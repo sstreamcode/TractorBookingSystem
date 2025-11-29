@@ -24,6 +24,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 
 const PRIMARY_NAV = [
   { labelKey: 'nav.home', href: '/' },
@@ -44,15 +45,6 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const activePath = useMemo(() => location.pathname, [location.pathname]);
-
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   const handleProfileClick = () => {
     navigate('/profile');
@@ -181,9 +173,9 @@ const Navbar = () => {
               <DropdownMenuTrigger asChild>
                 <button className="rounded-full ring-2 ring-transparent hover:ring-primary/20 transition-all">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.profilePictureUrl || '/placeholder.svg'} alt={user?.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-                      {getInitials(user?.name || 'U')}
+                    <AvatarImage src={getImageUrlWithCacheBust(user?.profilePictureUrl)} alt={user?.name} />
+                    <AvatarFallback className={`${getAvatarColor(user?.name || user?.email || 'User')} text-white text-xs font-semibold`}>
+                      {getInitials(user?.name || user?.email || 'U')}
                     </AvatarFallback>
                   </Avatar>
                 </button>
@@ -331,9 +323,9 @@ const Navbar = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 px-4 py-2">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={user?.profilePictureUrl || '/placeholder.svg'} alt={user?.name} />
-                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                          {getInitials(user?.name || 'U')}
+                        <AvatarImage src={getImageUrlWithCacheBust(user?.profilePictureUrl)} alt={user?.name} />
+                        <AvatarFallback className={`${getAvatarColor(user?.name || user?.email || 'User')} text-white text-sm font-semibold`}>
+                          {getInitials(user?.name || user?.email || 'U')}
                         </AvatarFallback>
                       </Avatar>
                       <div>

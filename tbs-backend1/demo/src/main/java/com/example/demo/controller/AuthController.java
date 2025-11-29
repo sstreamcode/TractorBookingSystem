@@ -67,7 +67,25 @@ public class AuthController {
             Claims claims = jwtUtil.parseClaims(token);
             String email = claims.getSubject();
             String role = claims.get("role", String.class);
-            return ResponseEntity.ok(Map.of("email", email, "role", role));
+            
+            // Fetch full user data from database
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user != null) {
+                return ResponseEntity.ok(Map.of(
+                    "email", user.getEmail(),
+                    "role", user.getRole(),
+                    "name", user.getName() != null ? user.getName() : "",
+                    "profilePictureUrl", user.getProfilePictureUrl() != null ? user.getProfilePictureUrl() : ""
+                ));
+            } else {
+                // Fallback if user not found in database
+                return ResponseEntity.ok(Map.of(
+                    "email", email,
+                    "role", role,
+                    "name", "",
+                    "profilePictureUrl", ""
+                ));
+            }
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("error", "Invalid token"));
         }

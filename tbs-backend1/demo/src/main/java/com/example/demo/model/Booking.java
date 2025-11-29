@@ -44,6 +44,9 @@ public class Booking {
     @JsonIgnore
     private List<Payment> payments;
     
+    @Column(nullable = false)
+    private Boolean retrievalReminderSent = false; // Track if 30-min reminder email was sent
+    
     // Helper method to get payment method for JSON serialization
     @com.fasterxml.jackson.annotation.JsonProperty("paymentMethod")
     public String getPaymentMethod() {
@@ -56,6 +59,24 @@ public class Booking {
             .findFirst()
             .map(Payment::getMethod)
             .orElse(payments.get(0).getMethod());
+    }
+    
+    // Expose payments for JSON serialization (without circular reference)
+    @com.fasterxml.jackson.annotation.JsonProperty("payments")
+    public java.util.List<java.util.Map<String, Object>> getPaymentsForJson() {
+        if (payments == null || payments.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return payments.stream()
+            .map(p -> {
+                java.util.Map<String, Object> paymentMap = new java.util.HashMap<>();
+                paymentMap.put("id", p.getId());
+                paymentMap.put("method", p.getMethod());
+                paymentMap.put("status", p.getStatus());
+                paymentMap.put("amount", p.getAmount());
+                return paymentMap;
+            })
+            .collect(java.util.stream.Collectors.toList());
     }
 
     public Long getId() { return id; }
@@ -74,6 +95,8 @@ public class Booking {
     public void setAdminStatus(String adminStatus) { this.adminStatus = adminStatus; }
     public Double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+    public Boolean getRetrievalReminderSent() { return retrievalReminderSent != null ? retrievalReminderSent : false; }
+    public void setRetrievalReminderSent(Boolean retrievalReminderSent) { this.retrievalReminderSent = retrievalReminderSent; }
     public Double getDeliveryLatitude() { return deliveryLatitude; }
     public void setDeliveryLatitude(Double deliveryLatitude) { this.deliveryLatitude = deliveryLatitude; }
     public Double getDeliveryLongitude() { return deliveryLongitude; }

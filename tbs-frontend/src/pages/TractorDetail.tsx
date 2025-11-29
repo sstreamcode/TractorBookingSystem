@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Zap, Fuel, Calendar, Clock, ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ArrowLeft, MapPin, Zap, Fuel, Calendar, Clock, ChevronLeft, ChevronRight, Info, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import StarRating from '@/components/StarRating';
+import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -133,6 +136,7 @@ const TractorDetail = () => {
     location: string;
   } | null>(null);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [isCreatingBooking, setIsCreatingBooking] = useState(false);
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [totalBookings, setTotalBookings] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<FeedbackType[]>([]);
@@ -280,6 +284,10 @@ const TractorDetail = () => {
       return;
     }
 
+    if (isCreatingBooking) {
+      return; // Prevent multiple clicks
+    }
+
     if (!tractor?.available) {
       showUnavailableInfo();
       return;
@@ -305,6 +313,7 @@ const TractorDetail = () => {
       return;
     }
 
+    setIsCreatingBooking(true);
     try {
       // Create booking with combined date and time
       const startAt = `${startDate}T${startTime}`;
@@ -338,6 +347,8 @@ const TractorDetail = () => {
       toast.success('Booking created! Please choose a payment method.');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to create booking');
+    } finally {
+      setIsCreatingBooking(false);
     }
   };
 
@@ -616,9 +627,16 @@ const TractorDetail = () => {
                         className="w-full" 
                         size="lg"
                         onClick={handleBooking}
-                        disabled={!tractor.available || totalCost <= 0}
+                        disabled={!tractor.available || totalCost <= 0 || isCreatingBooking}
                       >
-                        {!tractor.available ? 'Currently Unavailable' : 'Proceed to Payment'}
+                        {isCreatingBooking ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Booking...
+                          </>
+                        ) : (
+                          !tractor.available ? 'Currently Unavailable' : 'Proceed to Payment'
+                        )}
                       </Button>
                     </div>
                     {!tractor.available && tractor.nextAvailableAt && (
@@ -677,75 +695,154 @@ const TractorDetail = () => {
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          <div className="rounded-xl border p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Feedback</h3>
-            {feedback.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No feedback yet. Be the first to rate this tractor.</p>
-            ) : (
-              <div className="space-y-4">
-                {feedback.map((f) => (
-                  <div key={f.id} className="rounded-md border p-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium text-secondary">{f.authorName || 'Anonymous'}</span>
-                      <span>★ {f.rating}</span>
-                    </div>
-                    {f.comment && <p className="mt-2 text-sm text-muted-foreground">{f.comment}</p>}
-                    <p className="mt-1 text-xs text-muted-foreground">{new Date(f.createdAt).toLocaleString()}</p>
+          {/* Recent Feedback Section */}
+          <div className="rounded-xl border border-border bg-white shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-secondary flex items-center gap-2">
+                <span>Recent Feedback</span>
+                {feedback.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {feedback.length}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {feedback.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                    <Info className="h-8 w-8 text-muted-foreground" />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="rounded-xl border p-6">
-            <h3 className="text-lg font-semibold mb-4">Leave a Rating</h3>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-sm font-medium">Rating</Label>
-                  <select
-                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                    value={newRating}
-                    onChange={(e)=>setNewRating(parseInt(e.target.value))}
-                  >
-                    {[5,4,3,2,1].map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
+                  <p className="text-sm text-muted-foreground font-medium">
+                    No feedback yet. Be the first to rate this tractor!
+                  </p>
                 </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Comment (optional)</Label>
-                <textarea
-                  className="mt-1 w-full min-h-[80px] rounded-md border bg-background px-3 py-2 text-sm"
-                  value={newComment}
-                  onChange={(e)=>setNewComment(e.target.value)}
-                  placeholder="Share your experience..."
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  onClick={async ()=>{
-                    if (!id) return;
-                    try {
-                      await submitFeedback(id, newRating, newComment || undefined);
-                      const stats = await fetchTractorStats(id);
-                      setAvgRating(stats.avgRating);
-                      setTotalBookings(stats.totalBookings);
-                      setFeedback(stats.feedback || []);
-                      setNewComment('');
-                      toast.success('Feedback submitted');
-                    } catch (e: any) {
-                      if (e?.message?.toLowerCase().includes('authenticate')) {
+              ) : (
+                <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+                  {feedback.map((f) => (
+                    <div 
+                      key={f.id} 
+                      className="rounded-lg border border-border bg-gradient-to-br from-white to-muted/20 p-4 hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-10 w-10 flex-shrink-0">
+                          <AvatarImage src={getImageUrlWithCacheBust(f.profilePictureUrl || undefined)} alt={f.authorName} />
+                          <AvatarFallback className={`${getAvatarColor(f.authorName || 'User')} text-white text-sm font-semibold`}>
+                            {getInitials(f.authorName || 'A')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div>
+                              <p className="font-semibold text-secondary text-sm">{f.authorName || 'Anonymous'}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {new Date(f.createdAt).toLocaleDateString('en-US', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                            <StarRating rating={f.rating} size="sm" />
+                          </div>
+                          {f.comment && (
+                            <p className="text-sm text-muted-foreground leading-relaxed mt-2 whitespace-pre-wrap">
+                              {f.comment}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </div>
+
+          {/* Leave a Rating Section */}
+          <div className="rounded-xl border border-border bg-white shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl font-bold text-secondary">Leave a Rating</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Share your experience with this tractor</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                <div>
+                  <Label className="text-sm font-semibold text-secondary mb-3 block">Your Rating</Label>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/30">
+                    <StarRating 
+                      rating={newRating} 
+                      onRatingChange={setNewRating}
+                      interactive={true}
+                      size="lg"
+                    />
+                    <span className="text-sm font-medium text-secondary ml-2">
+                      {newRating} {newRating === 1 ? 'star' : 'stars'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="comment" className="text-sm font-semibold text-secondary mb-2 block">
+                    Comment (optional)
+                  </Label>
+                  <textarea
+                    id="comment"
+                    className="w-full min-h-[120px] rounded-lg border border-border bg-background px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    value={newComment}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 500) {
+                        setNewComment(e.target.value);
+                      }
+                    }}
+                    placeholder="Share your experience with this tractor..."
+                    maxLength={500}
+                  />
+                  <p className={`text-xs mt-1.5 ${newComment.length >= 450 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                    {newComment.length} / 500 characters
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={async () => {
+                      if (!id) return;
+                      if (!isAuthenticated) {
                         toast.error('Please log in to leave feedback.');
                         navigate('/login');
                         return;
                       }
-                      toast.error(e?.message || 'Failed to submit feedback');
-                    }
-                  }}
-                >
-                  Submit
-                </Button>
+                      try {
+                        await submitFeedback(id, newRating, newComment || undefined);
+                        const stats = await fetchTractorStats(id);
+                        setAvgRating(stats.avgRating);
+                        setTotalBookings(stats.totalBookings);
+                        setFeedback(stats.feedback || []);
+                        setNewComment('');
+                        setNewRating(5);
+                        toast.success('Thank you for your feedback!');
+                      } catch (e: any) {
+                        if (e?.message?.toLowerCase().includes('authenticate')) {
+                          toast.error('Please log in to leave feedback.');
+                          navigate('/login');
+                          return;
+                        }
+                        if (e?.message?.toLowerCase().includes('already rated')) {
+                          toast.error('You have already rated this tractor.');
+                          return;
+                        }
+                        toast.error(e?.message || 'Failed to submit feedback');
+                      }
+                    }}
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    Submit Feedback
+                  </Button>
+                </div>
               </div>
-            </div>
+            </CardContent>
           </div>
         </div>
       </div>

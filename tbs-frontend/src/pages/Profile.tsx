@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile, uploadImage } from '@/lib/api';
 import { toast } from 'sonner';
+import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 
 const Profile = () => {
   const { isAuthenticated, user, loading: authLoading, refreshUser } = useAuth();
@@ -22,12 +23,13 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && !editing && !saving) {
+      // Only sync from user context when not editing and not saving to avoid resetting user input
       setName(user.name || '');
       setEmail(user.email || '');
       setProfilePictureUrl(user.profilePictureUrl || '');
     }
-  }, [user]);
+  }, [user, editing, saving]);
 
   if (authLoading) {
     return (
@@ -63,19 +65,25 @@ const Profile = () => {
     setUploading(true);
     try {
       const { url } = await uploadImage(file);
-      setProfilePictureUrl(url);
-      // Auto-save the profile picture
-      await updateProfile(undefined, url);
-      toast.success('Profile picture updated');
       
-      // Update local storage
+      // Auto-save the profile picture
+      const response = await updateProfile(undefined, url);
+      
+      // Update local storage with response from backend
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const userObj = JSON.parse(storedUser);
-        userObj.profilePictureUrl = url;
+        userObj.profilePictureUrl = response.user.profilePictureUrl || url;
         localStorage.setItem('user', JSON.stringify(userObj));
       }
-      refreshUser();
+      
+      // Update local state immediately from response
+      setProfilePictureUrl(response.user.profilePictureUrl || url);
+      
+      // Refresh user context to sync with backend (await it)
+      await refreshUser();
+      
+      toast.success('Profile picture updated');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to upload image');
     } finally {
@@ -91,18 +99,34 @@ const Profile = () => {
     
     setSaving(true);
     try {
-      await updateProfile(name);
-      toast.success('Profile updated successfully');
-      setEditing(false);
-      // Update local storage user data
+      const response = await updateProfile(name);
+      
+      // Update local state immediately from response (before refreshing context)
+      const updatedName = response.user.name;
+      // Preserve existing profilePictureUrl if response doesn't have one (when only updating name)
+      const updatedProfilePic = response.user.profilePictureUrl || profilePictureUrl;
+      
+      setName(updatedName);
+      setProfilePictureUrl(updatedProfilePic);
+      
+      // Update local storage with response from backend
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const userObj = JSON.parse(storedUser);
-        userObj.name = name;
+        userObj.name = updatedName;
+        // Only update profilePictureUrl if we got a new one, otherwise preserve existing
+        if (response.user.profilePictureUrl) {
+          userObj.profilePictureUrl = response.user.profilePictureUrl;
+        }
         localStorage.setItem('user', JSON.stringify(userObj));
       }
-      // Refresh user context
-      refreshUser();
+      
+      // Refresh user context to sync with backend (await it)
+      await refreshUser();
+      
+      // Exit edit mode after everything is updated
+      setEditing(false);
+      toast.success('Profile updated successfully');
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update profile');
     } finally {
@@ -110,14 +134,6 @@ const Profile = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,9 +158,9 @@ const Profile = () => {
             <div className="flex flex-col items-center py-6">
               <div className="relative">
                 <Avatar className="w-32 h-32 mb-4">
-                  <AvatarImage src={profilePictureUrl} alt={name} />
-                  <AvatarFallback className="bg-primary text-white text-4xl font-semibold">
-                    {getInitials(name)}
+                  <AvatarImage src={getImageUrlWithCacheBust(profilePictureUrl)} alt={name} />
+                  <AvatarFallback className={`${getAvatarColor(name || email || 'User')} text-white text-4xl font-semibold`}>
+                    {getInitials(name || email || 'U')}
                   </AvatarFallback>
                 </Avatar>
                 <button

@@ -3,6 +3,8 @@ package com.example.demo;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.CacheControl;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -10,7 +12,10 @@ import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.util.HashUtil;
 
+import java.util.concurrent.TimeUnit;
+
 @SpringBootApplication
+@EnableScheduling
 public class DemoApplication {
 
 	public static void main(String[] args) {
@@ -37,8 +42,12 @@ public class DemoApplication {
         return new WebMvcConfigurer() {
             @Override
             public void addResourceHandlers(ResourceHandlerRegistry registry) {
+                // Configure uploads directory to be served dynamically without caching
+                // This ensures new profile pictures are immediately available without restart
                 registry.addResourceHandler("/uploads/**")
-                        .addResourceLocations("file:uploads/");
+                        .addResourceLocations("file:uploads/")
+                        .setCacheControl(CacheControl.noCache().mustRevalidate())
+                        .resourceChain(false); // Disable resource chain caching for dynamic files
             }
         };
     }

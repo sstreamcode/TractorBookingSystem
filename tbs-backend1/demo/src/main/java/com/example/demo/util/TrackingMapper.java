@@ -1,13 +1,28 @@
 package com.example.demo.util;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.example.demo.model.Booking;
 import com.example.demo.model.Tractor;
 
 public final class TrackingMapper {
+
+    private static final String OSRM_BASE_URL = "http://router.project-osrm.org/route/v1/driving";
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private TrackingMapper() {}
 
@@ -40,18 +55,33 @@ public final class TrackingMapper {
             payload.put("destination", destination);
 
             if (tractor.getLatitude() != null && tractor.getLongitude() != null) {
-                double distanceKm = computeDistanceKm(
-                    tractor.getLatitude(),
+                // Fetch route from OSRM for road-based routing
+                RouteResult routeResult = fetchRouteFromOSRM(
                     tractor.getLongitude(),
-                    tractor.getDestinationLatitude(),
-                    tractor.getDestinationLongitude()
+                    tractor.getLatitude(),
+                    tractor.getDestinationLongitude(),
+                    tractor.getDestinationLatitude()
                 );
-                payload.put("distanceKm", distanceKm);
-                payload.put("etaMinutes", estimateEtaMinutes(distanceKm));
-                payload.put("route", List.of(
-                    Map.of("lat", tractor.getLatitude(), "lng", tractor.getLongitude()),
-                    Map.of("lat", tractor.getDestinationLatitude(), "lng", tractor.getDestinationLongitude())
-                ));
+
+                if (routeResult != null && routeResult.route != null && !routeResult.route.isEmpty()) {
+                    payload.put("distanceKm", routeResult.distanceKm);
+                    payload.put("etaMinutes", estimateEtaMinutes(routeResult.distanceKm));
+                    payload.put("route", routeResult.route);
+                } else {
+                    // Fallback to straight-line distance if OSRM fails
+                    double distanceKm = computeDistanceKm(
+                        tractor.getLatitude(),
+                        tractor.getLongitude(),
+                        tractor.getDestinationLatitude(),
+                        tractor.getDestinationLongitude()
+                    );
+                    payload.put("distanceKm", distanceKm);
+                    payload.put("etaMinutes", estimateEtaMinutes(distanceKm));
+                    payload.put("route", List.of(
+                        Map.of("lat", tractor.getLatitude(), "lng", tractor.getLongitude()),
+                        Map.of("lat", tractor.getDestinationLatitude(), "lng", tractor.getDestinationLongitude())
+                    ));
+                }
             } else {
                 payload.put("route", List.of());
             }
@@ -72,6 +102,81 @@ public final class TrackingMapper {
         return payload;
     }
 
+    private static RouteResult fetchRouteFromOSRM(double lon1, double lat1, double lon2, double lat2) {
+        try {
+            // OSRM API format: /route/v1/{profile}/{coordinates}?overview=full&geometries=geojson
+            String url = String.format("%s/%f,%f;%f,%f?overview=full&geometries=geojson",
+                OSRM_BASE_URL, lon1, lat1, lon2, lat2);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                JsonNode routes = root.get("routes");
+                
+                if (routes != null && routes.isArray() && routes.size() > 0) {
+                    JsonNode route = routes.get(0);
+                    JsonNode geometry = route.get("geometry");
+                    JsonNode distanceNode = route.get("distance");
+                    JsonNode durationNode = route.get("duration");
+
+                    if (geometry != null && geometry.has("coordinates")) {
+                        JsonNode coordinates = geometry.get("coordinates");
+                        List<Map<String, Double>> routePoints = new ArrayList<>();
+
+                        if (coordinates.isArray()) {
+                            for (JsonNode coord : coordinates) {
+                                if (coord.isArray() && coord.size() >= 2) {
+                                    // GeoJSON format: [longitude, latitude]
+                                    double lng = coord.get(0).asDouble();
+                                    double lat = coord.get(1).asDouble();
+                                    routePoints.add(Map.of("lat", lat, "lng", lng));
+                                }
+                            }
+                        }
+
+                        // Calculate distance from route (in meters, convert to km)
+                        double distanceMeters = distanceNode != null ? distanceNode.asDouble(0) : 0;
+                        double distanceKm = distanceMeters / 1000.0;
+
+                        // If distance is 0, calculate from route geometry
+                        if (distanceKm <= 0 && routePoints.size() >= 2) {
+                            distanceKm = calculateRouteDistance(routePoints);
+                        }
+
+                        return new RouteResult(routePoints, distanceKm);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Log error but don't throw - fallback to straight-line distance
+            System.err.println("Failed to fetch route from OSRM: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private static double calculateRouteDistance(List<Map<String, Double>> routePoints) {
+        if (routePoints.size() < 2) {
+            return 0;
+        }
+        double totalDistance = 0;
+        for (int i = 1; i < routePoints.size(); i++) {
+            Map<String, Double> prev = routePoints.get(i - 1);
+            Map<String, Double> curr = routePoints.get(i);
+            totalDistance += computeDistanceKm(
+                prev.get("lat"), prev.get("lng"),
+                curr.get("lat"), curr.get("lng")
+            );
+        }
+        return totalDistance;
+    }
+
     public static double computeDistanceKm(double lat1, double lon1, double lat2, double lon2) {
         final int EARTH_RADIUS_KM = 6371;
         double dLat = Math.toRadians(lat2 - lat1);
@@ -88,6 +193,16 @@ public final class TrackingMapper {
         double averageSpeedKph = 25.0; // assumption configurable
         double hours = distanceKm / averageSpeedKph;
         return Math.max(1, Math.round(hours * 60));
+    }
+
+    private static class RouteResult {
+        final List<Map<String, Double>> route;
+        final double distanceKm;
+
+        RouteResult(List<Map<String, Double>> route, double distanceKm) {
+            this.route = route;
+            this.distanceKm = distanceKm;
+        }
     }
 }
 

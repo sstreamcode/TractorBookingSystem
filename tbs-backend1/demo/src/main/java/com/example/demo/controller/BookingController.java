@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.demo.model.Booking;
-import com.example.demo.model.Payment;
 import com.example.demo.model.Tractor;
 import com.example.demo.model.User;
 import com.example.demo.repository.BookingRepository;
@@ -274,6 +273,10 @@ public class BookingController {
 
         booking.setAdminStatus("APPROVED");
         bookingRepository.save(booking);
+        // Set delivery status to ORDERED when booking is approved
+        if (tractor.getDeliveryStatus() == null || tractor.getDeliveryStatus().isEmpty()) {
+            tractor.setDeliveryStatus("ORDERED");
+        }
         applyDestinationFromBooking(tractor, booking);
         tractorRepository.save(tractor);
         
@@ -324,8 +327,18 @@ public class BookingController {
             return ResponseEntity.badRequest().body(Map.of("error", "Booking must be approved before marking as paid"));
         }
 
-        if (!"PAID".equals(booking.getStatus())) {
-            booking.setStatus("PAID");
+        // For COD: If already delivered, keep status as DELIVERED (don't change to PAID)
+        // For non-COD: Change status to PAID
+        if (isCOD) {
+            // For COD, if already delivered, keep it as DELIVERED
+            if (!"DELIVERED".equals(booking.getStatus()) && !"COMPLETED".equals(booking.getStatus())) {
+                booking.setStatus("PAID");
+            }
+        } else {
+            // For non-COD, set status to PAID
+            if (!"PAID".equals(booking.getStatus())) {
+                booking.setStatus("PAID");
+            }
         }
 
         if (!"APPROVED".equals(booking.getAdminStatus())) {
@@ -343,8 +356,13 @@ public class BookingController {
         }
 
         bookingRepository.save(booking);
-        applyDestinationFromBooking(booking.getTractor(), booking);
-        tractorRepository.save(booking.getTractor());
+        Tractor tractor = booking.getTractor();
+        applyDestinationFromBooking(tractor, booking);
+        // Set delivery status to ORDERED when marked as paid
+        if (tractor.getDeliveryStatus() == null || tractor.getDeliveryStatus().isEmpty()) {
+            tractor.setDeliveryStatus("ORDERED");
+        }
+        tractorRepository.save(tractor);
         
         sendBookingPaidEmail(booking);
 
@@ -376,12 +394,203 @@ public class BookingController {
         Tractor tractor = booking.getTractor();
         tractor.setStatus("In Use");
         tractor.setAvailable(false);
-        clearDestinationAfterDelivery(tractor, booking);
+        tractor.setDeliveryStatus("DELIVERED"); // Update delivery status
+        
+        // Update tractor current location to delivery location
+        if (booking.getDeliveryLatitude() != null && booking.getDeliveryLongitude() != null) {
+            tractor.setLatitude(booking.getDeliveryLatitude());
+            tractor.setLongitude(booking.getDeliveryLongitude());
+            tractor.setLocationUpdatedAt(LocalDateTime.now());
+        }
+        if (booking.getDeliveryAddress() != null) {
+            tractor.setLocation(booking.getDeliveryAddress());
+        }
+        // Clear destination since tractor has arrived
+        tractor.setDestinationLatitude(null);
+        tractor.setDestinationLongitude(null);
+        tractor.setDestinationAddress(null);
+        
         tractorRepository.save(tractor);
         
         sendBookingDeliveredEmail(booking);
 
         return ResponseEntity.ok(Map.of("status", "DELIVERED", "message", "Booking marked as delivered"));
+    }
+
+    @PostMapping("/{bookingId}/mark-completed")
+    public ResponseEntity<?> markBookingCompleted(@PathVariable Long bookingId, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can mark bookings as completed"));
+        }
+
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+
+        Tractor tractor = booking.getTractor();
+        if (tractor == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Tractor not found"));
+        }
+
+        // Check if tractor has been returned
+        if (!"RETURNED".equals(tractor.getDeliveryStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Cannot complete booking. Tractor must be returned first."));
+        }
+
+        // Check if booking is already completed
+        if ("COMPLETED".equals(booking.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking is already completed"));
+        }
+
+        // Check if booking is cancelled
+        if ("CANCELLED".equals(booking.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Cannot complete a cancelled booking"));
+        }
+
+        // Allow completion if booking end time has passed (or is within 1 hour of ending)
+        // This gives some flexibility for early returns
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        if (booking.getEndAt().isAfter(now) && booking.getEndAt().isAfter(now.plusHours(1))) {
+            return ResponseEntity.badRequest().body(Map.of(
+                "error", 
+                "Cannot complete booking before the scheduled end time. Booking ends at: " + booking.getEndAt()
+            ));
+        }
+
+        booking.setStatus("COMPLETED");
+        bookingRepository.save(booking);
+
+        // Send completion email
+        try {
+            sendBookingCompletedEmail(booking);
+        } catch (Exception e) {
+            logger.error("Failed to send booking completed email", e);
+        }
+
+        return ResponseEntity.ok(Map.of("status", "COMPLETED", "message", "Booking marked as completed"));
+    }
+    
+    private void sendBookingCompletedEmail(Booking booking) {
+        try {
+            User user = booking.getUser();
+            String subject = "Booking Completed - Tractor Sewa";
+            String message = "Your booking has been successfully completed! Thank you for using Tractor Sewa. We hope you had a great experience. We look forward to serving you again!";
+            String bookingDetails = formatBookingDetails(booking);
+            String htmlContent = emailService.buildEmailTemplate(
+                user.getName(),
+                "Booking Completed",
+                message,
+                "COMPLETED",
+                bookingDetails
+            );
+            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send booking completed email", e);
+        }
+    }
+
+    @PutMapping("/{bookingId}/tractor-delivery-status")
+    public ResponseEntity<?> updateTractorDeliveryStatus(
+            @PathVariable Long bookingId,
+            @RequestBody Map<String, String> body,
+            Principal principal) {
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can update delivery status"));
+        }
+
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+
+        String deliveryStatus = body.get("deliveryStatus");
+        if (deliveryStatus == null || 
+            (!deliveryStatus.equals("ORDERED") && 
+             !deliveryStatus.equals("DELIVERING") && 
+             !deliveryStatus.equals("DELIVERED") && 
+             !deliveryStatus.equals("RETURNED"))) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid delivery status. Must be ORDERED, DELIVERING, DELIVERED, or RETURNED"));
+        }
+
+        Tractor tractor = booking.getTractor();
+        if (tractor == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Tractor not found"));
+        }
+
+        // Prevent reverting delivery status if tractor is already returned
+        if ("RETURNED".equals(tractor.getDeliveryStatus()) && !"RETURNED".equals(deliveryStatus)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Cannot change status. Tractor has already been returned."));
+        }
+
+        String previousStatus = tractor.getDeliveryStatus();
+        tractor.setDeliveryStatus(deliveryStatus);
+        
+        // Update tractor availability and status based on delivery status
+        switch (deliveryStatus) {
+            case "ORDERED":
+                tractor.setStatus("Booked");
+                tractor.setAvailable(false);
+                break;
+            case "DELIVERING":
+                tractor.setStatus("In Transit");
+                tractor.setAvailable(false);
+                break;
+            case "DELIVERED":
+                tractor.setStatus("In Use");
+                tractor.setAvailable(false);
+                // Update tractor current location to delivery location
+                if (booking.getDeliveryLatitude() != null && booking.getDeliveryLongitude() != null) {
+                    tractor.setLatitude(booking.getDeliveryLatitude());
+                    tractor.setLongitude(booking.getDeliveryLongitude());
+                    tractor.setLocationUpdatedAt(LocalDateTime.now());
+                }
+                if (booking.getDeliveryAddress() != null) {
+                    tractor.setLocation(booking.getDeliveryAddress());
+                }
+                // Clear destination since tractor has arrived
+                tractor.setDestinationLatitude(null);
+                tractor.setDestinationLongitude(null);
+                tractor.setDestinationAddress(null);
+                
+                // Update booking status if not already delivered
+                // For COD, booking can be DELIVERED before being PAID
+                // For non-COD, booking should be PAID before being DELIVERED
+                boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+                    .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+                
+                if (!"DELIVERED".equals(booking.getStatus()) && 
+                    (isCOD || "PAID".equals(booking.getStatus()))) {
+                    booking.setStatus("DELIVERED");
+                    bookingRepository.save(booking);
+                }
+                break;
+            case "RETURNED":
+                // Check if booking end time has passed
+                java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                if (booking.getEndAt().isAfter(now)) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", 
+                        "Cannot mark tractor as returned before booking end time. Booking ends at: " + booking.getEndAt()
+                    ));
+                }
+                
+                tractor.setStatus("Available");
+                tractor.setAvailable(true);
+                // Don't auto-complete booking when returned - admin must mark as completed after booking time ends
+                // Booking status remains as DELIVERED until explicitly marked as COMPLETED
+                break;
+        }
+        
+        tractorRepository.save(tractor);
+
+        return ResponseEntity.ok(Map.of(
+            "deliveryStatus", deliveryStatus,
+            "tractorStatus", tractor.getStatus(),
+            "message", "Tractor delivery status updated from " + (previousStatus != null ? previousStatus : "null") + " to " + deliveryStatus
+        ));
     }
 
     private void applyDestinationFromBooking(Tractor tractor, Booking booking) {
@@ -451,12 +660,21 @@ public class BookingController {
     private void sendBookingCreatedEmail(Booking booking) {
         try {
             User user = booking.getUser();
-            String subject = "Booking Confirmation - Tractor Sewa";
-            String message = "Thank you for your booking! Your booking request has been received and is pending admin approval. We will notify you once your booking is reviewed.";
+            // Check payment method to customize message
+            boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+                .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+            
+            String subject = "Booking Request Received - Tractor Sewa";
+            String message;
+            if (isCOD) {
+                message = "Thank you for your booking request with Cash on Delivery! Your booking has been received and is pending admin approval. Once approved, you can proceed with payment upon delivery.";
+            } else {
+                message = "Thank you for your booking request! Your booking has been received and is pending admin approval. Once approved, please proceed with the payment to confirm your booking.";
+            }
             String bookingDetails = formatBookingDetails(booking);
             String htmlContent = emailService.buildEmailTemplate(
                 user.getName(),
-                "Booking Confirmation",
+                "Booking Request Received",
                 message,
                 "PENDING_APPROVAL",
                 bookingDetails
@@ -470,8 +688,17 @@ public class BookingController {
     private void sendBookingApprovedEmail(Booking booking) {
         try {
             User user = booking.getUser();
+            // Check payment method to customize message
+            boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+                .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+            
             String subject = "Booking Approved - Tractor Sewa";
-            String message = "Great news! Your booking has been approved by our admin team. Please proceed with the payment to confirm your booking.";
+            String message;
+            if (isCOD) {
+                message = "Great news! Your booking has been approved by our admin team. Your tractor will be delivered to the specified location, and you can pay upon delivery. We will notify you when your tractor is on the way.";
+            } else {
+                message = "Great news! Your booking has been approved by our admin team. Please proceed with the payment to confirm your booking. Once payment is confirmed, we will notify you when your tractor is on the way.";
+            }
             String bookingDetails = formatBookingDetails(booking);
             String htmlContent = emailService.buildEmailTemplate(
                 user.getName(),
@@ -509,7 +736,7 @@ public class BookingController {
         try {
             User user = booking.getUser();
             String subject = "Payment Confirmed - Tractor Sewa";
-            String message = "Your payment has been confirmed! Your booking is now active. We will notify you when your tractor is on the way.";
+            String message = "Your payment has been confirmed! Your booking is now active and ready for delivery. We will notify you when your tractor is on the way to your location.";
             String bookingDetails = formatBookingDetails(booking);
             String htmlContent = emailService.buildEmailTemplate(
                 user.getName(),
@@ -528,7 +755,7 @@ public class BookingController {
         try {
             User user = booking.getUser();
             String subject = "Tractor Delivered - Tractor Sewa";
-            String message = "Your tractor has been delivered to the specified location. Please ensure to return it on time. Thank you for choosing Tractor Sewa!";
+            String message = "Your tractor has been delivered to the specified location and is ready for use. Please ensure to return it on time as per your booking schedule. Thank you for choosing Tractor Sewa!";
             String bookingDetails = formatBookingDetails(booking);
             String htmlContent = emailService.buildEmailTemplate(
                 user.getName(),

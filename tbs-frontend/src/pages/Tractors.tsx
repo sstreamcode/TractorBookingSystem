@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Search, SlidersHorizontal, Tractor as TractorIcon, Calendar, Fuel, Gauge, MapPin, Clock3, Info } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { Search, SlidersHorizontal, Tractor as TractorIcon, Calendar, Fuel, Gauge, MapPin, Clock3, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getTractorsForUI } from '@/lib/api';
 import type { Tractor } from '@/types';
 import { Badge } from '@/components/ui/badge';
+import RangeSlider from '@/components/RangeSlider';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -85,6 +86,11 @@ const Tractors = () => {
   const [minRating, setMinRating] = useState(0);
   const { t } = useLanguage();
   const [showFilters, setShowFilters] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    types: true,
+    price: true,
+    specs: true,
+  });
   const [typeFilter, setTypeFilter] = useState<{compact:boolean; row:boolean; speciality:boolean; utility:boolean; orchard:boolean}>({
     compact: false,
     row: false,
@@ -139,6 +145,19 @@ const Tractors = () => {
     },
     [t]
   );
+
+  // Calculate active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery) count++;
+    if (locationFilter !== 'all') count++;
+    if (availabilityFilter !== 'all') count++;
+    if (minRating > 0) count++;
+    if (minPrice > 0 || maxPrice < 5000) count++;
+    if (hpMin > 0 || hpMax < 300) count++;
+    if (Object.values(typeFilter).some(Boolean)) count++;
+    return count;
+  }, [searchQuery, locationFilter, availabilityFilter, minRating, minPrice, maxPrice, hpMin, hpMax, typeFilter]);
 
   const filteredTractors = tractors.filter(tractor => {
     const matchesSearch =
@@ -231,66 +250,46 @@ const Tractors = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-3 text-secondary">{t('tractors.header.title')}</h1>
             <p className="text-lg text-muted-foreground font-medium">{t('tractors.header.subtitle')}</p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setShowFilters(s => !s)}
-            className="rounded-xl border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5 font-semibold shadow-sm"
-          >
-            <SlidersHorizontal className="mr-2 h-4 w-4" />
-            {showFilters ? t('tractors.filters.toggle.hide') : t('tractors.filters.toggle.show')}
-          </Button>
+          <div className="flex items-center gap-3">
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="px-3 py-1.5">
+                {activeFilterCount} {activeFilterCount === 1 ? 'filter' : 'filters'} active
+              </Badge>
+            )}
+            <Button 
+              variant="outline" 
+              onClick={() => setShowFilters(s => !s)}
+              className="rounded-xl border-2 border-primary/30 hover:border-primary/50 hover:bg-primary/5 font-semibold shadow-sm"
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              {showFilters ? t('tractors.filters.toggle.hide') : t('tractors.filters.toggle.show')}
+            </Button>
+          </div>
         </div>
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="rounded-2xl border-2 border-border/60 bg-gradient-to-br from-white to-emerald-50/30 p-6 mb-10 shadow-lg">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <p className="text-sm font-medium">{t('tractors.filters.types')}</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={typeFilter.compact} onChange={(e)=>setTypeFilter(s=>({...s,compact:e.target.checked}))} />
-                    {t('tractors.filters.type.compact')}
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={typeFilter.row} onChange={(e)=>setTypeFilter(s=>({...s,row:e.target.checked}))} />
-                    {t('tractors.filters.type.row')}
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={typeFilter.speciality} onChange={(e)=>setTypeFilter(s=>({...s,speciality:e.target.checked}))} />
-                    {t('tractors.filters.type.speciality')}
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={typeFilter.utility} onChange={(e)=>setTypeFilter(s=>({...s,utility:e.target.checked}))} />
-                    {t('tractors.filters.type.utility')}
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={typeFilter.orchard} onChange={(e)=>setTypeFilter(s=>({...s,orchard:e.target.checked}))} />
-                    {t('tractors.filters.type.orchard')}
-                  </label>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">
-                    {t('tractors.filters.price')}: रू {minPrice} - रू {maxPrice}/{t('tractors.pricePerHour')}
-                  </p>
-                  <input type="range" min={0} max={5000} value={minPrice} onChange={(e)=>setMinPrice(parseInt(e.target.value))} className="w-full accent-emerald-600" />
-                  <input type="range" min={0} max={5000} value={maxPrice} onChange={(e)=>setMaxPrice(parseInt(e.target.value))} className="mt-2 w-full accent-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-1">
-                    {t('tractors.filters.hp')}: {hpMin} - {hpMax} HP
-                  </p>
-                  <input type="range" min={0} max={300} value={hpMin} onChange={(e)=>setHpMin(parseInt(e.target.value))} className="w-full accent-emerald-600" />
-                  <input type="range" min={0} max={300} value={hpMax} onChange={(e)=>setHpMax(parseInt(e.target.value))} className="mt-2 w-full accent-emerald-600" />
-                </div>
+          <div className="rounded-2xl border border-border bg-white shadow-lg mb-8 overflow-hidden">
+            {/* Quick Search Bar */}
+            <div className="p-4 border-b border-border bg-gradient-to-r from-emerald-50/50 to-white">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                  className="pl-10 h-11 rounded-lg border-border/60 focus:border-primary" 
+                  placeholder={t('tractors.filters.search')} 
+                  value={searchQuery} 
+                  onChange={(e)=>setSearchQuery(e.target.value)} 
+                />
               </div>
-              <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-10" placeholder={t('tractors.filters.search')} value={searchQuery} onChange={(e)=>setSearchQuery(e.target.value)} />
-                </div>
+            </div>
+
+            {/* Filter Sections */}
+            <div className="p-4 space-y-4">
+              {/* Quick Filters Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Select value={locationFilter} onValueChange={setLocationFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
+                    <MapPin className="mr-2 h-4 w-4" />
                     <SelectValue placeholder={t('tractors.filters.location')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -302,7 +301,8 @@ const Tractors = () => {
                   </SelectContent>
                 </Select>
                 <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
+                    <Clock3 className="mr-2 h-4 w-4" />
                     <SelectValue placeholder={t('tractors.filters.availability')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,26 +312,139 @@ const Tractors = () => {
                   </SelectContent>
                 </Select>
                 <Select value={String(minRating)} onValueChange={(v)=>setMinRating(parseFloat(v))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-10">
+                    <span className="mr-2">★</span>
                     <SelectValue placeholder={t('tractors.filters.rating')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">{t('tractors.filters.rating.any')}</SelectItem>
-                    <SelectItem value="4.0">4.0+</SelectItem>
-                    <SelectItem value="4.3">4.3+</SelectItem>
-                    <SelectItem value="4.5">4.5+</SelectItem>
-                    <SelectItem value="4.7">4.7+</SelectItem>
+                    <SelectItem value="4.0">4.0+ ⭐</SelectItem>
+                    <SelectItem value="4.3">4.3+ ⭐</SelectItem>
+                    <SelectItem value="4.5">4.5+ ⭐</SelectItem>
+                    <SelectItem value="4.7">4.7+ ⭐</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <Button variant="ghost" onClick={()=>{
-                setTypeFilter({compact:false,row:false,speciality:false,utility:false,orchard:false});
-                setMinPrice(0); setMaxPrice(5000); setHpMin(0); setHpMax(300); setMinRating(0);
-                setLocationFilter('all'); setAvailabilityFilter('all'); setSearchQuery('');
-              }}>{t('tractors.filters.action.cancel')}</Button>
-              <Button onClick={()=>{ /* filters already live; noop for UX */ }}>{t('tractors.filters.action.apply')}</Button>
+
+              {/* Collapsible Sections */}
+              <div className="space-y-3 pt-2 border-t border-border">
+                {/* Tractor Types */}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections(s => ({ ...s, types: !s.types }))}
+                    className="flex items-center justify-between w-full text-sm font-semibold text-secondary hover:text-primary transition-colors"
+                  >
+                    <span>{t('tractors.filters.types')}</span>
+                    {expandedSections.types ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  {expandedSections.types && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[
+                        { key: 'compact', label: t('tractors.filters.type.compact') },
+                        { key: 'row', label: t('tractors.filters.type.row') },
+                        { key: 'speciality', label: t('tractors.filters.type.speciality') },
+                        { key: 'utility', label: t('tractors.filters.type.utility') },
+                        { key: 'orchard', label: t('tractors.filters.type.orchard') },
+                      ].map(({ key, label }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setTypeFilter(s => ({ ...s, [key]: !s[key as keyof typeof s] }))}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            typeFilter[key as keyof typeof typeFilter]
+                              ? 'bg-primary text-white shadow-md'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Price Range */}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections(s => ({ ...s, price: !s.price }))}
+                    className="flex items-center justify-between w-full text-sm font-semibold text-secondary hover:text-primary transition-colors"
+                  >
+                    <span>{t('tractors.filters.price')}</span>
+                    {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  {expandedSections.price && (
+                    <div className="pt-2">
+                      <RangeSlider
+                        min={0}
+                        max={5000}
+                        value={[minPrice, maxPrice]}
+                        onChange={([min, max]) => {
+                          setMinPrice(min);
+                          setMaxPrice(max);
+                        }}
+                        step={100}
+                        label=""
+                        formatValue={(v) => `रू ${v.toLocaleString()}`}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Horsepower Range */}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedSections(s => ({ ...s, specs: !s.specs }))}
+                    className="flex items-center justify-between w-full text-sm font-semibold text-secondary hover:text-primary transition-colors"
+                  >
+                    <span>{t('tractors.filters.hp')}</span>
+                    {expandedSections.specs ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                  {expandedSections.specs && (
+                    <div className="pt-2">
+                      <RangeSlider
+                        min={0}
+                        max={300}
+                        value={[hpMin, hpMax]}
+                        onChange={([min, max]) => {
+                          setHpMin(min);
+                          setHpMax(max);
+                        }}
+                        step={10}
+                        label=""
+                        formatValue={(v) => `${v} HP`}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Active Filters & Reset */}
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                {activeFilterCount > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Active:</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {activeFilterCount}
+                    </Badge>
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setTypeFilter({compact:false,row:false,speciality:false,utility:false,orchard:false});
+                    setMinPrice(0); setMaxPrice(5000); setHpMin(0); setHpMax(300); setMinRating(0);
+                    setLocationFilter('all'); setAvailabilityFilter('all'); setSearchQuery('');
+                  }}
+                  className="text-xs"
+                >
+                  <X className="mr-1.5 h-3.5 w-3.5" />
+                  Reset All
+                </Button>
+              </div>
             </div>
           </div>
         )}

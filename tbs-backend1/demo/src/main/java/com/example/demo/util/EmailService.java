@@ -122,8 +122,10 @@ public class EmailService {
         return switch (status.toUpperCase()) {
             case "PENDING", "PENDING_APPROVAL" -> "#fef3c7"; // Yellow
             case "APPROVED", "PAID", "DELIVERED" -> "#d1fae5"; // Green
+            case "COMPLETED" -> "#dbeafe"; // Blue
             case "DENIED", "CANCELLED" -> "#fee2e2"; // Red
             case "REFUND_REQUESTED" -> "#e0e7ff"; // Blue
+            case "RETRIEVAL_REMINDER" -> "#fef3c7"; // Yellow for reminders
             default -> "#f3f4f6"; // Gray
         };
     }
@@ -136,9 +138,11 @@ public class EmailService {
             case "APPROVED" -> "✅";
             case "PAID" -> "💳";
             case "DELIVERED" -> "🚜";
+            case "COMPLETED" -> "🎉";
             case "DENIED" -> "❌";
             case "CANCELLED" -> "🚫";
             case "REFUND_REQUESTED" -> "💰";
+            case "RETRIEVAL_REMINDER" -> "⚠️";
             default -> "📋";
         };
     }

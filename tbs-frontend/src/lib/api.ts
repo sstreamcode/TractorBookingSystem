@@ -163,6 +163,7 @@ export interface Feedback {
   rating: number;
   comment?: string;
   createdAt: string;
+  profilePictureUrl?: string | null;
 }
 
 export async function fetchTractorStats(id: string | number): Promise<{ tractorId: number; totalBookings: number; avgRating: number; feedback: Feedback[] }> {
@@ -437,6 +438,7 @@ export interface BookingApiModel {
     hourlyRate?: number;
     imageUrl?: string;
     imageUrls?: string[];
+    deliveryStatus?: string;
   };
   startAt: string;
   endAt: string;
@@ -603,6 +605,39 @@ export async function markBookingDelivered(bookingId: string): Promise<{ status:
   return res.json();
 }
 
+export async function markBookingCompleted(bookingId: string): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/mark-completed`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to mark booking as completed', res.status);
+  }
+  return res.json();
+}
+
+export async function updateTractorDeliveryStatus(
+  bookingId: string,
+  deliveryStatus: 'ORDERED' | 'DELIVERING' | 'DELIVERED' | 'RETURNED'
+): Promise<{ deliveryStatus: string; tractorStatus: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/tractor-delivery-status`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    },
+    body: JSON.stringify({ deliveryStatus })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to update delivery status', res.status);
+  }
+  return res.json();
+}
+
 export async function approveBooking(bookingId: string): Promise<{ adminStatus: string; message: string }> {
   const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/approve`, {
     method: 'POST',
@@ -654,6 +689,7 @@ export function toUiTractor(apiTractor: TractorApiModel): Tractor {
     rating: apiTractor.rating ?? undefined,
     totalBookings: apiTractor.totalBookings ?? undefined,
     status: apiTractor.status || undefined,
+    deliveryStatus: apiTractor.deliveryStatus || undefined,
     nextAvailableAt: apiTractor.nextAvailableAt || undefined,
     category: apiTractor.category || undefined,
     quantity: apiTractor.quantity || undefined,
@@ -684,13 +720,16 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
   })();
 
   // Map backend status to frontend status
-  const mapStatus = (status: string): 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'refund_requested' => {
+  // Note: For COD, status can be DELIVERED before being PAID
+  const mapStatus = (status: string): 'pending' | 'confirmed' | 'delivered' | 'completed' | 'cancelled' | 'refund_requested' => {
     switch (status.toUpperCase()) {
       case 'PENDING':
         return 'pending';
       case 'PAID':
         return 'confirmed';
       case 'DELIVERED':
+        return 'delivered'; // Changed from 'completed' to 'delivered' to distinguish from completed
+      case 'COMPLETED':
         return 'completed';
       case 'CANCELLED':
         return 'cancelled';
@@ -722,6 +761,36 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
       ? apiBooking.payments.find(p => p.method === 'CASH_ON_DELIVERY')?.method || apiBooking.payments[0].method
       : undefined);
 
+  // Determine payment status from payments array (primary source of truth)
+  // For COD, payment can be PENDING even if booking is DELIVERED
+  let paymentStatus: 'paid' | 'pending' = 'pending';
+  if (apiBooking.payments && apiBooking.payments.length > 0) {
+    // Check if any payment has status SUCCESS - this is the definitive indicator
+    const hasSuccessfulPayment = apiBooking.payments.some(p => p.status === 'SUCCESS');
+    if (hasSuccessfulPayment) {
+      paymentStatus = 'paid';
+    } else {
+      // If no SUCCESS payment found, check if it's a non-COD payment that was processed
+      // For eSewa: if booking status indicates payment was made (PAID/DELIVERED/COMPLETED), consider it paid
+      if (paymentMethod !== 'CASH_ON_DELIVERY') {
+        if (apiBooking.status === 'PAID' || apiBooking.status === 'DELIVERED' || apiBooking.status === 'COMPLETED') {
+          // For non-COD payments, if booking reached PAID/DELIVERED/COMPLETED, payment was successful
+          paymentStatus = 'paid';
+        }
+      }
+      // For COD, payment remains pending until explicitly marked as SUCCESS
+    }
+  } else {
+    // No payments array available - fallback to booking status
+    // For non-COD: if booking status indicates payment (PAID/DELIVERED/COMPLETED), payment was made
+    if (paymentMethod !== 'CASH_ON_DELIVERY' && 
+        (apiBooking.status === 'PAID' || apiBooking.status === 'DELIVERED' || apiBooking.status === 'COMPLETED')) {
+      paymentStatus = 'paid';
+    } else {
+      paymentStatus = 'pending';
+    }
+  }
+
   return {
     id: String(apiBooking.id),
     tractorId: String(apiBooking.tractor.id),
@@ -734,13 +803,14 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     endDate: apiBooking.endAt,
     totalCost: totalCost,
     status: mapStatus(apiBooking.status),
-    paymentStatus: apiBooking.status === 'PAID' || apiBooking.status === 'DELIVERED' ? 'paid' : 'pending',
+    paymentStatus: paymentStatus,
     adminStatus: mapAdminStatus(apiBooking.adminStatus),
     paymentMethod: paymentMethod,
     deliveryLatitude: apiBooking.deliveryLatitude || undefined,
     deliveryLongitude: apiBooking.deliveryLongitude || undefined,
-    deliveryAddress: apiBooking.deliveryAddress || undefined
-  };
+    deliveryAddress: apiBooking.deliveryAddress || undefined,
+    tractorDeliveryStatus: apiBooking.tractor.deliveryStatus || undefined
+  } as Booking & { tractorDeliveryStatus?: string };
 }
 
 export async function getMyBookingsForUI(): Promise<Booking[]> {
