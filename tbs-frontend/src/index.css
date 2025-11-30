@@ -4,6 +4,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
 /* Modern Professional Design System - Tractor Sewa */
 
 @layer base {
@@ -211,6 +226,72 @@
   select:focus {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+  }
+
+  /* Date and Time Input Visibility Enhancements */
+  input[type="date"],
+  input[type="time"],
+  input[type="datetime-local"] {
+    color: rgb(241, 245, 249) !important; /* slate-100 - ensure text is visible */
+  }
+
+  /* Date and Time Input Icons - Make them white and visible */
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    cursor: pointer !important;
+    opacity: 1 !important;
+    filter: invert(1) brightness(200%) contrast(100%) !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    padding: 2px !important;
+    margin-right: 4px !important;
+  }
+
+  /* Make calendar/clock icons white and more visible on hover */
+  input[type="date"]::-webkit-calendar-picker-indicator:hover,
+  input[type="time"]::-webkit-calendar-picker-indicator:hover,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+    filter: invert(1) brightness(250%) contrast(100%) !important;
+    opacity: 1 !important;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text,
+  input[type="date"]::-webkit-datetime-edit-month-field,
+  input[type="date"]::-webkit-datetime-edit-day-field,
+  input[type="date"]::-webkit-datetime-edit-year-field,
+  input[type="time"]::-webkit-datetime-edit-text,
+  input[type="time"]::-webkit-datetime-edit-hour-field,
+  input[type="time"]::-webkit-datetime-edit-minute-field,
+  input[type="time"]::-webkit-datetime-edit-ampm-field {
+    color: rgb(241, 245, 249) !important; /* slate-100 */
+  }
+
+  input[type="date"]::-webkit-datetime-edit-text:focus,
+  input[type="date"]::-webkit-datetime-edit-month-field:focus,
+  input[type="date"]::-webkit-datetime-edit-day-field:focus,
+  input[type="date"]::-webkit-datetime-edit-year-field:focus,
+  input[type="time"]::-webkit-datetime-edit-text:focus,
+  input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+  input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+  input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
+    background-color: rgba(245, 158, 11, 0.2) !important; /* amber-500 with opacity */
+    color: rgb(245, 158, 11) !important; /* amber-500 */
+  }
+
+  /* Firefox date/time input styling */
+  input[type="date"]::-moz-placeholder,
+  input[type="time"]::-moz-placeholder {
+    color: rgb(148, 163, 184) !important; /* slate-400 */
+    opacity: 1 !important;
+  }
+
+  input[type="date"]::placeholder,
+  input[type="time"]::placeholder {
+    color: rgb(148, 163, 184) !important; /* slate-400 */
+    opacity: 1 !important;
   }
 
   /* Custom Animations */

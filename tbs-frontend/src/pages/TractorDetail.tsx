@@ -504,7 +504,7 @@ const TractorDetail = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate">Start Date</Label>
+                    <Label htmlFor="startDate" className="text-slate-100">Start Date</Label>
                     <Input
                       id="startDate"
                       type="date"
@@ -517,46 +517,46 @@ const TractorDetail = () => {
                         }
                       }}
                       min={today}
-                      className="cursor-pointer"
-                      style={{ colorScheme: 'light' }}
+                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
+                      style={{ colorScheme: 'dark' }}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="startTime">Start Time</Label>
+                    <Label htmlFor="startTime" className="text-slate-100">Start Time</Label>
                     <Input
                       id="startTime"
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="cursor-pointer"
+                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endDate">End Date</Label>
+                    <Label htmlFor="endDate" className="text-slate-100">End Date</Label>
                     <Input
                       id="endDate"
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       min={startDate || today}
-                      className="cursor-pointer"
-                      style={{ colorScheme: 'light' }}
+                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-[2] [&::-webkit-calendar-picker-indicator]:contrast-150"
+                      style={{ colorScheme: 'dark' }}
                       disabled={!startDate}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endTime">End Time</Label>
+                    <Label htmlFor="endTime" className="text-slate-100">End Time</Label>
                     <Input
                       id="endTime"
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="cursor-pointer"
+                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-[2] [&::-webkit-calendar-picker-indicator]:contrast-150"
                       disabled={!endDate}
                     />
                   </div>

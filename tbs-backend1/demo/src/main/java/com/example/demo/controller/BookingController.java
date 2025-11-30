@@ -383,15 +383,31 @@ public class BookingController {
         boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
             .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
 
-        // Allow delivery if: already paid, already delivered, or COD payment method
-        if (!"PAID".equals(booking.getStatus()) && !"DELIVERED".equals(booking.getStatus()) && !isCOD) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Booking must be paid before marking as delivered (unless COD)"));
+        // For COD: Must be approved before delivery
+        // For eSewa: Must be paid (already confirmed) before delivery
+        if (isCOD) {
+            if (!"APPROVED".equals(booking.getAdminStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "COD booking must be approved before marking as delivered"));
+            }
+        } else {
+            // For eSewa (non-COD): Must be paid before delivery
+            if (!"PAID".equals(booking.getStatus()) && !"DELIVERED".equals(booking.getStatus())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Booking must be paid before marking as delivered"));
+            }
         }
 
         booking.setStatus("DELIVERED");
         bookingRepository.save(booking);
 
         Tractor tractor = booking.getTractor();
+        
+        // Store original tractor location before updating to delivery location (if not already stored)
+        if (booking.getOriginalTractorLatitude() == null && tractor.getLatitude() != null) {
+            booking.setOriginalTractorLatitude(tractor.getLatitude());
+            booking.setOriginalTractorLongitude(tractor.getLongitude());
+            booking.setOriginalTractorLocation(tractor.getLocation());
+        }
+        
         tractor.setStatus("In Use");
         tractor.setAvailable(false);
         tractor.setDeliveryStatus("DELIVERED"); // Update delivery status
@@ -410,6 +426,7 @@ public class BookingController {
         tractor.setDestinationLongitude(null);
         tractor.setDestinationAddress(null);
         
+        bookingRepository.save(booking); // Save booking with original location
         tractorRepository.save(tractor);
         
         sendBookingDeliveredEmail(booking);
@@ -461,6 +478,31 @@ public class BookingController {
 
         booking.setStatus("COMPLETED");
         bookingRepository.save(booking);
+
+        // Reset tractor location to original admin location
+        if (booking.getOriginalTractorLatitude() != null && booking.getOriginalTractorLongitude() != null) {
+            tractor.setLatitude(booking.getOriginalTractorLatitude());
+            tractor.setLongitude(booking.getOriginalTractorLongitude());
+            tractor.setLocationUpdatedAt(LocalDateTime.now());
+        }
+        if (booking.getOriginalTractorLocation() != null) {
+            tractor.setLocation(booking.getOriginalTractorLocation());
+        } else {
+            // Fallback to default location if original not stored
+            tractor.setLatitude(27.7172); // Kathmandu default
+            tractor.setLongitude(85.3240);
+            tractor.setLocation("Kathmandu, Nepal");
+        }
+        
+        // Reset tractor status and availability
+        tractor.setStatus("Available");
+        tractor.setAvailable(true);
+        tractor.setDeliveryStatus(null); // Clear delivery status
+        tractor.setDestinationLatitude(null);
+        tractor.setDestinationLongitude(null);
+        tractor.setDestinationAddress(null);
+        
+        tractorRepository.save(tractor);
 
         // Send completion email
         try {
@@ -541,6 +583,14 @@ public class BookingController {
             case "DELIVERED":
                 tractor.setStatus("In Use");
                 tractor.setAvailable(false);
+                
+                // Store original tractor location before updating to delivery location (if not already stored)
+                if (booking.getOriginalTractorLatitude() == null && tractor.getLatitude() != null) {
+                    booking.setOriginalTractorLatitude(tractor.getLatitude());
+                    booking.setOriginalTractorLongitude(tractor.getLongitude());
+                    booking.setOriginalTractorLocation(tractor.getLocation());
+                }
+                
                 // Update tractor current location to delivery location
                 if (booking.getDeliveryLatitude() != null && booking.getDeliveryLongitude() != null) {
                     tractor.setLatitude(booking.getDeliveryLatitude());
@@ -564,8 +614,8 @@ public class BookingController {
                 if (!"DELIVERED".equals(booking.getStatus()) && 
                     (isCOD || "PAID".equals(booking.getStatus()))) {
                     booking.setStatus("DELIVERED");
-                    bookingRepository.save(booking);
                 }
+                bookingRepository.save(booking); // Save booking with original location
                 break;
             case "RETURNED":
                 // Check if booking end time has passed

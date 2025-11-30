@@ -53,10 +53,10 @@ const AdminReports = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p>Loading...</p>
+          <p className="text-slate-100">Loading...</p>
         </div>
       </div>
     );
@@ -68,23 +68,61 @@ const AdminReports = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p>Loading reports...</p>
+          <p className="text-slate-100">Loading reports...</p>
         </div>
       </div>
     );
   }
 
+  // Helper function to check if a booking is paid
+  // A booking is considered paid if:
+  // 1. It has a payment with status 'SUCCESS' in the payments array, OR
+  // 2. The booking status is 'PAID', 'DELIVERED', or 'COMPLETED' (for non-COD payments)
+  const isBookingPaid = (booking: BookingApiModel): boolean => {
+    // Check payments array first (most reliable)
+    if (booking.payments && booking.payments.length > 0) {
+      const hasSuccessfulPayment = booking.payments.some(p => p.status === 'SUCCESS');
+      if (hasSuccessfulPayment) return true;
+    }
+    
+    // For non-COD payments, if status indicates payment was processed, consider it paid
+    if (booking.paymentMethod !== 'CASH_ON_DELIVERY') {
+      if (booking.status === 'PAID' || booking.status === 'DELIVERED' || booking.status === 'COMPLETED') {
+        return true;
+      }
+    }
+    
+    // For COD, only consider paid if there's a SUCCESS payment
+    // (COD can be DELIVERED/COMPLETED before payment)
+    return false;
+  };
+
+  // Helper function to check if a booking is successful/completed
+  // A booking is successful if it's completed (tractor returned) and paid
+  const isBookingSuccessful = (booking: BookingApiModel): boolean => {
+    return (booking.status === 'COMPLETED' || booking.status === 'DELIVERED') && isBookingPaid(booking);
+  };
+
   // Calculate all metrics
   const totalBookings = bookings.length;
-  // Paid bookings include both PAID and DELIVERED status (both are paid)
-  const paidBookings = bookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED');
+  
+  // Paid bookings: any booking that has been paid (regardless of final status)
+  const paidBookings = bookings.filter(isBookingPaid);
+  
+  // Successful bookings: completed/delivered AND paid
+  const successfulBookings = bookings.filter(isBookingSuccessful);
+  
+  // Status-based filtering
   const pendingBookings = bookings.filter(b => b.status === 'PENDING');
   const cancelledBookings = bookings.filter(b => b.status === 'CANCELLED');
   const refundRequested = bookings.filter(b => b.status === 'REFUND_REQUESTED');
+  const completedBookings = bookings.filter(b => b.status === 'COMPLETED');
+  const deliveredBookings = bookings.filter(b => b.status === 'DELIVERED');
   
+  // Total revenue from all paid bookings
   const totalRevenue = paidBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
   const averageBookingValue = paidBookings.length > 0 ? totalRevenue / paidBookings.length : 0;
   
@@ -97,17 +135,17 @@ const AdminReports = () => {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   const recentBookings = bookings.filter(b => new Date(b.startAt) >= thirtyDaysAgo);
   
-  // Revenue trends
+  // Revenue trends - from paid bookings in last 30 days
   const recentRevenue = recentBookings
-    .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
+    .filter(isBookingPaid)
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
   
   // Most popular tractors
   const tractorStats = tractors.map(tractor => {
     const tractorBookings = bookings.filter(b => b.tractor?.id === tractor.id);
-    const paidForThis = tractorBookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length;
+    const paidForThis = tractorBookings.filter(isBookingPaid).length;
     const revenue = tractorBookings
-      .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
+      .filter(isBookingPaid)
       .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
     
     return {
@@ -125,18 +163,20 @@ const AdminReports = () => {
     .sort((a, b) => b.bookingsCount - a.bookingsCount)
     .slice(0, 5);
   
-  // Status distribution percentages
+  // Status distribution percentages - based on actual status
   const statusDistribution = {
     paid: (paidBookings.length / totalBookings) * 100 || 0,
     pending: (pendingBookings.length / totalBookings) * 100 || 0,
     cancelled: (cancelledBookings.length / totalBookings) * 100 || 0,
-    refundRequested: (refundRequested.length / totalBookings) * 100 || 0
+    refundRequested: (refundRequested.length / totalBookings) * 100 || 0,
+    completed: (completedBookings.length / totalBookings) * 100 || 0,
+    delivered: (deliveredBookings.length / totalBookings) * 100 || 0
   };
   
-  // Payment method stats (simplified - assuming most are eSewa or COD)
+  // Payment method stats - based on paid bookings
   const paymentMethods = {
-    eSewa: paidBookings.filter(b => (b.status === 'PAID' || b.status === 'DELIVERED') && b.paymentMethod !== 'CASH_ON_DELIVERY').length,
-    cod: paidBookings.filter(b => (b.status === 'PAID' || b.status === 'DELIVERED') && b.paymentMethod === 'CASH_ON_DELIVERY').length
+    eSewa: paidBookings.filter(b => b.paymentMethod !== 'CASH_ON_DELIVERY').length,
+    cod: paidBookings.filter(b => b.paymentMethod === 'CASH_ON_DELIVERY').length
   };
 
   const generatePDF = () => {
@@ -155,11 +195,11 @@ const AdminReports = () => {
       return false;
     };
 
-    // Header with Tractor Sewa branding
-    doc.setFillColor(16, 185, 129); // Primary green color
+    // Header with Tractor Sewa branding - Amber/Orange theme
+    doc.setFillColor(245, 158, 11); // amber-500
     doc.rect(0, 0, pageWidth, 40, 'F');
     
-    // White text on green background
+    // White text on amber background
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
@@ -204,7 +244,8 @@ const AdminReports = () => {
       ['Average Booking Value', `Rs. ${Math.round(averageBookingValue).toLocaleString()}`],
       ['Total Bookings', totalBookings.toString()],
       ['Paid Bookings', paidBookings.length.toString()],
-      ['Success Rate', `${totalBookings > 0 ? Math.round((paidBookings.length / totalBookings) * 100) : 0}%`],
+      ['Successful Bookings', successfulBookings.length.toString()],
+      ['Success Rate', `${totalBookings > 0 ? Math.round((successfulBookings.length / totalBookings) * 100) : 0}%`],
       ['Total Customers', activeUsers.toString()],
       ['Total Tractors', totalTractors.toString()],
       ['Available Tractors', availableTractors.toString()],
@@ -216,7 +257,7 @@ const AdminReports = () => {
       body: metricsData,
       theme: 'striped',
       headStyles: { 
-        fillColor: [16, 185, 129],
+        fillColor: [245, 158, 11], // amber-500
         textColor: [255, 255, 255],
         fontStyle: 'bold'
       },
@@ -234,6 +275,8 @@ const AdminReports = () => {
     yPosition += 8;
 
     const statusData = [
+      ['Completed', completedBookings.length.toString(), `${statusDistribution.completed.toFixed(1)}%`],
+      ['Delivered', deliveredBookings.length.toString(), `${statusDistribution.delivered.toFixed(1)}%`],
       ['Paid', paidBookings.length.toString(), `${statusDistribution.paid.toFixed(1)}%`],
       ['Pending', pendingBookings.length.toString(), `${statusDistribution.pending.toFixed(1)}%`],
       ['Cancelled', cancelledBookings.length.toString(), `${statusDistribution.cancelled.toFixed(1)}%`],
@@ -246,7 +289,7 @@ const AdminReports = () => {
       body: statusData,
       theme: 'striped',
       headStyles: { 
-        fillColor: [16, 185, 129],
+        fillColor: [245, 158, 11], // amber-500
         textColor: [255, 255, 255],
         fontStyle: 'bold'
       },
@@ -265,7 +308,7 @@ const AdminReports = () => {
 
     const revenueData = [
       ['Period', 'Revenue', 'Bookings'],
-      ['Last 30 Days', `Rs. ${recentRevenue.toLocaleString()}`, recentBookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length.toString()],
+      ['Last 30 Days', `Rs. ${recentRevenue.toLocaleString()}`, recentBookings.filter(isBookingPaid).length.toString()],
       ['All Time', `Rs. ${totalRevenue.toLocaleString()}`, paidBookings.length.toString()],
     ];
 
@@ -275,7 +318,7 @@ const AdminReports = () => {
       body: revenueData.slice(1),
       theme: 'striped',
       headStyles: { 
-        fillColor: [16, 185, 129],
+        fillColor: [245, 158, 11], // amber-500
         textColor: [255, 255, 255],
         fontStyle: 'bold'
       },
@@ -295,6 +338,7 @@ const AdminReports = () => {
     const paymentData = [
       ['eSewa', paymentMethods.eSewa.toString()],
       ['Cash on Delivery (COD)', paymentMethods.cod.toString()],
+      ['Total Paid', paidBookings.length.toString()],
     ];
 
     autoTable(doc, {
@@ -303,7 +347,7 @@ const AdminReports = () => {
       body: paymentData,
       theme: 'striped',
       headStyles: { 
-        fillColor: [16, 185, 129],
+        fillColor: [245, 158, 11], // amber-500
         textColor: [255, 255, 255],
         fontStyle: 'bold'
       },
@@ -335,7 +379,7 @@ const AdminReports = () => {
         body: tractorData,
         theme: 'striped',
         headStyles: { 
-          fillColor: [16, 185, 129],
+          fillColor: [245, 158, 11], // amber-500
           textColor: [255, 255, 255],
           fontStyle: 'bold'
         },
@@ -371,15 +415,15 @@ const AdminReports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2 text-secondary">Reports & Insights</h1>
-            <p className="text-muted-foreground">Comprehensive analytics and business insights</p>
+            <h1 className="text-3xl font-bold mb-2 text-slate-100">Reports & Insights</h1>
+            <p className="text-slate-400">Comprehensive analytics and business insights</p>
           </div>
           <Button
             onClick={generatePDF}
@@ -392,33 +436,33 @@ const AdminReports = () => {
 
         {/* Key Metrics Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold text-secondary">रू {totalRevenue.toLocaleString()}</p>
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Revenue</p>
+                  <p className="text-3xl font-bold text-slate-100">रू {totalRevenue.toLocaleString()}</p>
                   <div className="flex items-center mt-2 text-sm">
-                    <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                    <span className="text-green-600 font-medium">All time</span>
+                    <TrendingUp className="h-4 w-4 text-amber-500 mr-1" />
+                    <span className="text-amber-500 font-medium">All time</span>
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                  <DollarSign className="h-7 w-7 text-green-600" />
+                <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <DollarSign className="h-7 w-7 text-amber-500" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Avg Booking Value</p>
-                  <p className="text-3xl font-bold text-secondary">रू {Math.round(averageBookingValue).toLocaleString()}</p>
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Avg Booking Value</p>
+                  <p className="text-3xl font-bold text-slate-100">रू {Math.round(averageBookingValue).toLocaleString()}</p>
                   <div className="flex items-center mt-2 text-sm">
-                    <BarChart3 className="h-4 w-4 text-amber-600 mr-1" />
-                    <span className="text-amber-700 font-medium">Per transaction</span>
+                    <BarChart3 className="h-4 w-4 text-amber-500 mr-1" />
+                    <span className="text-amber-500 font-medium">Per transaction</span>
                   </div>
                 </div>
                 <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
@@ -428,39 +472,39 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Success Rate</p>
-                  <p className="text-3xl font-bold text-secondary">
-                    {totalBookings > 0 ? Math.round((paidBookings.length / totalBookings) * 100) : 0}%
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Success Rate</p>
+                  <p className="text-3xl font-bold text-slate-100">
+                    {totalBookings > 0 ? Math.round((successfulBookings.length / totalBookings) * 100) : 0}%
                   </p>
                   <div className="flex items-center mt-2 text-sm">
-                    <CheckCircle className="h-4 w-4 text-green-600 mr-1" />
-                    <span className="text-green-600 font-medium">Completed</span>
+                    <CheckCircle className="h-4 w-4 text-amber-500 mr-1" />
+                    <span className="text-amber-500 font-medium">Completed & Paid</span>
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center">
-                  <PieChart className="h-7 w-7 text-green-600" />
+                <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <PieChart className="h-7 w-7 text-amber-500" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Customers</p>
-                  <p className="text-3xl font-bold text-secondary">{activeUsers}</p>
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Customers</p>
+                  <p className="text-3xl font-bold text-slate-100">{activeUsers}</p>
                   <div className="flex items-center mt-2 text-sm">
-                    <Users className="h-4 w-4 text-purple-600 mr-1" />
-                    <span className="text-purple-600 font-medium">Active users</span>
+                    <Users className="h-4 w-4 text-amber-500 mr-1" />
+                    <span className="text-amber-500 font-medium">Active users</span>
                   </div>
                 </div>
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center">
-                  <Users className="h-7 w-7 text-purple-600" />
+                <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <Users className="h-7 w-7 text-amber-500" />
                 </div>
               </div>
             </CardContent>
@@ -470,9 +514,9 @@ const AdminReports = () => {
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           {/* Booking Status Distribution */}
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-secondary flex items-center">
+              <CardTitle className="text-slate-100 flex items-center">
                 <PieChart className="mr-2 h-5 w-5" />
                 Booking Status Distribution
               </CardTitle>
@@ -482,16 +526,34 @@ const AdminReports = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
-                      <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
-                      <span className="text-sm font-medium text-secondary">Paid</span>
+                      <CheckCircle className="h-4 w-4 text-amber-500 mr-2" />
+                      <span className="text-sm font-medium text-slate-100">Completed</span>
                     </div>
-                    <span className="text-sm font-semibold text-secondary">
+                    <span className="text-sm font-semibold text-slate-100">
+                      {completedBookings.length} ({statusDistribution.completed.toFixed(1)}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div 
+                      className="bg-amber-500 h-2 rounded-full transition-all" 
+                      style={{ width: `${statusDistribution.completed}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-4 w-4 text-orange-500 mr-2" />
+                      <span className="text-sm font-medium text-slate-100">Paid</span>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-100">
                       {paidBookings.length} ({statusDistribution.paid.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
-                      className="bg-green-600 h-2 rounded-full transition-all" 
+                      className="bg-orange-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.paid}%` }}
                     />
                   </div>
@@ -500,16 +562,16 @@ const AdminReports = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
-                      <Clock className="h-4 w-4 text-yellow-600 mr-2" />
-                      <span className="text-sm font-medium text-secondary">Pending</span>
+                      <Clock className="h-4 w-4 text-yellow-500 mr-2" />
+                      <span className="text-sm font-medium text-slate-100">Pending</span>
                     </div>
-                    <span className="text-sm font-semibold text-secondary">
+                    <span className="text-sm font-semibold text-slate-100">
                       {pendingBookings.length} ({statusDistribution.pending.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
-                      className="bg-yellow-600 h-2 rounded-full transition-all" 
+                      className="bg-yellow-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.pending}%` }}
                     />
                   </div>
@@ -518,16 +580,16 @@ const AdminReports = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
-                      <AlertCircle className="h-4 w-4 text-orange-600 mr-2" />
-                      <span className="text-sm font-medium text-secondary">Refund Requested</span>
+                      <AlertCircle className="h-4 w-4 text-orange-500 mr-2" />
+                      <span className="text-sm font-medium text-slate-100">Refund Requested</span>
                     </div>
-                    <span className="text-sm font-semibold text-secondary">
+                    <span className="text-sm font-semibold text-slate-100">
                       {refundRequested.length} ({statusDistribution.refundRequested.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
-                      className="bg-orange-600 h-2 rounded-full transition-all" 
+                      className="bg-orange-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.refundRequested}%` }}
                     />
                   </div>
@@ -536,16 +598,16 @@ const AdminReports = () => {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
-                      <XCircle className="h-4 w-4 text-red-600 mr-2" />
-                      <span className="text-sm font-medium text-secondary">Cancelled</span>
+                      <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                      <span className="text-sm font-medium text-slate-100">Cancelled</span>
                     </div>
-                    <span className="text-sm font-semibold text-secondary">
+                    <span className="text-sm font-semibold text-slate-100">
                       {cancelledBookings.length} ({statusDistribution.cancelled.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-muted rounded-full h-2">
+                  <div className="w-full bg-slate-700 rounded-full h-2">
                     <div 
-                      className="bg-red-600 h-2 rounded-full transition-all" 
+                      className="bg-red-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.cancelled}%` }}
                     />
                   </div>
@@ -555,56 +617,56 @@ const AdminReports = () => {
           </Card>
 
           {/* Resource Utilization */}
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-secondary flex items-center">
+              <CardTitle className="text-slate-100 flex items-center">
                 <Tractor className="mr-2 h-5 w-5" />
                 Fleet Overview
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
                   <div className="flex items-center">
-                    <Tractor className="h-5 w-5 text-amber-600 mr-3" />
+                    <Tractor className="h-5 w-5 text-amber-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-secondary">Total Tractors</p>
-                      <p className="text-xs text-muted-foreground">In fleet</p>
+                      <p className="text-sm font-medium text-slate-100">Total Tractors</p>
+                      <p className="text-xs text-slate-400">In fleet</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-secondary">{totalTractors}</span>
+                  <span className="text-2xl font-bold text-slate-100">{totalTractors}</span>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
                   <div className="flex items-center">
-                    <CheckCircle className="h-5 w-5 text-green-600 mr-3" />
+                    <CheckCircle className="h-5 w-5 text-amber-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-secondary">Available</p>
-                      <p className="text-xs text-muted-foreground">Ready to rent</p>
+                      <p className="text-sm font-medium text-slate-100">Available</p>
+                      <p className="text-xs text-slate-400">Ready to rent</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-green-600">{availableTractors}</span>
+                  <span className="text-2xl font-bold text-amber-500">{availableTractors}</span>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
                   <div className="flex items-center">
-                    <Activity className="h-5 w-5 text-orange-600 mr-3" />
+                    <Activity className="h-5 w-5 text-orange-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-secondary">Utilization Rate</p>
-                      <p className="text-xs text-muted-foreground">Based on bookings</p>
+                      <p className="text-sm font-medium text-slate-100">Utilization Rate</p>
+                      <p className="text-xs text-slate-400">Based on bookings</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-secondary">
+                  <span className="text-2xl font-bold text-slate-100">
                     {totalTractors > 0 ? Math.round((bookings.length / totalTractors / totalBookings) * 100 || 0) : 0}%
                   </span>
                 </div>
 
-                <div className="mt-4 p-4 bg-gradient-to-br from-amber-50 to-orange-50/30 rounded-lg border-2 border-amber-200">
-                  <p className="text-sm font-semibold text-amber-700 mb-1">Recent Activity</p>
-                  <p className="text-xs text-muted-foreground">
+                <div className="mt-4 p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-lg border-2 border-amber-500/20">
+                  <p className="text-sm font-semibold text-amber-400 mb-1">Recent Activity</p>
+                  <p className="text-xs text-slate-300">
                     {recentBookings.length} bookings in the last 30 days
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-300">
                     रू {recentRevenue.toLocaleString()} revenue generated
                   </p>
                 </div>
@@ -614,41 +676,41 @@ const AdminReports = () => {
         </div>
 
         {/* Popular Tractors */}
-        <Card className="border border-border shadow-sm mb-8">
+        <Card className="border border-slate-700 bg-slate-800 shadow-sm mb-8">
           <CardHeader>
-            <CardTitle className="text-secondary flex items-center">
+            <CardTitle className="text-slate-100 flex items-center">
               <TrendingUp className="mr-2 h-5 w-5" />
               Most Popular Tractors
             </CardTitle>
           </CardHeader>
           <CardContent>
             {popularTractors.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No tractor statistics available yet</p>
+              <p className="text-sm text-slate-400">No tractor statistics available yet</p>
             ) : (
               <div className="space-y-4">
                 {popularTractors.map((tractor, index) => (
-                  <div key={tractor.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div key={tractor.id} className="flex items-center justify-between p-4 border border-slate-700 rounded-lg hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
                         <span className="text-lg font-bold text-white">#{index + 1}</span>
                       </div>
                       <div>
-                        <p className="font-semibold text-secondary">{tractor.name}</p>
-                        <p className="text-sm text-muted-foreground">{tractor.model}</p>
+                        <p className="font-semibold text-slate-100">{tractor.name}</p>
+                        <p className="text-sm text-slate-400">{tractor.model}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6 text-sm">
                       <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Bookings</p>
-                        <p className="font-semibold text-secondary">{tractor.bookingsCount}</p>
+                        <p className="text-xs text-slate-400">Bookings</p>
+                        <p className="font-semibold text-slate-100">{tractor.bookingsCount}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Revenue</p>
-                        <p className="font-semibold text-green-600">रू {tractor.revenue.toLocaleString()}</p>
+                        <p className="text-xs text-slate-400">Revenue</p>
+                        <p className="font-semibold text-amber-500">रू {tractor.revenue.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-muted-foreground">Utilization</p>
-                        <p className="font-semibold text-amber-700">{tractor.utilizationRate.toFixed(1)}%</p>
+                        <p className="text-xs text-slate-400">Utilization</p>
+                        <p className="font-semibold text-amber-500">{tractor.utilizationRate.toFixed(1)}%</p>
                       </div>
                     </div>
                   </div>
@@ -660,81 +722,85 @@ const AdminReports = () => {
 
         {/* Summary Cards */}
         <div className="grid md:grid-cols-3 gap-6">
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-secondary">Quick Stats</CardTitle>
+              <CardTitle className="text-base text-slate-100">Quick Stats</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Bookings</span>
-                  <span className="font-semibold text-secondary">{totalBookings}</span>
+                  <span className="text-slate-400">Total Bookings</span>
+                  <span className="font-semibold text-slate-100">{totalBookings}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Successful</span>
-                  <span className="font-semibold text-green-600">{paidBookings.length}</span>
+                  <span className="text-slate-400">Successful</span>
+                  <span className="font-semibold text-amber-500">{successfulBookings.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Cancelled</span>
-                  <span className="font-semibold text-red-600">{cancelledBookings.length}</span>
+                  <span className="text-slate-400">Paid</span>
+                  <span className="font-semibold text-orange-500">{paidBookings.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Refund Pending</span>
-                  <span className="font-semibold text-orange-600">{refundRequested.length}</span>
+                  <span className="text-slate-400">Cancelled</span>
+                  <span className="font-semibold text-red-500">{cancelledBookings.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">Refund Pending</span>
+                  <span className="font-semibold text-orange-500">{refundRequested.length}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-secondary">Revenue Insights</CardTitle>
+              <CardTitle className="text-base text-slate-100">Revenue Insights</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Revenue</span>
-                  <span className="font-semibold text-green-600">रू {totalRevenue.toLocaleString()}</span>
+                  <span className="text-slate-400">Total Revenue</span>
+                  <span className="font-semibold text-amber-500">रू {totalRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Avg per Booking</span>
-                  <span className="font-semibold text-secondary">रू {Math.round(averageBookingValue).toLocaleString()}</span>
+                  <span className="text-slate-400">Avg per Booking</span>
+                  <span className="font-semibold text-slate-100">रू {Math.round(averageBookingValue).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Last 30 Days</span>
-                  <span className="font-semibold text-amber-700">रू {recentRevenue.toLocaleString()}</span>
+                  <span className="text-slate-400">Last 30 Days</span>
+                  <span className="font-semibold text-amber-500">रू {recentRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Success Rate</span>
-                  <span className="font-semibold text-amber-700">
-                    {totalBookings > 0 ? Math.round((paidBookings.length / totalBookings) * 100) : 0}%
+                  <span className="text-slate-400">Success Rate</span>
+                  <span className="font-semibold text-amber-500">
+                    {totalBookings > 0 ? Math.round((successfulBookings.length / totalBookings) * 100) : 0}%
                   </span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-border shadow-sm">
+          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-secondary">Business Health</CardTitle>
+              <CardTitle className="text-base text-slate-100">Business Health</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total Customers</span>
-                  <span className="font-semibold text-secondary">{activeUsers}</span>
+                  <span className="text-slate-400">Total Customers</span>
+                  <span className="font-semibold text-slate-100">{activeUsers}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Active Fleet</span>
-                  <span className="font-semibold text-amber-700">{availableTractors}/{totalTractors}</span>
+                  <span className="text-slate-400">Active Fleet</span>
+                  <span className="font-semibold text-amber-500">{availableTractors}/{totalTractors}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Fleet Size</span>
-                  <span className="font-semibold text-secondary">{totalTractors}</span>
+                  <span className="text-slate-400">Fleet Size</span>
+                  <span className="font-semibold text-slate-100">{totalTractors}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Growth Potential</span>
-                  <span className="font-semibold text-green-600">
+                  <span className="text-slate-400">Growth Potential</span>
+                  <span className="font-semibold text-amber-500">
                     {totalTractors > 0 ? Math.round((availableTractors / totalTractors) * 100) : 0}%
                   </span>
                 </div>

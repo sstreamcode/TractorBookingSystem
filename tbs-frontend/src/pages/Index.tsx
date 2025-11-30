@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from '@/components/ui/carousel';
 import { ArrowRight, MapPin, Shield, Tractor as TractorIcon, Clock, Navigation, Search, Calendar, CreditCard, CheckCircle2, Star } from 'lucide-react';
 import { getTractorsForUI } from '@/lib/api';
 import type { Tractor } from '@/types';
@@ -12,11 +13,32 @@ const Index = () => {
     const { t } = useLanguage();
     const [tractors, setTractors] = useState<Tractor[]>([]);
     const [loading, setLoading] = useState(true);
+    const [api2, setApi2] = useState<CarouselApi>();
+    
+    // Carousel images from public folder
+    const carouselImages = [
+        '/images/tractor1.png',
+        '/images/tractor2.png',
+        '/images/a.webp',
+        '/images/b.jpg',
+    ];
 
     useEffect(() => {
         window.scrollTo(0, 0);
         fetchTractors();
     }, []);
+
+    // Auto-slide for main carousel
+
+    useEffect(() => {
+        if (!api2) return;
+
+        const interval = setInterval(() => {
+            api2.scrollNext();
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [api2]);
 
     const fetchTractors = async () => {
         try {
@@ -33,29 +55,72 @@ const Index = () => {
         <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
             <Navbar />
 
-            {/* Hero Section - Dark Theme */}
-            <section className="relative pt-20 md:pt-32 pb-12 md:pb-20 overflow-hidden bg-slate-900">
+            {/* Hero Section - Full Height - Dark Theme */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-900">
+                {/* Content */}
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-100 leading-tight">
-                            {t('landing.hero.mainTitle')}
-                        </h1>
-                        <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                            {t('landing.hero.mainSubtitle')}
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                    <div className="max-w-5xl mx-auto text-center space-y-8 md:space-y-12">
+                        <div className="space-y-6 md:space-y-8">
+                            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-slate-100 leading-tight animate-fade-in">
+                                {t('landing.hero.mainTitle')}
+                            </h1>
+                            <p className="text-xl sm:text-2xl md:text-3xl text-slate-300 max-w-4xl mx-auto leading-relaxed">
+                                {t('landing.hero.mainSubtitle')}
+                            </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
                             <Link to="/tractors" className="w-full sm:w-auto">
-                                <Button size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg hover:shadow-xl transition-all duration-300">
+                                <Button size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105">
                                     {t('landing.hero.browseButton')}
-                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                    <ArrowRight className="ml-2 h-6 w-6" />
                                 </Button>
                             </Link>
                             <Link to="#how" className="w-full sm:w-auto">
-                                <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-slate-600 bg-slate-800/50 text-slate-100 hover:bg-slate-800 hover:text-white font-semibold">
+                                <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl border-2 border-slate-600 bg-slate-800/50 backdrop-blur-sm text-slate-100 hover:bg-slate-700 hover:text-white hover:border-amber-500/50 font-semibold transition-all duration-300">
                                     {t('landing.hero.howItWorksButton')}
                                 </Button>
                             </Link>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Image Carousel Section */}
+            <section className="py-16 md:py-24 bg-slate-900 border-y border-slate-800">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-7xl mx-auto">
+                        <Carousel
+                            className="w-full"
+                            setApi={setApi2}
+                            opts={{
+                                align: "start",
+                                loop: true,
+                            }}
+                        >
+                            <CarouselContent className="-ml-2 md:-ml-4">
+                                {carouselImages.map((image, index) => (
+                                    <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
+                                        <div className="p-3">
+                                            <div className="relative group overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-800 hover:border-amber-500/70 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-2">
+                                                <div className="aspect-[4/3] relative overflow-hidden bg-slate-700">
+                                                    <img
+                                                        src={image}
+                                                        alt={`Tractor showcase ${index + 1}`}
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1592982537447-6f2a6a0c7c18?q=80&w=1000&auto=format&fit=crop";
+                                                        }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CarouselItem>
+                                ))}
+                            </CarouselContent>
+                            <CarouselPrevious className="left-4 h-12 w-12 bg-slate-800/90 backdrop-blur-sm border-2 border-slate-700 text-slate-100 hover:bg-slate-700 hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
+                            <CarouselNext className="right-4 h-12 w-12 bg-slate-800/90 backdrop-blur-sm border-2 border-slate-700 text-slate-100 hover:bg-slate-700 hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
+                        </Carousel>
                     </div>
                 </div>
             </section>

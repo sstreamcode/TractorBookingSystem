@@ -64,9 +64,24 @@ const AdminDashboard = () => {
   }
 
   // Calculate stats from real data
-  // Revenue includes both PAID and DELIVERED status bookings (both are paid)
+  // Use the same logic as AdminReports to determine if a booking is paid
+  const isBookingPaid = (booking: BookingApiModel): boolean => {
+    // Check if booking has any successful payment
+    if (booking.payments && booking.payments.length > 0) {
+      return booking.payments.some(p => p.status === 'SUCCESS');
+    }
+    // For non-COD bookings, if status is PAID/DELIVERED/COMPLETED, consider it paid
+    const paymentMethod = booking.paymentMethod || 
+      (booking.payments && booking.payments.length > 0 ? booking.payments[0].method : undefined);
+    if (paymentMethod !== 'CASH_ON_DELIVERY') {
+      return booking.status === 'PAID' || booking.status === 'DELIVERED' || booking.status === 'COMPLETED';
+    }
+    return false;
+  };
+
+  // Total revenue from all paid bookings
   const totalRevenue = bookings
-    .filter(b => b.status === 'PAID' || b.status === 'DELIVERED')
+    .filter(isBookingPaid)
     .reduce((sum, b) => sum + (b.totalAmount || 0), 0);
 
   // Sort bookings by date (most recent first) and take the 5 most recent
@@ -110,7 +125,7 @@ const AdminDashboard = () => {
                   <p className="text-sm text-slate-400 mb-1 font-medium">{t('admin.dashboard.stats.bookings')}</p>
                   <p className="text-4xl font-bold mb-1 text-slate-100">{bookings.length}</p>
                   <p className="text-xs text-emerald-400 mt-1 font-semibold">
-                    {bookings.filter(b => b.status === 'PAID' || b.status === 'DELIVERED').length} {t('admin.dashboard.stats.paid')}
+                    {bookings.filter(isBookingPaid).length} {t('admin.dashboard.stats.paid')}
                   </p>
                 </div>
                 <div className="w-14 h-14 bg-emerald-500 rounded-xl flex items-center justify-center shadow-md">

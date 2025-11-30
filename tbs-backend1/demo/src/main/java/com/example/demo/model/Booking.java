@@ -39,6 +39,11 @@ public class Booking {
     private Double deliveryLatitude;
     private Double deliveryLongitude;
     private String deliveryAddress;
+    
+    // Store original tractor location before delivery (to restore on completion)
+    private Double originalTractorLatitude;
+    private Double originalTractorLongitude;
+    private String originalTractorLocation;
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonIgnore
@@ -103,6 +108,12 @@ public class Booking {
     public void setDeliveryLongitude(Double deliveryLongitude) { this.deliveryLongitude = deliveryLongitude; }
     public String getDeliveryAddress() { return deliveryAddress; }
     public void setDeliveryAddress(String deliveryAddress) { this.deliveryAddress = deliveryAddress; }
+    public Double getOriginalTractorLatitude() { return originalTractorLatitude; }
+    public void setOriginalTractorLatitude(Double originalTractorLatitude) { this.originalTractorLatitude = originalTractorLatitude; }
+    public Double getOriginalTractorLongitude() { return originalTractorLongitude; }
+    public void setOriginalTractorLongitude(Double originalTractorLongitude) { this.originalTractorLongitude = originalTractorLongitude; }
+    public String getOriginalTractorLocation() { return originalTractorLocation; }
+    public void setOriginalTractorLocation(String originalTractorLocation) { this.originalTractorLocation = originalTractorLocation; }
     public List<Payment> getPayments() { return payments; }
     public void setPayments(List<Payment> payments) { this.payments = payments; }
 }

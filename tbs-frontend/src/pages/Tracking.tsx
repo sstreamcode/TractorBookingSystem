@@ -130,7 +130,7 @@ const Tracking = () => {
               </Select>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-400">
               You don’t have any bookings ready for tracking yet. Once a tractor is approved, its route will appear here.
             </p>
           )}
@@ -158,50 +158,50 @@ const Tracking = () => {
                   : undefined
               }
               route={trackingData.route}
-              className="h-[60vh] w-full rounded-xl border bg-muted relative z-10"
+              className="h-[60vh] w-full rounded-xl border border-slate-700 bg-slate-800 relative z-10"
             />
 
             {trackingLoading && (
-              <p className="text-xs text-muted-foreground">Refreshing tracking data...</p>
+              <p className="text-xs text-slate-400">Refreshing tracking data...</p>
             )}
 
-            {trackingError && <p className="text-sm text-red-600">{trackingError}</p>}
+            {trackingError && <p className="text-sm text-red-400">{trackingError}</p>}
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-border p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">ETA</p>
-                <p className="text-3xl font-semibold text-secondary mt-2">
+              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">ETA</p>
+                <p className="text-3xl font-semibold text-slate-100 mt-2">
                   {trackingData.etaMinutes ? `${trackingData.etaMinutes} min` : '—'}
                 </p>
               </div>
-              <div className="rounded-xl border border-border p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Distance</p>
-                <p className="text-3xl font-semibold text-secondary mt-2">
+              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Distance</p>
+                <p className="text-3xl font-semibold text-slate-100 mt-2">
                   {trackingData.distanceKm ? `${trackingData.distanceKm.toFixed(1)} km` : '—'}
                 </p>
               </div>
-              <div className="rounded-xl border border-border p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
-                <p className="text-lg font-semibold text-secondary mt-2">
+              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Status</p>
+                <p className="text-lg font-semibold text-amber-500 mt-2">
                   {trackingData.bookingStatus ? trackingData.bookingStatus.toUpperCase() : trackingData.status || '—'}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-border p-4 space-y-2 text-sm">
+            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 space-y-2 text-sm">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Current location</p>
-                <p className="text-secondary font-medium">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current location</p>
+                <p className="text-slate-100 font-medium">
                   {trackingData.currentLocation?.address || 'Awaiting live update'}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Destination</p>
-                <p className="text-secondary font-medium">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Destination</p>
+                <p className="text-slate-100 font-medium">
                   {trackingData.destination?.address || trackingData.deliveryAddress || 'Not assigned'}
                 </p>
                 {trackingData.deliveryWindow && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-slate-400 mt-1">
                     Window:{' '}
                     {new Date(trackingData.deliveryWindow.startAt).toLocaleString()} -{' '}
                     {new Date(trackingData.deliveryWindow.endAt).toLocaleString()}
@@ -211,7 +211,7 @@ const Tracking = () => {
             </div>
           </div>
         ) : trackableBookings.length > 0 ? (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-800 p-8 text-center text-sm text-slate-400">
             {trackingLoading ? 'Loading tracking data...' : 'Select a booking to view its route.'}
           </div>
         ) : null}
