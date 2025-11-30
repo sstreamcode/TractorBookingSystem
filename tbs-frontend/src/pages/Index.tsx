@@ -38,21 +38,21 @@ const Index = () => {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="max-w-4xl mx-auto text-center space-y-6 md:space-y-8">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-slate-100 leading-tight">
-                            Tractor Booking System
+                            {t('landing.hero.mainTitle')}
                         </h1>
                         <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                            Rent, track, and manage tractors across Nepal with real-time visibility, secure payments, and powerful admin tools.
+                            {t('landing.hero.mainSubtitle')}
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                             <Link to="/tractors" className="w-full sm:w-auto">
                                 <Button size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-lg hover:shadow-xl transition-all duration-300">
-                                    Browse Tractors
+                                    {t('landing.hero.browseButton')}
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
                             </Link>
                             <Link to="#how" className="w-full sm:w-auto">
                                 <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-slate-600 bg-slate-800/50 text-slate-100 hover:bg-slate-800 hover:text-white font-semibold">
-                                    How it works
+                                    {t('landing.hero.howItWorksButton')}
                                 </Button>
                             </Link>
                         </div>
@@ -66,19 +66,19 @@ const Index = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-6xl mx-auto">
                         <div className="text-center">
                             <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">1,200+</div>
-                            <div className="text-sm md:text-base text-slate-400">Active Tractors</div>
+                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.activeTractors')}</div>
                         </div>
                         <div className="text-center">
                             <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">25k+</div>
-                            <div className="text-sm md:text-base text-slate-400">Bookings Completed</div>
+                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.bookingsCompleted')}</div>
                         </div>
                         <div className="text-center">
                             <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">70+</div>
-                            <div className="text-sm md:text-base text-slate-400">Districts Covered</div>
+                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.districtsCovered')}</div>
                         </div>
                         <div className="text-center">
                             <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">4.8/5</div>
-                            <div className="text-sm md:text-base text-slate-400">Avg. Rating</div>
+                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.avgRating')}</div>
                         </div>
                     </div>
                 </div>
@@ -89,12 +89,12 @@ const Index = () => {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 md:mb-12 gap-4">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">Featured Tractors</h2>
-                            <p className="text-slate-400 text-base md:text-lg">High-demand models ready to book near you.</p>
+                            <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">{t('landing.featured.title')}</h2>
+                            <p className="text-slate-400 text-base md:text-lg">{t('landing.featured.subtitle')}</p>
                         </div>
                         <Link to="/tractors">
                             <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800">
-                                See all
+                                {t('landing.featured.seeAll')}
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
@@ -152,7 +152,7 @@ const Index = () => {
                                                         </div>
                                                     )}
                                                     <div className="text-sm text-slate-300 group-hover:text-slate-200 transition-colors flex items-center gap-1">
-                                                        View details
+                                                        {t('landing.featured.viewDetails')}
                                                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                                     </div>
                                                 </div>
@@ -163,8 +163,8 @@ const Index = () => {
                             ) : (
                                 <div className="col-span-full text-center py-16">
                                     <TractorIcon className="h-16 w-16 mx-auto text-slate-600 mb-4" />
-                                    <p className="text-slate-400 text-lg">No tractors available at the moment.</p>
-                                    <p className="text-slate-500 text-sm mt-2">Check back soon for new listings!</p>
+                                    <p className="text-slate-400 text-lg">{t('landing.featured.noTractors')}</p>
+                                    <p className="text-slate-500 text-sm mt-2">{t('landing.featured.checkBack')}</p>
                                 </div>
                             )}
                         </div>
@@ -176,40 +176,40 @@ const Index = () => {
             <section id="how" className="py-16 md:py-24 bg-slate-800/50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">How it works</h2>
-                        <p className="text-slate-400 text-base md:text-lg">From search to payment in a few simple steps.</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">{t('landing.howItWorks.title')}</h2>
+                        <p className="text-slate-400 text-base md:text-lg">{t('landing.howItWorks.subtitle')}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 max-w-7xl mx-auto">
                         {[
                             {
                                 step: "1",
-                                title: "Browse & Filter",
-                                desc: "Search by location, price, horsepower, and availability.",
+                                title: t('landing.howItWorks.step1.title'),
+                                desc: t('landing.howItWorks.step1.desc'),
                                 icon: Search,
                             },
                             {
                                 step: "2",
-                                title: "Pick a Slot",
-                                desc: "Choose date and time that fits your schedule.",
+                                title: t('landing.howItWorks.step2.title'),
+                                desc: t('landing.howItWorks.step2.desc'),
                                 icon: Calendar,
                             },
                             {
                                 step: "3",
-                                title: "Live Tracking",
-                                desc: "Follow your tractor in real-time on the map.",
+                                title: t('landing.howItWorks.step3.title'),
+                                desc: t('landing.howItWorks.step3.desc'),
                                 icon: Navigation,
                             },
                             {
                                 step: "4",
-                                title: "Get to Work",
-                                desc: "Operator arrives and job starts on time.",
+                                title: t('landing.howItWorks.step4.title'),
+                                desc: t('landing.howItWorks.step4.desc'),
                                 icon: TractorIcon,
                             },
                             {
                                 step: "5",
-                                title: "Easy Payment",
-                                desc: "Pay securely via eSewa or cash on delivery.",
+                                title: t('landing.howItWorks.step5.title'),
+                                desc: t('landing.howItWorks.step5.desc'),
                                 icon: CreditCard,
                             },
                         ].map((item, index) => (
@@ -236,30 +236,30 @@ const Index = () => {
             <section className="py-16 md:py-24 bg-slate-900">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">Why choose TBS?</h2>
-                        <p className="text-slate-400 text-base md:text-lg">Built for Nepal's terrain and agriculture needs.</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">{t('landing.whyChoose.title')}</h2>
+                        <p className="text-slate-400 text-base md:text-lg">{t('landing.whyChoose.subtitle')}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
                         {[
                             {
-                                title: "Real-time Tracking",
-                                desc: "Live GPS tracking and route visualization for every booking.",
+                                title: t('landing.whyChoose.feature1.title'),
+                                desc: t('landing.whyChoose.feature1.desc'),
                                 icon: Navigation,
                             },
                             {
-                                title: "Flexible Payments",
-                                desc: "Pay via eSewa or cash on delivery with instant verification.",
+                                title: t('landing.whyChoose.feature2.title'),
+                                desc: t('landing.whyChoose.feature2.desc'),
                                 icon: CreditCard,
                             },
                             {
-                                title: "Secure & Transparent",
-                                desc: "Verified owners, clear pricing, and protected transactions.",
+                                title: t('landing.whyChoose.feature3.title'),
+                                desc: t('landing.whyChoose.feature3.desc'),
                                 icon: Shield,
                             },
                             {
-                                title: "Optimized Operations",
-                                desc: "Smart logistics and utilization insights for admins.",
+                                title: t('landing.whyChoose.feature4.title'),
+                                desc: t('landing.whyChoose.feature4.desc'),
                                 icon: TractorIcon,
                             },
                         ].map((feature, index) => (
@@ -280,20 +280,20 @@ const Index = () => {
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-4xl mx-auto bg-slate-800 rounded-2xl p-8 md:p-12 border border-slate-700">
                         <div className="text-center space-y-6">
-                            <h3 className="text-2xl md:text-3xl font-bold text-slate-100">Need a tractor this week?</h3>
+                            <h3 className="text-2xl md:text-3xl font-bold text-slate-100">{t('landing.cta.title')}</h3>
                             <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
-                                Check availability in your area and confirm instantly. Operators are vetted and ready to work on schedule.
+                                {t('landing.cta.subtitle')}
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
                                 <Link to="/tractors" className="w-full sm:w-auto">
                                     <Button size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold">
-                                        Browse Tractors
+                                        {t('landing.cta.browseButton')}
                                         <ArrowRight className="ml-2 h-5 w-5" />
                                     </Button>
                                 </Link>
                                 <Link to="/login" className="w-full sm:w-auto">
                                     <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-slate-600 bg-slate-800/50 text-slate-100 hover:bg-slate-700 hover:text-white">
-                                        Sign in
+                                        {t('landing.cta.signInButton')}
                                     </Button>
                                 </Link>
                             </div>

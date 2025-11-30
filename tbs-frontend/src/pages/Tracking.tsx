@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { getMyBookingsForUI, getBookingTracking, type TrackingResponse } from '@/lib/api';
 import type { Booking } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 
 const Tracking = () => {
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const { t } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [trackingData, setTrackingData] = useState<TrackingResponse | null>(null);
@@ -81,7 +83,7 @@ const Tracking = () => {
       <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">Loading...</p>
+          <p className="text-slate-100">{t('tracking.loading')}</p>
         </div>
       </div>
     );
@@ -96,13 +98,13 @@ const Tracking = () => {
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-6 space-y-3 relative z-20">
-          <h1 className="text-2xl font-semibold text-slate-100">Real-Time Tractor Tracking</h1>
+          <h1 className="text-2xl font-semibold text-slate-100">{t('tracking.title')}</h1>
           <p className="text-sm text-slate-400">
-            View the live route, ETA, and delivery progress for your approved bookings.
+            {t('tracking.subtitle')}
           </p>
           {trackableBookings.length > 0 ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Select booking</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('tracking.selectBooking')}</p>
               <Select
                 value={selectedBookingId ?? ''}
                 onValueChange={(value) => {

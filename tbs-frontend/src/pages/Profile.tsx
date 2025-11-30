@@ -8,12 +8,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { updateProfile, uploadImage } from '@/lib/api';
 import { toast } from 'sonner';
 import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 
 const Profile = () => {
   const { isAuthenticated, user, loading: authLoading, refreshUser } = useAuth();
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [profilePictureUrl, setProfilePictureUrl] = useState('');
@@ -36,7 +38,7 @@ const Profile = () => {
       <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">Loading...</p>
+          <p className="text-slate-100">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -141,8 +143,8 @@ const Profile = () => {
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-slate-100">My Profile</h1>
-          <p className="text-slate-400">Manage your account information</p>
+          <h1 className="text-3xl font-bold mb-2 text-slate-100">{t('profile.title')}</h1>
+          <p className="text-slate-400">{t('profile.subtitle')}</p>
         </div>
 
         {/* Profile Card */}
@@ -150,7 +152,7 @@ const Profile = () => {
           <CardHeader>
             <CardTitle className="text-slate-100 flex items-center">
               <Settings className="mr-2 h-5 w-5" />
-              Profile Information
+              {t('profile.information')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -181,7 +183,7 @@ const Profile = () => {
               </div>
               <h2 className="text-2xl font-bold text-slate-100">{name}</h2>
               <p className="text-slate-400">{email}</p>
-              {uploading && <p className="text-sm text-slate-400">Uploading...</p>}
+              {uploading && <p className="text-sm text-slate-400">{t('profile.uploading')}</p>}
             </div>
 
             {/* Divider */}
@@ -193,7 +195,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label htmlFor="name" className="flex items-center text-sm font-medium text-slate-200">
                   <User className="mr-2 h-4 w-4" />
-                  Full Name
+                  {t('profile.fullName')}
                 </Label>
                 <Input
                   id="name"
@@ -201,7 +203,7 @@ const Profile = () => {
                   onChange={(e) => setName(e.target.value)}
                   disabled={!editing}
                   className="w-full bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
-                  placeholder="Enter your name"
+                  placeholder={t('profile.enterName')}
                 />
               </div>
 
@@ -209,7 +211,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label htmlFor="email" className="flex items-center text-sm font-medium text-slate-200">
                   <Mail className="mr-2 h-4 w-4" />
-                  Email Address
+                  {t('profile.emailAddress')}
                 </Label>
                 <Input
                   id="email"
@@ -218,7 +220,7 @@ const Profile = () => {
                   className="w-full bg-slate-900 border-slate-700 text-slate-400"
                   placeholder="your.email@example.com"
                 />
-                <p className="text-xs text-slate-500">Email cannot be changed</p>
+                <p className="text-xs text-slate-500">{t('profile.emailCannotChange')}</p>
               </div>
 
               {/* Action Buttons */}
@@ -234,7 +236,7 @@ const Profile = () => {
                       disabled={saving}
                       className="border-slate-700 text-slate-300 hover:bg-slate-700"
                     >
-                      Cancel
+                      {t('profile.cancel')}
                     </Button>
                     <Button
                       onClick={handleSave}
@@ -242,7 +244,7 @@ const Profile = () => {
                       className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                     >
                       <Save className="mr-2 h-4 w-4" />
-                      {saving ? 'Saving...' : 'Save Changes'}
+                      {saving ? t('profile.saving') : t('profile.saveChanges')}
                     </Button>
                   </>
                 ) : (
@@ -250,7 +252,7 @@ const Profile = () => {
                     onClick={() => setEditing(true)}
                     className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                   >
-                    Edit Profile
+                    {t('profile.editProfile')}
                   </Button>
                 )}
               </div>

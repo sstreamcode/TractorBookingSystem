@@ -4,10 +4,12 @@ import { CheckCircle, ArrowRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { verifyEsewaPayment } from '@/lib/api';
 import { toast } from 'sonner';
 
 const PaymentSuccess = () => {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(true);
@@ -22,7 +24,7 @@ const PaymentSuccess = () => {
   useEffect(() => {
     const verifyPayment = async () => {
       if (!bookingId) {
-        toast.error('Invalid booking ID');
+        toast.error(t('payment.invalidBookingId'));
         navigate('/dashboard');
         return;
       }
@@ -48,7 +50,7 @@ const PaymentSuccess = () => {
 
         console.log('Verifying payment with bookingId:', bookingId, 'refId:', referenceId);
         await verifyEsewaPayment(bookingId, referenceId);
-        toast.success('Payment verified successfully!');
+        toast.success(t('payment.verified'));
         setProcessing(false);
         // Auto redirect after 3 seconds
         setTimeout(() => {
@@ -56,7 +58,7 @@ const PaymentSuccess = () => {
         }, 3000);
       } catch (error: any) {
         console.error('Payment verification error:', error);
-        toast.error(error?.message || 'Payment verification failed');
+        toast.error(error?.message || t('payment.verificationFailed'));
         setTimeout(() => {
           navigate('/dashboard');
         }, 3000);
@@ -78,16 +80,16 @@ const PaymentSuccess = () => {
               <div className="mb-6">
                 <CheckCircle className="h-24 w-24 text-green-500 mx-auto" />
               </div>
-              <h1 className="text-3xl font-bold mb-2 text-slate-100">Payment Successful!</h1>
+              <h1 className="text-3xl font-bold mb-2 text-slate-100">{t('payment.success.title')}</h1>
               {processing ? (
-                <p className="text-slate-400 mb-6">Verifying payment...</p>
+                <p className="text-slate-400 mb-6">{t('payment.success.verifying')}</p>
               ) : (
                 <>
                   <p className="text-slate-400 mb-6">
-                    Your booking has been confirmed. You will be redirected to your dashboard shortly.
+                    {t('payment.success.confirmed')}
                   </p>
                   <Button onClick={() => navigate('/dashboard')} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
-                    Go to Dashboard
+                    {t('payment.success.goDashboard')}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </>

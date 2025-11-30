@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import Navbar from '@/components/Navbar';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const MapPreview = () => {
+  const { t } = useLanguage();
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,8 +32,8 @@ const MapPreview = () => {
     <div className="min-h-screen bg-slate-900">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-semibold mb-4 text-slate-100">Leaflet Map Preview</h1>
-        <p className="text-slate-400 mb-6">Use this page to confirm Leaflet tiles load correctly in your environment.</p>
+        <h1 className="text-2xl font-semibold mb-4 text-slate-100">{t('mappreview.title')}</h1>
+        <p className="text-slate-400 mb-6">{t('mappreview.description')}</p>
         <div className="rounded-xl border border-slate-700 overflow-hidden">
           <div ref={containerRef} className="h-[480px] w-full" />
         </div>
