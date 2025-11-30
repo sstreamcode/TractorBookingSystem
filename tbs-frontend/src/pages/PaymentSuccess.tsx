@@ -69,24 +69,24 @@ const PaymentSuccess = () => {
   }, [bookingId, dataParam, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-16">
         <div className="max-w-md mx-auto">
-          <Card className="text-center">
+          <Card className="text-center border border-slate-700 bg-slate-800">
             <CardContent className="p-8">
               <div className="mb-6">
                 <CheckCircle className="h-24 w-24 text-green-500 mx-auto" />
               </div>
-              <h1 className="text-3xl font-bold mb-2">Payment Successful!</h1>
+              <h1 className="text-3xl font-bold mb-2 text-slate-100">Payment Successful!</h1>
               {processing ? (
-                <p className="text-muted-foreground mb-6">Verifying payment...</p>
+                <p className="text-slate-400 mb-6">Verifying payment...</p>
               ) : (
                 <>
-                  <p className="text-muted-foreground mb-6">
+                  <p className="text-slate-400 mb-6">
                     Your booking has been confirmed. You will be redirected to your dashboard shortly.
                   </p>
-                  <Button onClick={() => navigate('/dashboard')}>
+                  <Button onClick={() => navigate('/dashboard')} className="bg-amber-500 hover:bg-amber-600 text-slate-900">
                     Go to Dashboard
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>

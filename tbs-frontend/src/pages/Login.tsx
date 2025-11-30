@@ -35,79 +35,73 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-amber-50/50 via-white to-orange-50/30 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-900 relative overflow-hidden">
       <div className="w-full max-w-md relative z-10">
         {/* Prominent Branding Section */}
         <div className="text-center mb-10">
           <Link to="/" className="inline-flex items-center justify-center gap-4 mb-8 group">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 text-white shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500 text-slate-900 shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
               <Tractor className="h-8 w-8" />
             </div>
             <div className="flex flex-col items-start">
-              <span className="text-3xl font-bold leading-tight text-gray-900 group-hover:text-amber-700 transition-colors">
-                Tractor Sewa
+              <span className="text-3xl font-bold leading-tight text-slate-100 group-hover:text-amber-500 transition-colors">
+                TBS
               </span>
-              <span className="text-xs uppercase tracking-wider text-muted-foreground leading-tight font-semibold">
+              <span className="text-xs uppercase tracking-wider text-slate-400 leading-tight font-semibold">
                 {t('brand.subtitle')}
               </span>
             </div>
           </Link>
-          <h1 className="text-5xl font-bold mb-4 text-secondary">{t('auth.welcome')}</h1>
-          <p className="text-lg text-muted-foreground font-medium">{t('auth.welcomeDesc')}</p>
+          <h1 className="text-5xl font-bold mb-4 text-slate-100">{t('auth.welcome')}</h1>
+          <p className="text-lg text-slate-400 font-medium">{t('auth.welcomeDesc')}</p>
         </div>
 
-        <Card className="border border-border/60 shadow-2xl bg-white/95 backdrop-blur-sm">
+        <Card className="border border-slate-700 shadow-2xl bg-slate-800 backdrop-blur-sm">
           <CardHeader className="space-y-2 pb-6 pt-8">
-            <CardTitle className="text-3xl font-bold text-secondary">{t('auth.login.title')}</CardTitle>
-            <CardDescription className="text-base font-medium">
+            <CardTitle className="text-3xl font-bold text-slate-100">{t('auth.login.title')}</CardTitle>
+            <CardDescription className="text-base font-medium text-slate-400">
               {t('auth.login.description')}
             </CardDescription>
           </CardHeader>
           <CardContent className="pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-bold text-secondary">{t('auth.email')}</Label>
+                <Label htmlFor="email" className="text-sm font-bold text-slate-200">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder={t('auth.emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 text-base rounded-xl border-2"
+                  className="h-12 text-base rounded-xl border-2 border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-bold text-secondary">{t('auth.password')}</Label>
+                <Label htmlFor="password" className="text-sm font-bold text-slate-200">{t('auth.password')}</Label>
                 <Input
                   id="password"
                   type="password"
                   placeholder={t('auth.passwordPlaceholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 text-base rounded-xl border-2"
+                  className="h-12 text-base rounded-xl border-2 border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
                   required
                 />
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base font-bold rounded-xl bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+                className="w-full h-12 text-base font-bold rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
                 disabled={isLoading}
               >
                 {isLoading ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground pt-2 font-medium">
+              <p className="text-center text-sm text-slate-400 pt-2 font-medium">
                 {t('auth.dontHaveAccount')}{' '}
-                <Link to="/register" className="text-primary font-bold hover:underline transition-colors">
+                <Link to="/register" className="text-amber-500 font-bold hover:text-amber-400 hover:underline transition-colors">
                   {t('auth.signUp')}
                 </Link>
               </p>

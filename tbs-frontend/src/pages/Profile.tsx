@@ -33,10 +33,10 @@ const Profile = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p>Loading...</p>
+          <p className="text-slate-100">Loading...</p>
         </div>
       </div>
     );
@@ -136,19 +136,19 @@ const Profile = () => {
 
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-secondary">My Profile</h1>
-          <p className="text-muted-foreground">Manage your account information</p>
+          <h1 className="text-3xl font-bold mb-2 text-slate-100">My Profile</h1>
+          <p className="text-slate-400">Manage your account information</p>
         </div>
 
         {/* Profile Card */}
-        <Card className="border border-border shadow-sm">
+        <Card className="border border-slate-700 bg-slate-800 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-secondary flex items-center">
+            <CardTitle className="text-slate-100 flex items-center">
               <Settings className="mr-2 h-5 w-5" />
               Profile Information
             </CardTitle>
@@ -167,7 +167,7 @@ const Profile = () => {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  className="absolute bottom-0 right-0 bg-amber-500 text-slate-900 rounded-full p-2 shadow-md hover:bg-amber-600 transition-colors disabled:opacity-50"
                 >
                   <Camera className="h-5 w-5" />
                 </button>
@@ -179,19 +179,19 @@ const Profile = () => {
                   className="hidden"
                 />
               </div>
-              <h2 className="text-2xl font-bold text-secondary">{name}</h2>
-              <p className="text-muted-foreground">{email}</p>
-              {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
+              <h2 className="text-2xl font-bold text-slate-100">{name}</h2>
+              <p className="text-slate-400">{email}</p>
+              {uploading && <p className="text-sm text-slate-400">Uploading...</p>}
             </div>
 
             {/* Divider */}
-            <div className="border-t border-border"></div>
+            <div className="border-t border-slate-700"></div>
 
             {/* Form Fields */}
             <div className="space-y-6 max-w-2xl mx-auto">
               {/* Name Field */}
               <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center text-sm font-medium">
+                <Label htmlFor="name" className="flex items-center text-sm font-medium text-slate-200">
                   <User className="mr-2 h-4 w-4" />
                   Full Name
                 </Label>
@@ -200,14 +200,14 @@ const Profile = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={!editing}
-                  className="w-full"
+                  className="w-full bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
                   placeholder="Enter your name"
                 />
               </div>
 
               {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center text-sm font-medium">
+                <Label htmlFor="email" className="flex items-center text-sm font-medium text-slate-200">
                   <Mail className="mr-2 h-4 w-4" />
                   Email Address
                 </Label>
@@ -215,10 +215,10 @@ const Profile = () => {
                   id="email"
                   value={email}
                   disabled
-                  className="w-full bg-muted"
+                  className="w-full bg-slate-900 border-slate-700 text-slate-400"
                   placeholder="your.email@example.com"
                 />
-                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                <p className="text-xs text-slate-500">Email cannot be changed</p>
               </div>
 
               {/* Action Buttons */}
@@ -232,13 +232,14 @@ const Profile = () => {
                         setName(user?.name || '');
                       }}
                       disabled={saving}
+                      className="border-slate-700 text-slate-300 hover:bg-slate-700"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSave}
                       disabled={saving}
-                      className="bg-primary hover:bg-primary/90"
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                     >
                       <Save className="mr-2 h-4 w-4" />
                       {saving ? 'Saving...' : 'Save Changes'}
@@ -247,7 +248,7 @@ const Profile = () => {
                 ) : (
                   <Button
                     onClick={() => setEditing(true)}
-                    className="bg-primary hover:bg-primary/90"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-900"
                   >
                     Edit Profile
                   </Button>

@@ -78,10 +78,10 @@ const Tracking = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p>Loading...</p>
+          <p className="text-slate-100">Loading...</p>
         </div>
       </div>
     );
@@ -92,17 +92,17 @@ const Tracking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-6 space-y-3 relative z-20">
-          <h1 className="text-2xl font-semibold text-secondary">Real-Time Tractor Tracking</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-slate-100">Real-Time Tractor Tracking</h1>
+          <p className="text-sm text-slate-400">
             View the live route, ETA, and delivery progress for your approved bookings.
           </p>
           {trackableBookings.length > 0 ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Select booking</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Select booking</p>
               <Select
                 value={selectedBookingId ?? ''}
                 onValueChange={(value) => {

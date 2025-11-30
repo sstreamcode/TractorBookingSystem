@@ -63,14 +63,14 @@ const Navbar = () => {
   const isEnglish = language === 'en';
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+    <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-6 h-16">
-        {/* Logo - Farm Themed */}
+        {/* Logo - Dark Theme */}
         <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-amber-600 to-orange-600 text-white shadow-lg transition-transform group-hover:scale-105 group-hover:shadow-amber-500/50">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-slate-900 shadow-lg transition-transform group-hover:scale-105">
             <Tractor className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold text-gray-900 group-hover:text-amber-700 transition-colors">Tractor Sewa</span>
+          <span className="text-lg font-bold text-slate-100 group-hover:text-amber-500 transition-colors">TBS</span>
         </Link>
 
         {/* Desktop Navigation - Clean & Minimal */}
@@ -83,8 +83,8 @@ const Navbar = () => {
                   key={item.labelKey}
                   to={item.href}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
-                      ? 'text-amber-700 bg-amber-50 font-semibold'
-                      : 'text-muted-foreground hover:text-amber-700 hover:bg-amber-50/50'
+                      ? 'text-amber-500 bg-slate-800 font-semibold'
+                      : 'text-slate-300 hover:text-amber-500 hover:bg-slate-800/50'
                     }`}
                 >
                   {t(item.labelKey)}

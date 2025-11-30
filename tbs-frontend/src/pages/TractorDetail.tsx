@@ -83,14 +83,14 @@ const TractorGallery = ({ tractor }: { tractor: TractorType }) => {
           <div className="absolute inset-0 pointer-events-none">
             <button
               type="button"
-              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10"
+              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-800/90 rounded-full p-2 shadow z-10"
               onClick={() => go(-1)}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               type="button"
-              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10"
+              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-800/90 rounded-full p-2 shadow z-10"
               onClick={() => go(1)}
             >
               <ChevronRight className="h-5 w-5" />
@@ -201,10 +201,10 @@ const TractorDetail = () => {
 
   if (error || !tractor) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p>{error ?? 'Tractor not found'}</p>
+          <p className="text-slate-100">{error ?? 'Tractor not found'}</p>
         </div>
       </div>
     );
@@ -418,7 +418,7 @@ const TractorDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
@@ -439,50 +439,50 @@ const TractorDetail = () => {
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{tractor.name}</h1>
-                <p className="text-lg text-muted-foreground">{tractor.model}</p>
-                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
+                <p className="text-lg text-slate-400">{tractor.model}</p>
+                <div className="mt-2 flex items-center gap-4 text-sm text-slate-400">
                   {avgRating != null && (
                     <span className="inline-flex items-center gap-1">
-                      ★ <span className="font-semibold text-secondary">{avgRating.toFixed(1)}</span>
+                      ★ <span className="font-semibold text-slate-100">{avgRating.toFixed(1)}</span>
                     </span>
                   )}
                   {totalBookings != null && (
                     <span className="inline-flex items-center gap-1">
-                      Bookings <span className="font-semibold text-secondary">{totalBookings}</span>
+                      Bookings <span className="font-semibold text-slate-100">{totalBookings}</span>
                     </span>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-                  <MapPin className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                  <MapPin className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="text-sm text-slate-400">Location</p>
                     <p className="font-medium">{tractor.location}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-                  <Zap className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                  <Zap className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Power</p>
+                    <p className="text-sm text-slate-400">Power</p>
                     <p className="font-medium">{tractor.horsePower} HP</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-                  <Fuel className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                  <Fuel className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Fuel Type</p>
+                    <p className="text-sm text-slate-400">Fuel Type</p>
                     <p className="font-medium">{tractor.fuelType}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-                  <Clock className="h-5 w-5 text-primary" />
+                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                  <Clock className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Rate</p>
+                    <p className="text-sm text-slate-400">Rate</p>
                     <p className="font-medium">रू {tractor.hourlyRate}/hr</p>
                   </div>
                 </div>
@@ -490,7 +490,7 @@ const TractorDetail = () => {
 
               <div>
                 <h3 className="text-lg font-semibold mb-2">Description</h3>
-                <p className="text-muted-foreground leading-relaxed">{tractor.description}</p>
+                <p className="text-slate-400 leading-relaxed">{tractor.description}</p>
               </div>
             </div>
           </div>
@@ -565,10 +565,10 @@ const TractorDetail = () => {
                 {/* Delivery Location Map */}
                 <div className="space-y-2">
                   <Label>Delivery Location</Label>
-                  <div className="relative rounded-lg border border-border overflow-hidden">
+                  <div className="relative rounded-lg border border-slate-700 overflow-hidden">
                     <button
                       type="button"
-                      className="absolute right-3 top-3 z-10 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-primary shadow hover:bg-white"
+                      className="absolute right-3 top-3 z-10 rounded-full bg-slate-800/90 px-3 py-1 text-xs font-medium text-amber-500 shadow hover:bg-slate-800"
                       onClick={handleUseCurrentLocation}
                     >
                       Use my location
@@ -579,34 +579,34 @@ const TractorDetail = () => {
                       className="h-64 w-full"
                     />
                     {deliveryLocation && (
-                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md text-sm max-w-xs">
-                        <p className="font-semibold text-secondary">Selected Location</p>
-                        <p className="text-xs text-muted-foreground truncate">{deliveryLocation.address}</p>
-                        <p className="text-xs text-muted-foreground">
+                      <div className="absolute top-2 left-2 bg-slate-800/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md text-sm max-w-xs">
+                        <p className="font-semibold text-slate-100">Selected Location</p>
+                        <p className="text-xs text-slate-400 truncate">{deliveryLocation.address}</p>
+                        <p className="text-xs text-slate-400">
                           {deliveryLocation.lat.toFixed(6)}, {deliveryLocation.lng.toFixed(6)}
                         </p>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-400">
                     Click on the map to select where you want the tractor delivered
                   </p>
                 </div>
 
                 {totalCost > 0 && (
-                  <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <div className="p-4 bg-slate-800/50 rounded-lg space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Hourly Rate</span>
-                      <span className="font-medium">रू {tractor.hourlyRate}</span>
+                      <span className="text-slate-400">Hourly Rate</span>
+                      <span className="font-medium text-slate-200">NPR {tractor.hourlyRate}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span className="font-medium">{Math.ceil((new Date(`${endDate}T${endTime}`).getTime() - new Date(`${startDate}T${startTime}`).getTime()) / (1000 * 60 * 60))} hours</span>
+                      <span className="text-slate-400">Duration</span>
+                      <span className="font-medium text-slate-200">{Math.ceil((new Date(`${endDate}T${endTime}`).getTime() - new Date(`${startDate}T${startTime}`).getTime()) / (1000 * 60 * 60))} hours</span>
                     </div>
-                    <div className="pt-2 border-t">
+                    <div className="pt-2 border-t border-slate-700">
                       <div className="flex justify-between">
-                        <span className="font-semibold">Total Cost</span>
-                        <span className="text-2xl font-bold text-primary">रू {totalCost}</span>
+                        <span className="font-semibold text-slate-100">Total Cost</span>
+                        <span className="text-2xl font-bold text-amber-500">NPR {totalCost}</span>
                       </div>
                     </div>
                   </div>
@@ -640,44 +640,44 @@ const TractorDetail = () => {
                       </Button>
                     </div>
                     {!tractor.available && tractor.nextAvailableAt && (
-                      <p className="text-xs text-muted-foreground text-center">
+                      <p className="text-xs text-slate-400 text-center">
                         Booked until {new Date(tractor.nextAvailableAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                       </p>
                     )}
 
                     {!isAuthenticated && (
-                      <p className="text-sm text-center text-muted-foreground">
+                      <p className="text-sm text-center text-slate-400">
                         You need to <Button variant="link" className="p-0" onClick={() => navigate('/login')}>login</Button> to book this tractor
                       </p>
                     )}
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                      <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-3">
+                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                      <p className="text-sm font-medium text-emerald-400 mb-3">
                         Booking Created! Choose a payment method:
                       </p>
                       <div className="grid gap-3">
-                        <Card className="cursor-pointer hover:border-primary transition-colors" onClick={handleEsewaPayment}>
+                        <Card className="cursor-pointer hover:border-amber-500 transition-colors" onClick={handleEsewaPayment}>
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <Wallet className="h-5 w-5 text-primary" />
+                              <Wallet className="h-5 w-5 text-amber-500" />
                               <div>
                                 <p className="font-semibold">Pay with eSewa</p>
-                                <p className="text-sm text-muted-foreground">Secure online payment</p>
+                                <p className="text-sm text-slate-400">Secure online payment</p>
                               </div>
                             </div>
                             <Badge variant="secondary">Instant</Badge>
                           </CardContent>
                         </Card>
 
-                        <Card className="cursor-pointer hover:border-primary transition-colors" onClick={handleCashOnDelivery}>
+                        <Card className="cursor-pointer hover:border-amber-500 transition-colors" onClick={handleCashOnDelivery}>
                           <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <CreditCard className="h-5 w-5 text-primary" />
+                              <CreditCard className="h-5 w-5 text-amber-500" />
                               <div>
                                 <p className="font-semibold">Cash on Delivery</p>
-                                <p className="text-sm text-muted-foreground">Pay when you receive</p>
+                                <p className="text-sm text-slate-400">Pay when you receive</p>
                               </div>
                             </div>
                             <Badge variant="outline">COD</Badge>
@@ -696,9 +696,9 @@ const TractorDetail = () => {
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Recent Feedback Section */}
-          <div className="rounded-xl border border-border bg-white shadow-sm">
+          <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-secondary flex items-center gap-2">
+              <CardTitle className="text-xl font-bold text-slate-100 flex items-center gap-2">
                 <span>Recent Feedback</span>
                 {feedback.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
@@ -711,9 +711,9 @@ const TractorDetail = () => {
               {feedback.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                    <Info className="h-8 w-8 text-muted-foreground" />
+                    <Info className="h-8 w-8 text-slate-400" />
                   </div>
-                  <p className="text-sm text-muted-foreground font-medium">
+                  <p className="text-sm text-slate-400 font-medium">
                     No feedback yet. Be the first to rate this tractor!
                   </p>
                 </div>
@@ -722,7 +722,7 @@ const TractorDetail = () => {
                   {feedback.map((f) => (
                     <div 
                       key={f.id} 
-                      className="rounded-lg border border-border bg-gradient-to-br from-white to-muted/20 p-4 hover:shadow-md transition-all duration-300"
+                      className="rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-700/20 p-4 hover:shadow-md transition-all duration-300"
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 flex-shrink-0">
@@ -734,8 +734,8 @@ const TractorDetail = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div>
-                              <p className="font-semibold text-secondary text-sm">{f.authorName || 'Anonymous'}</p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                              <p className="font-semibold text-slate-100 text-sm">{f.authorName || 'Anonymous'}</p>
+                              <p className="text-xs text-slate-400 mt-0.5">
                                 {new Date(f.createdAt).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'short',
@@ -748,7 +748,7 @@ const TractorDetail = () => {
                             <StarRating rating={f.rating} size="sm" />
                           </div>
                           {f.comment && (
-                            <p className="text-sm text-muted-foreground leading-relaxed mt-2 whitespace-pre-wrap">
+                            <p className="text-sm text-slate-400 leading-relaxed mt-2 whitespace-pre-wrap">
                               {f.comment}
                             </p>
                           )}
@@ -762,35 +762,35 @@ const TractorDetail = () => {
           </div>
 
           {/* Leave a Rating Section */}
-          <div className="rounded-xl border border-border bg-white shadow-sm">
+          <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-secondary">Leave a Rating</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Share your experience with this tractor</p>
+              <CardTitle className="text-xl font-bold text-slate-100">Leave a Rating</CardTitle>
+              <p className="text-sm text-slate-400 mt-1">Share your experience with this tractor</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-5">
                 <div>
-                  <Label className="text-sm font-semibold text-secondary mb-3 block">Your Rating</Label>
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/30">
+                  <Label className="text-sm font-semibold text-slate-100 mb-3 block">Your Rating</Label>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-slate-700 bg-muted/30">
                     <StarRating 
                       rating={newRating} 
                       onRatingChange={setNewRating}
                       interactive={true}
                       size="lg"
                     />
-                    <span className="text-sm font-medium text-secondary ml-2">
+                    <span className="text-sm font-medium text-slate-100 ml-2">
                       {newRating} {newRating === 1 ? 'star' : 'stars'}
                     </span>
                   </div>
                 </div>
                 
                 <div>
-                  <Label htmlFor="comment" className="text-sm font-semibold text-secondary mb-2 block">
+                  <Label htmlFor="comment" className="text-sm font-semibold text-slate-100 mb-2 block">
                     Comment (optional)
                   </Label>
                   <textarea
                     id="comment"
-                    className="w-full min-h-[120px] rounded-lg border border-border bg-background px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="w-full min-h-[120px] rounded-lg border border-slate-700 bg-slate-900 text-slate-100 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-slate-500"
                     value={newComment}
                     onChange={(e) => {
                       if (e.target.value.length <= 500) {
@@ -800,7 +800,7 @@ const TractorDetail = () => {
                     placeholder="Share your experience with this tractor..."
                     maxLength={500}
                   />
-                  <p className={`text-xs mt-1.5 ${newComment.length >= 450 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                    <p className={`text-xs mt-1.5 ${newComment.length >= 450 ? 'text-orange-400' : 'text-slate-400'}`}>
                     {newComment.length} / 500 characters
                   </p>
                 </div>
@@ -836,7 +836,7 @@ const TractorDetail = () => {
                         toast.error(e?.message || 'Failed to submit feedback');
                       }
                     }}
-                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                    className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Submit Feedback
                   </Button>
@@ -847,41 +847,41 @@ const TractorDetail = () => {
         </div>
       </div>
       <AlertDialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
-        <AlertDialogContent className="max-w-lg border border-primary/20 bg-white/95 backdrop-blur-md">
+        <AlertDialogContent className="max-w-lg border border-amber-500/20 bg-slate-800/95 backdrop-blur-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
                 <Clock className="h-6 w-6" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-semibold text-secondary">
+                <AlertDialogTitle className="text-xl font-semibold text-slate-100">
                   {tractor?.name || 'Tractor Availability'}
                 </AlertDialogTitle>
-                <p className="text-sm text-muted-foreground">Current booking status & availability</p>
+                <p className="text-sm text-slate-400">Current booking status & availability</p>
               </div>
             </div>
           </AlertDialogHeader>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 space-y-3">
+            <div className="rounded-xl border border-amber-500/10 bg-amber-500/5 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Current Status</span>
-                <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary capitalize">
+                <span className="text-sm text-slate-400">Current Status</span>
+                <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-500 capitalize">
                   {availabilityDialogData?.status || 'unavailable'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Next Available</span>
-                <span className="font-medium text-secondary">{availabilityDialogData?.nextAvailableText || 'Not scheduled'}</span>
+                <span className="text-slate-400">Next Available</span>
+                <span className="font-medium text-slate-100">{availabilityDialogData?.nextAvailableText || 'Not scheduled'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Current Location</span>
-                <span className="font-medium text-secondary">{availabilityDialogData?.location || 'Not specified'}</span>
+                <span className="text-slate-400">Current Location</span>
+                <span className="font-medium text-slate-100">{availabilityDialogData?.location || 'Not specified'}</span>
               </div>
             </div>
 
-            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
-              <Info className="h-5 w-5 text-primary" />
+            <div className="flex gap-3 rounded-xl border border-slate-700 bg-muted/30 p-4 text-sm leading-relaxed text-slate-400">
+              <Info className="h-5 w-5 text-amber-500" />
               <p>{availabilityDialogData?.message || 'This tractor is currently fulfilling another booking. Please check back later or choose a different tractor.'}</p>
             </div>
           </div>

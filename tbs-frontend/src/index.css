@@ -8,40 +8,40 @@
 
 @layer base {
   :root {
-    /* Base Colors - Modern Professional Palette */
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* Base Colors - Dark Theme */
+    --background: 222 47% 11%; /* slate-900 */
+    --foreground: 210 40% 98%; /* slate-100 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card: 222 47% 15%; /* slate-800 */
+    --card-foreground: 210 40% 98%; /* slate-100 */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 222 47% 15%; /* slate-800 */
+    --popover-foreground: 210 40% 98%; /* slate-100 */
 
-    /* Primary - Farm Themed Amber/Orange */
-    --primary: 38 92% 50%; /* amber-600 */
-    --primary-foreground: 0 0% 100%;
+    /* Primary - Amber */
+    --primary: 38 92% 50%; /* amber-500 */
+    --primary-foreground: 222 47% 11%; /* slate-900 */
 
-    /* Secondary - Deep Slate */
-    --secondary: 222 47% 11%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary - Slate */
+    --secondary: 222 47% 11%; /* slate-900 */
+    --secondary-foreground: 210 40% 98%; /* slate-100 */
 
-    /* Muted - Soft Gray */
-    --muted: 210 20% 98%;
-    --muted-foreground: 215 16% 47%;
+    /* Muted - Slate */
+    --muted: 222 47% 20%; /* slate-700 */
+    --muted-foreground: 215 20% 65%; /* slate-400 */
 
-    /* Accent - Farm Themed Orange */
-    --accent: 25 95% 53%; /* orange-600 */
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Amber */
+    --accent: 38 92% 50%; /* amber-500 */
+    --accent-foreground: 222 47% 11%; /* slate-900 */
 
-    /* Destructive - Modern Red */
+    /* Destructive - Red */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 38 92% 50%; /* amber-600 */
+    --border: 222 47% 25%; /* slate-700 */
+    --input: 222 47% 25%; /* slate-700 */
+    --ring: 38 92% 50%; /* amber-500 */
 
     /* Border Radius */
     --radius: 1rem;
@@ -71,7 +71,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-slate-900 text-slate-100 antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     font-variation-settings: normal;
@@ -84,7 +84,7 @@
   h4,
   h5,
   h6 {
-    @apply text-secondary font-bold;
+    @apply text-slate-100 font-bold;
     letter-spacing: -0.025em;
     line-height: 1.2;
   }

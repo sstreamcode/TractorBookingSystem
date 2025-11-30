@@ -64,8 +64,8 @@ const ImageCarousel = ({
               key={i}
               className={`h-1.5 rounded-full transition-all ${
                 i === currentIndex 
-                  ? 'w-6 bg-white' 
-                  : 'w-1.5 bg-white/50'
+                  ? 'w-6 bg-amber-500' 
+                  : 'w-1.5 bg-amber-500/50'
               }`}
             />
           ))}
@@ -103,7 +103,7 @@ const UserDashboard = () => {
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
@@ -122,7 +122,7 @@ const UserDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-slate-900">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
           <p>Loading...</p>
@@ -178,13 +178,13 @@ const UserDashboard = () => {
   const getStatusBadgeClassName = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return '!border-green-200 !bg-green-50 !text-green-700';
+        return '!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400';
       case 'completed':
-        return '!border-amber-200 !bg-amber-50 !text-amber-700';
+        return '!border-amber-500/30 !bg-amber-500/10 !text-amber-400';
       case 'cancelled':
         return '';
       case 'refund_requested':
-        return '!border-orange-200 !bg-orange-50 !text-orange-700';
+        return '!border-orange-500/30 !bg-orange-500/10 !text-orange-400';
       default:
         return '';
     }
@@ -193,7 +193,7 @@ const UserDashboard = () => {
   const getPaymentBadgeClassName = (status: string) => {
     switch (status) {
       case 'paid':
-        return '!border-green-200 !bg-green-50 !text-green-700';
+        return '!border-emerald-500/30 !bg-emerald-500/10 !text-emerald-400';
       case 'failed':
         return '';
       default:
@@ -232,58 +232,58 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-secondary">My Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user?.name}!</p>
+          <h1 className="text-3xl font-bold mb-2 text-slate-100">My Dashboard</h1>
+          <p className="text-slate-400">Welcome back, {user?.name}!</p>
         </div>
 
         {/* Stats - Simple Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card className="card-hover border border-border shadow-sm">
+          <Card className="card-hover border border-slate-700 bg-slate-800 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Bookings</p>
-                  <p className="text-4xl font-bold text-secondary">{userBookings.length}</p>
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Bookings</p>
+                  <p className="text-4xl font-bold text-slate-100">{userBookings.length}</p>
                 </div>
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
-                  <Calendar className="h-7 w-7 text-white" />
+                <div className="w-14 h-14 bg-amber-500 rounded-xl flex items-center justify-center shadow-md">
+                  <Calendar className="h-7 w-7 text-slate-900" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-hover border border-border shadow-sm">
+          <Card className="card-hover border border-slate-700 bg-slate-800 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Active Bookings</p>
-                  <p className="text-4xl font-bold text-secondary">
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Active Bookings</p>
+                  <p className="text-4xl font-bold text-slate-100">
                     {userBookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <Clock className="h-7 w-7 text-primary" />
+                <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <Clock className="h-7 w-7 text-amber-500" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="card-hover border border-border shadow-sm">
+          <Card className="card-hover border border-slate-700 bg-slate-800 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Spent</p>
-                  <p className="text-4xl font-bold text-secondary">
-                    रू {userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)}
+                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Spent</p>
+                  <p className="text-4xl font-bold text-slate-100">
+                    NPR {userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)}
                   </p>
                 </div>
-                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center">
-                  <CreditCard className="h-7 w-7 text-primary" />
+                <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">
+                  <CreditCard className="h-7 w-7 text-amber-500" />
                 </div>
               </div>
             </CardContent>
@@ -292,13 +292,13 @@ const UserDashboard = () => {
 
         {/* Bookings Grid */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-secondary">My Bookings</h2>
+          <h2 className="text-2xl font-bold mb-4 text-slate-100">My Bookings</h2>
           {userBookings.length === 0 ? (
-            <Card className="border border-border shadow-sm">
+            <Card className="border border-slate-700 bg-slate-800 shadow-sm">
               <CardContent className="text-center py-12">
-                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground text-lg">No bookings yet</p>
-                <p className="text-muted-foreground/70 text-sm mt-2">Start by browsing available tractors</p>
+                <Calendar className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+                <p className="text-slate-400 text-lg">No bookings yet</p>
+                <p className="text-slate-400/70 text-sm mt-2">Start by browsing available tractors</p>
               </CardContent>
             </Card>
           ) : (
@@ -313,7 +313,7 @@ const UserDashboard = () => {
                 return (
                   <Card
                     key={booking.id}
-                    className="card-hover border border-border shadow-sm overflow-hidden bg-card"
+                    className="card-hover border border-slate-700 bg-slate-800 shadow-sm overflow-hidden bg-card"
                   >
                     {/* Tractor Image */}
                     <div className="aspect-video w-full overflow-hidden bg-muted relative">
@@ -367,7 +367,7 @@ const UserDashboard = () => {
                     {/* Price */}
                     <div className="border-t border-border pt-4 mb-4">
                       <p className="text-3xl font-bold text-primary">रू {booking.totalCost}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Total amount</p>
+                      <p className="text-xs text-slate-400 mt-1">Total amount</p>
                     </div>
 
                     {/* Status and Actions */}

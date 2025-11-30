@@ -9,11 +9,11 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
+    <div className="flex min-h-screen items-center justify-center bg-slate-900">
       <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-gray-600">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/80">
+        <h1 className="mb-4 text-4xl font-bold text-slate-100">404</h1>
+        <p className="mb-4 text-xl text-slate-400">Oops! Page not found</p>
+        <a href="/" className="text-amber-500 underline hover:text-amber-400">
           Return to Home
         </a>
       </div>

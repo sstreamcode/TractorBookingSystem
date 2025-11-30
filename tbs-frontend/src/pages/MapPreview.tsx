@@ -27,12 +27,12 @@ const MapPreview = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-slate-900">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-semibold mb-4 text-secondary">Leaflet Map Preview</h1>
-        <p className="text-muted-foreground mb-6">Use this page to confirm Leaflet tiles load correctly in your environment.</p>
-        <div className="rounded-xl border border-border overflow-hidden">
+        <h1 className="text-2xl font-semibold mb-4 text-slate-100">Leaflet Map Preview</h1>
+        <p className="text-slate-400 mb-6">Use this page to confirm Leaflet tiles load correctly in your environment.</p>
+        <div className="rounded-xl border border-slate-700 overflow-hidden">
           <div ref={containerRef} className="h-[480px] w-full" />
         </div>
       </div>
