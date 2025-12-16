@@ -95,11 +95,11 @@ const Contact = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
             <Navbar />
 
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <section className="relative pt-32 pb-20 overflow-hidden bg-background">
                 <div className="absolute inset-0 z-0 opacity-10">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
@@ -108,28 +108,28 @@ const Contact = () => {
                     <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-2xl mb-6 border border-amber-500/20">
                         <MessageSquare className="h-10 w-10 text-amber-500" />
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-slate-100 leading-tight">
+                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-foreground leading-tight">
                         {t('contact.hero.title')}
                     </h1>
-                    <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                         {t('contact.hero.subtitle')}
                     </p>
                 </div>
             </section>
 
             {/* Contact Methods */}
-            <section className="py-16 bg-slate-900">
+            <section className="py-16 bg-background">
                 <div className="container mx-auto px-4">
                     <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
                         {contactMethods.map((method, index) => (
-                            <Card key={index} className="border border-slate-700 bg-slate-800 hover:border-amber-500/50 transition-all hover:-translate-y-1">
+                            <Card key={index} className="border border-border bg-card hover:border-amber-500/50 transition-all hover:-translate-y-1">
                                 <CardContent className="p-6 text-center">
                                     <div className={`inline-flex items-center justify-center p-4 ${method.bgColor} rounded-xl mb-4`}>
                                         <method.icon className={`h-8 w-8 ${method.color}`} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-100 mb-2">{method.title}</h3>
-                                    <p className="text-slate-200 font-medium mb-1">{method.content}</p>
-                                    <p className="text-sm text-slate-400">{method.subtitle}</p>
+                                    <h3 className="text-xl font-bold text-foreground mb-2">{method.title}</h3>
+                                    <p className="text-foreground font-medium mb-1">{method.content}</p>
+                                    <p className="text-sm text-muted-foreground">{method.subtitle}</p>
                                 </CardContent>
                             </Card>
                         ))}
@@ -137,40 +137,40 @@ const Contact = () => {
 
                     <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
                         {/* Contact Form */}
-                        <Card className="border border-slate-700 bg-slate-800 shadow-xl">
+                        <Card className="border border-border bg-card shadow-xl">
                             <CardHeader className="pb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-amber-500/10 rounded-lg">
                                         <Send className="h-6 w-6 text-amber-500" />
                                     </div>
-                                    <CardTitle className="text-2xl font-bold text-slate-100">{t('contact.form.title')}</CardTitle>
+                                    <CardTitle className="text-2xl font-bold text-foreground">{t('contact.form.title')}</CardTitle>
                                 </div>
-                                <p className="text-slate-400 mt-2">{t('contact.form.subtitle')}</p>
+                                <p className="text-muted-foreground mt-2">{t('contact.form.subtitle')}</p>
                             </CardHeader>
                             <CardContent className="p-6">
                                 <form onSubmit={handleSubmit} className="space-y-5">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="firstName" className="text-slate-200 font-medium">{t('contact.form.firstName')}</Label>
+                                            <Label htmlFor="firstName" className="text-foreground font-medium">{t('contact.form.firstName')}</Label>
                                             <Input
                                                 id="firstName"
                                                 name="firstName"
                                                 value={formData.firstName}
                                                 onChange={handleChange}
                                                 placeholder="John"
-                                                className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                                                className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                                                 required
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="lastName" className="text-slate-200 font-medium">{t('contact.form.lastName')}</Label>
+                                            <Label htmlFor="lastName" className="text-foreground font-medium">{t('contact.form.lastName')}</Label>
                                             <Input
                                                 id="lastName"
                                                 name="lastName"
                                                 value={formData.lastName}
                                                 onChange={handleChange}
                                                 placeholder="Doe"
-                                                className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                                                className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                                                 required
                                             />
                                         </div>
@@ -178,7 +178,7 @@ const Contact = () => {
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="email" className="text-slate-200 font-medium">{t('contact.form.email')}</Label>
+                                            <Label htmlFor="email" className="text-foreground font-medium">{t('contact.form.email')}</Label>
                                             <Input
                                                 id="email"
                                                 name="email"
@@ -186,12 +186,12 @@ const Contact = () => {
                                                 value={formData.email}
                                                 onChange={handleChange}
                                                 placeholder="john@example.com"
-                                                className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                                                className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                                                 required
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label htmlFor="phone" className="text-slate-200 font-medium">{t('contact.form.phone')}</Label>
+                                            <Label htmlFor="phone" className="text-foreground font-medium">{t('contact.form.phone')}</Label>
                                             <Input
                                                 id="phone"
                                                 name="phone"
@@ -199,33 +199,33 @@ const Contact = () => {
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 placeholder="+977 9800000000"
-                                                className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                                                className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="subject" className="text-slate-200 font-medium">{t('contact.form.subject')}</Label>
+                                        <Label htmlFor="subject" className="text-foreground font-medium">{t('contact.form.subject')}</Label>
                                         <Input
                                             id="subject"
                                             name="subject"
                                             value={formData.subject}
                                             onChange={handleChange}
                                             placeholder={t('contact.form.subject.placeholder')}
-                                            className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                                            className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                                             required
                                         />
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="message" className="text-slate-200 font-medium">{t('contact.form.message')}</Label>
+                                        <Label htmlFor="message" className="text-foreground font-medium">{t('contact.form.message')}</Label>
                                         <Textarea
                                             id="message"
                                             name="message"
                                             value={formData.message}
                                             onChange={handleChange}
                                             placeholder={t('contact.form.message.placeholder')}
-                                            className="min-h-[150px] bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500 resize-none"
+                                            className="min-h-[150px] bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 resize-none"
                                             required
                                         />
                                     </div>
@@ -254,27 +254,27 @@ const Contact = () => {
 
                         {/* Business Hours & FAQ */}
                         <div className="space-y-6">
-                            <Card className="border border-slate-700 bg-slate-800">
+                            <Card className="border border-border bg-card">
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-blue-500/10 rounded-lg">
                                             <Clock className="h-6 w-6 text-blue-500" />
                                         </div>
-                                        <CardTitle className="text-xl font-bold text-slate-100">{t('contact.hours.title')}</CardTitle>
+                                        <CardTitle className="text-xl font-bold text-foreground">{t('contact.hours.title')}</CardTitle>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between items-center py-2 border-b border-slate-700">
-                                        <span className="text-slate-300 font-medium">{t('contact.hours.weekday')}</span>
-                                        <span className="text-slate-400">{t('contact.hours.weekday.time')}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-border">
+                                        <span className="text-foreground font-medium">{t('contact.hours.weekday')}</span>
+                                        <span className="text-muted-foreground">{t('contact.hours.weekday.time')}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-slate-700">
-                                        <span className="text-slate-300 font-medium">{t('contact.hours.saturday')}</span>
-                                        <span className="text-slate-400">{t('contact.hours.saturday.time')}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-border">
+                                        <span className="text-foreground font-medium">{t('contact.hours.saturday')}</span>
+                                        <span className="text-muted-foreground">{t('contact.hours.saturday.time')}</span>
                                     </div>
                                     <div className="flex justify-between items-center py-2">
-                                        <span className="text-slate-300 font-medium">{t('contact.hours.sunday')}</span>
-                                        <span className="text-slate-400">{t('contact.hours.sunday.time')}</span>
+                                        <span className="text-foreground font-medium">{t('contact.hours.sunday')}</span>
+                                        <span className="text-muted-foreground">{t('contact.hours.sunday.time')}</span>
                                     </div>
                                     <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                                         <p className="text-sm text-emerald-400 flex items-center gap-2">
@@ -285,20 +285,20 @@ const Contact = () => {
                                 </CardContent>
                             </Card>
 
-                            <Card className="border border-slate-700 bg-slate-800">
+                            <Card className="border border-border bg-card">
                                 <CardHeader>
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-purple-500/10 rounded-lg">
                                             <HelpCircle className="h-6 w-6 text-purple-500" />
                                         </div>
-                                        <CardTitle className="text-xl font-bold text-slate-100">{t('contact.faq.title')}</CardTitle>
+                                        <CardTitle className="text-xl font-bold text-foreground">{t('contact.faq.title')}</CardTitle>
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {faqs.map((faq, index) => (
-                                        <div key={index} className="pb-4 border-b border-slate-700 last:border-0 last:pb-0">
-                                            <h4 className="text-slate-100 font-semibold mb-2">{faq.question}</h4>
-                                            <p className="text-slate-400 text-sm leading-relaxed">{faq.answer}</p>
+                                        <div key={index} className="pb-4 border-b border-border last:border-0 last:pb-0">
+                                            <h4 className="text-foreground font-semibold mb-2">{faq.question}</h4>
+                                            <p className="text-muted-foreground text-sm leading-relaxed">{faq.answer}</p>
                                         </div>
                                     ))}
                                 </CardContent>
@@ -309,23 +309,23 @@ const Contact = () => {
             </section>
 
             {/* Additional Info Section */}
-            <section className="py-16 bg-slate-800/50">
+            <section className="py-16 bg-secondary/50">
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto text-center">
                         <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-full mb-6">
                             <Globe className="h-8 w-8 text-amber-500" />
                         </div>
-                        <h2 className="text-3xl font-bold mb-4 text-slate-100">{t('contact.help.title')}</h2>
-                        <p className="text-lg text-slate-400 mb-8 max-w-2xl mx-auto">
+                        <h2 className="text-3xl font-bold mb-4 text-foreground">{t('contact.help.title')}</h2>
+                        <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                             {t('contact.help.desc')}
                         </p>
                         <div className="flex flex-wrap justify-center gap-4">
-                            <div className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg">
-                                <span className="text-slate-300 text-sm">{t('contact.help.response')} </span>
+                            <div className="px-4 py-2 bg-card border border-border rounded-lg">
+                                <span className="text-foreground text-sm">{t('contact.help.response')} </span>
                                 <span className="text-amber-500 font-semibold">{t('contact.help.response.time')}</span>
                             </div>
-                            <div className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg">
-                                <span className="text-slate-300 text-sm">{t('contact.help.languages')} </span>
+                            <div className="px-4 py-2 bg-card border border-border rounded-lg">
+                                <span className="text-foreground text-sm">{t('contact.help.languages')} </span>
                                 <span className="text-amber-500 font-semibold">{t('contact.help.languages.list')}</span>
                             </div>
                         </div>

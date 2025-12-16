@@ -148,11 +148,11 @@ const Privacy = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
             <Navbar />
 
             {/* Header Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <section className="relative pt-32 pb-20 overflow-hidden bg-background">
                 <div className="absolute inset-0 z-0 opacity-10">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
@@ -161,13 +161,13 @@ const Privacy = () => {
                     <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-2xl mb-6 border border-amber-500/20">
                         <Shield className="h-10 w-10 text-amber-500" />
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-slate-100 leading-tight">
+                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-foreground leading-tight">
                         {t('privacy.hero.title')}
                     </h1>
-                    <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed mb-6">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-6">
                         {t('privacy.hero.subtitle')}
                     </p>
-                    <div className="flex items-center justify-center gap-4 text-slate-400 text-sm">
+                    <div className="flex items-center justify-center gap-4 text-muted-foreground text-sm">
                         <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
                             <span>{t('privacy.hero.lastUpdated')} {t('privacy.hero.december2024')}</span>
@@ -179,17 +179,17 @@ const Privacy = () => {
             </section>
 
             {/* Quick Summary */}
-            <section className="py-12 bg-slate-800/50 border-y border-slate-800">
+            <section className="py-12 bg-secondary/50 border-y border-border">
                 <div className="container mx-auto px-4">
-                    <Card className="border border-amber-500/30 bg-slate-800/80 max-w-4xl mx-auto">
+                    <Card className="border border-amber-500/30 bg-card max-w-4xl mx-auto">
                         <CardContent className="p-8">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 bg-amber-500/10 rounded-xl flex-shrink-0">
                                     <AlertCircle className="h-6 w-6 text-amber-500" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-bold text-slate-100 mb-3">{t('privacy.summary.title')}</h3>
-                                    <ul className="space-y-2 text-slate-300">
+                                    <h3 className="text-xl font-bold text-foreground mb-3">{t('privacy.summary.title')}</h3>
+                                    <ul className="space-y-2 text-muted-foreground">
                                         <li className="flex items-start gap-2">
                                             <span className="text-amber-500 mt-1">•</span>
                                             <span>{t('privacy.summary.p1')}</span>
@@ -215,17 +215,17 @@ const Privacy = () => {
             </section>
 
             {/* Main Content */}
-            <section className="py-16 bg-slate-900">
+            <section className="py-16 bg-background">
                 <div className="container mx-auto px-4 max-w-5xl">
                     <div className="space-y-8">
                         {sections.map((section, index) => (
-                            <Card key={index} className="border border-slate-700 bg-slate-800 hover:border-amber-500/30 transition-all">
+                            <Card key={index} className="border border-border bg-card hover:border-amber-500/30 transition-all">
                                 <CardHeader>
                                     <div className="flex items-center gap-4">
                                         <div className={`p-3 ${section.bgColor} rounded-xl`}>
                                             <section.icon className={`h-6 w-6 ${section.color}`} />
                                         </div>
-                                        <CardTitle className="text-2xl font-bold text-slate-100">
+                                        <CardTitle className="text-2xl font-bold text-foreground">
                                             {index + 1}. {section.title}
                                         </CardTitle>
                                     </div>
@@ -237,10 +237,10 @@ const Privacy = () => {
                                                 key={pIndex}
                                                 className={`leading-relaxed ${
                                                     paragraph.startsWith('•') || paragraph.startsWith('-')
-                                                        ? 'text-slate-300 ml-4'
+                                                        ? 'text-foreground ml-4'
                                                         : paragraph === ''
                                                         ? 'h-4'
-                                                        : 'text-slate-400'
+                                                        : 'text-muted-foreground'
                                                 }`}
                                             >
                                                 {paragraph}
@@ -255,27 +255,27 @@ const Privacy = () => {
             </section>
 
             {/* Changes to Policy */}
-            <section className="py-16 bg-slate-800/50">
+            <section className="py-16 bg-secondary/50">
                 <div className="container mx-auto px-4 max-w-4xl">
-                    <Card className="border border-slate-700 bg-slate-800">
+                    <Card className="border border-border bg-card">
                         <CardHeader>
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-blue-500/10 rounded-xl">
                                     <FileText className="h-6 w-6 text-blue-500" />
                                 </div>
-                                <CardTitle className="text-2xl font-bold text-slate-100">{t('privacy.changes.title')}</CardTitle>
+                                <CardTitle className="text-2xl font-bold text-foreground">{t('privacy.changes.title')}</CardTitle>
                             </div>
                         </CardHeader>
                         <CardContent className="pl-16">
-                            <p className="text-slate-400 leading-relaxed mb-4">
+                            <p className="text-muted-foreground leading-relaxed mb-4">
                                 {t('privacy.changes.p1')}
                             </p>
-                            <ul className="space-y-2 text-slate-300 ml-4">
+                            <ul className="space-y-2 text-muted-foreground ml-4">
                                 <li>• {t('privacy.changes.p2')}</li>
                                 <li>• {t('privacy.changes.p3')}</li>
                                 <li>• {t('privacy.changes.p4')}</li>
                             </ul>
-                            <p className="text-slate-400 leading-relaxed mt-4">
+                            <p className="text-muted-foreground leading-relaxed mt-4">
                                 {t('privacy.changes.p6')}
                             </p>
                         </CardContent>
@@ -284,25 +284,25 @@ const Privacy = () => {
             </section>
 
             {/* Contact Section */}
-            <section className="py-16 bg-slate-900">
+            <section className="py-16 bg-background">
                 <div className="container mx-auto px-4 max-w-4xl">
-                    <Card className="border border-amber-500/30 bg-gradient-to-br from-slate-800 to-slate-900">
+                    <Card className="border border-amber-500/30 bg-card">
                         <CardContent className="p-12 text-center">
                             <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-full mb-6">
                                 <Mail className="h-10 w-10 text-amber-500" />
                             </div>
-                            <h2 className="text-3xl font-bold mb-4 text-slate-100">{t('privacy.contact.title')}</h2>
-                            <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
+                            <h2 className="text-3xl font-bold mb-4 text-foreground">{t('privacy.contact.title')}</h2>
+                            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                                 {t('privacy.contact.desc')}
                             </p>
                             <div className="space-y-4 mb-8">
-                                <div className="flex items-center justify-center gap-3 text-slate-200">
+                                <div className="flex items-center justify-center gap-3 text-foreground">
                                     <Mail className="h-5 w-5 text-amber-500" />
                                     <a href={`mailto:${t('privacy.contact.email1')}`} className="text-amber-500 hover:text-amber-400 hover:underline font-medium">
                                         {t('privacy.contact.email1')}
                                     </a>
                                 </div>
-                                <div className="flex items-center justify-center gap-3 text-slate-200">
+                                <div className="flex items-center justify-center gap-3 text-foreground">
                                     <Mail className="h-5 w-5 text-amber-500" />
                                     <a href={`mailto:${t('privacy.contact.email2')}`} className="text-amber-500 hover:text-amber-400 hover:underline font-medium">
                                         {t('privacy.contact.email2')}

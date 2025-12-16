@@ -53,10 +53,10 @@ const AdminReports = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">Loading...</p>
+          <p className="text-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -68,10 +68,10 @@ const AdminReports = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">Loading reports...</p>
+          <p className="text-foreground">Loading reports...</p>
         </div>
       </div>
     );
@@ -415,15 +415,15 @@ const AdminReports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2 text-slate-100">Reports & Insights</h1>
-            <p className="text-slate-400">Comprehensive analytics and business insights</p>
+            <h1 className="text-3xl font-bold mb-2 text-foreground">Reports & Insights</h1>
+            <p className="text-muted-foreground">Comprehensive analytics and business insights</p>
           </div>
           <Button
             onClick={generatePDF}
@@ -436,12 +436,12 @@ const AdminReports = () => {
 
         {/* Key Metrics Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
+          <Card className="border border-amber-500/30 bg-card shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Revenue</p>
-                  <p className="text-3xl font-bold text-slate-100">रू {totalRevenue.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Revenue</p>
+                  <p className="text-3xl font-bold text-foreground">रू {totalRevenue.toLocaleString()}</p>
                   <div className="flex items-center mt-2 text-sm">
                     <TrendingUp className="h-4 w-4 text-amber-500 mr-1" />
                     <span className="text-amber-500 font-medium">All time</span>
@@ -454,12 +454,12 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
+        <Card className="border border-amber-500/30 bg-card shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400 mb-1 font-medium">Avg Booking Value</p>
-                  <p className="text-3xl font-bold text-slate-100">रू {Math.round(averageBookingValue).toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Avg Booking Value</p>
+                  <p className="text-3xl font-bold text-foreground">रू {Math.round(averageBookingValue).toLocaleString()}</p>
                   <div className="flex items-center mt-2 text-sm">
                     <BarChart3 className="h-4 w-4 text-amber-500 mr-1" />
                     <span className="text-amber-500 font-medium">Per transaction</span>
@@ -472,12 +472,12 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
+        <Card className="border border-amber-500/30 bg-card shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400 mb-1 font-medium">Success Rate</p>
-                  <p className="text-3xl font-bold text-slate-100">
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Success Rate</p>
+                  <p className="text-3xl font-bold text-foreground">
                     {totalBookings > 0 ? Math.round((successfulBookings.length / totalBookings) * 100) : 0}%
                   </p>
                   <div className="flex items-center mt-2 text-sm">
@@ -492,12 +492,12 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-amber-500/30 bg-slate-800 shadow-sm hover:shadow-amber-500/20 transition-all">
+        <Card className="border border-amber-500/30 bg-card shadow-sm hover:shadow-amber-500/20 transition-all">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400 mb-1 font-medium">Total Customers</p>
-                  <p className="text-3xl font-bold text-slate-100">{activeUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">Total Customers</p>
+                  <p className="text-3xl font-bold text-foreground">{activeUsers}</p>
                   <div className="flex items-center mt-2 text-sm">
                     <Users className="h-4 w-4 text-amber-500 mr-1" />
                     <span className="text-amber-500 font-medium">Active users</span>
@@ -514,9 +514,9 @@ const AdminReports = () => {
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-2 gap-6 mb-8">
           {/* Booking Status Distribution */}
-          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+          <Card className="border border-border bg-card shadow-sm">
             <CardHeader>
-              <CardTitle className="text-slate-100 flex items-center">
+              <CardTitle className="text-foreground flex items-center">
                 <PieChart className="mr-2 h-5 w-5" />
                 Booking Status Distribution
               </CardTitle>
@@ -527,13 +527,13 @@ const AdminReports = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <CheckCircle className="h-4 w-4 text-amber-500 mr-2" />
-                      <span className="text-sm font-medium text-slate-100">Completed</span>
+                      <span className="text-sm font-medium text-foreground">Completed</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {completedBookings.length} ({statusDistribution.completed.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-amber-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.completed}%` }}
@@ -545,13 +545,13 @@ const AdminReports = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <CheckCircle className="h-4 w-4 text-orange-500 mr-2" />
-                      <span className="text-sm font-medium text-slate-100">Paid</span>
+                      <span className="text-sm font-medium text-foreground">Paid</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {paidBookings.length} ({statusDistribution.paid.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-orange-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.paid}%` }}
@@ -563,13 +563,13 @@ const AdminReports = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <Clock className="h-4 w-4 text-yellow-500 mr-2" />
-                      <span className="text-sm font-medium text-slate-100">Pending</span>
+                      <span className="text-sm font-medium text-foreground">Pending</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {pendingBookings.length} ({statusDistribution.pending.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-yellow-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.pending}%` }}
@@ -581,13 +581,13 @@ const AdminReports = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <AlertCircle className="h-4 w-4 text-orange-500 mr-2" />
-                      <span className="text-sm font-medium text-slate-100">Refund Requested</span>
+                      <span className="text-sm font-medium text-foreground">Refund Requested</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {refundRequested.length} ({statusDistribution.refundRequested.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-orange-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.refundRequested}%` }}
@@ -599,13 +599,13 @@ const AdminReports = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center">
                       <XCircle className="h-4 w-4 text-red-500 mr-2" />
-                      <span className="text-sm font-medium text-slate-100">Cancelled</span>
+                      <span className="text-sm font-medium text-foreground">Cancelled</span>
                     </div>
-                    <span className="text-sm font-semibold text-slate-100">
+                    <span className="text-sm font-semibold text-foreground">
                       {cancelledBookings.length} ({statusDistribution.cancelled.toFixed(1)}%)
                     </span>
                   </div>
-                  <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className="bg-red-500 h-2 rounded-full transition-all" 
                       style={{ width: `${statusDistribution.cancelled}%` }}
@@ -617,56 +617,56 @@ const AdminReports = () => {
           </Card>
 
           {/* Resource Utilization */}
-          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+          <Card className="border border-border bg-card shadow-sm">
             <CardHeader>
-              <CardTitle className="text-slate-100 flex items-center">
+              <CardTitle className="text-foreground flex items-center">
                 <Tractor className="mr-2 h-5 w-5" />
                 Fleet Overview
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div className="flex items-center">
                     <Tractor className="h-5 w-5 text-amber-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-slate-100">Total Tractors</p>
-                      <p className="text-xs text-slate-400">In fleet</p>
+                      <p className="text-sm font-medium text-foreground">Total Tractors</p>
+                      <p className="text-xs text-muted-foreground">In fleet</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-slate-100">{totalTractors}</span>
+                  <span className="text-2xl font-bold text-foreground">{totalTractors}</span>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
                   <div className="flex items-center">
                     <CheckCircle className="h-5 w-5 text-amber-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-slate-100">Available</p>
-                      <p className="text-xs text-slate-400">Ready to rent</p>
+                      <p className="text-sm font-medium text-foreground">Available</p>
+                      <p className="text-xs text-muted-foreground">Ready to rent</p>
                     </div>
                   </div>
                   <span className="text-2xl font-bold text-amber-500">{availableTractors}</span>
                 </div>
 
-                <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                   <div className="flex items-center">
                     <Activity className="h-5 w-5 text-orange-500 mr-3" />
                     <div>
-                      <p className="text-sm font-medium text-slate-100">Utilization Rate</p>
-                      <p className="text-xs text-slate-400">Based on bookings</p>
+                      <p className="text-sm font-medium text-foreground">Utilization Rate</p>
+                      <p className="text-xs text-muted-foreground">Based on bookings</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-slate-100">
+                  <span className="text-2xl font-bold text-foreground">
                     {totalTractors > 0 ? Math.round((bookings.length / totalTractors / totalBookings) * 100 || 0) : 0}%
                   </span>
                 </div>
 
                 <div className="mt-4 p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-lg border-2 border-amber-500/20">
-                  <p className="text-sm font-semibold text-amber-400 mb-1">Recent Activity</p>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-sm font-semibold text-amber-500 mb-1">Recent Activity</p>
+                  <p className="text-xs text-muted-foreground">
                     {recentBookings.length} bookings in the last 30 days
                   </p>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-muted-foreground">
                     रू {recentRevenue.toLocaleString()} revenue generated
                   </p>
                 </div>
@@ -676,40 +676,40 @@ const AdminReports = () => {
         </div>
 
         {/* Popular Tractors */}
-        <Card className="border border-slate-700 bg-slate-800 shadow-sm mb-8">
+        <Card className="border border-border bg-card shadow-sm mb-8">
           <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center">
+            <CardTitle className="text-foreground flex items-center">
               <TrendingUp className="mr-2 h-5 w-5" />
               Most Popular Tractors
             </CardTitle>
           </CardHeader>
           <CardContent>
             {popularTractors.length === 0 ? (
-              <p className="text-sm text-slate-400">No tractor statistics available yet</p>
+              <p className="text-sm text-muted-foreground">No tractor statistics available yet</p>
             ) : (
               <div className="space-y-4">
                 {popularTractors.map((tractor, index) => (
-                  <div key={tractor.id} className="flex items-center justify-between p-4 border border-slate-700 rounded-lg hover:bg-slate-700/50 transition-colors">
+                  <div key={tractor.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
                         <span className="text-lg font-bold text-white">#{index + 1}</span>
                       </div>
                       <div>
-                        <p className="font-semibold text-slate-100">{tractor.name}</p>
-                        <p className="text-sm text-slate-400">{tractor.model}</p>
+                        <p className="font-semibold text-foreground">{tractor.name}</p>
+                        <p className="text-sm text-muted-foreground">{tractor.model}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-6 text-sm">
                       <div className="text-center">
-                        <p className="text-xs text-slate-400">Bookings</p>
-                        <p className="font-semibold text-slate-100">{tractor.bookingsCount}</p>
+                        <p className="text-xs text-muted-foreground">Bookings</p>
+                        <p className="font-semibold text-foreground">{tractor.bookingsCount}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-slate-400">Revenue</p>
+                        <p className="text-xs text-muted-foreground">Revenue</p>
                         <p className="font-semibold text-amber-500">रू {tractor.revenue.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xs text-slate-400">Utilization</p>
+                        <p className="text-xs text-muted-foreground">Utilization</p>
                         <p className="font-semibold text-amber-500">{tractor.utilizationRate.toFixed(1)}%</p>
                       </div>
                     </div>
@@ -722,56 +722,56 @@ const AdminReports = () => {
 
         {/* Summary Cards */}
         <div className="grid md:grid-cols-3 gap-6">
-          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+          <Card className="border border-border bg-card shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-slate-100">Quick Stats</CardTitle>
+              <CardTitle className="text-base text-foreground">Quick Stats</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Total Bookings</span>
-                  <span className="font-semibold text-slate-100">{totalBookings}</span>
+                  <span className="text-muted-foreground">Total Bookings</span>
+                  <span className="font-semibold text-foreground">{totalBookings}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Successful</span>
+                  <span className="text-muted-foreground">Successful</span>
                   <span className="font-semibold text-amber-500">{successfulBookings.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Paid</span>
+                  <span className="text-muted-foreground">Paid</span>
                   <span className="font-semibold text-orange-500">{paidBookings.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Cancelled</span>
+                  <span className="text-muted-foreground">Cancelled</span>
                   <span className="font-semibold text-red-500">{cancelledBookings.length}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Refund Pending</span>
+                  <span className="text-muted-foreground">Refund Pending</span>
                   <span className="font-semibold text-orange-500">{refundRequested.length}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+          <Card className="border border-border bg-card shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base text-slate-100">Revenue Insights</CardTitle>
+              <CardTitle className="text-base text-foreground">Revenue Insights</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Total Revenue</span>
+                  <span className="text-muted-foreground">Total Revenue</span>
                   <span className="font-semibold text-amber-500">रू {totalRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Avg per Booking</span>
-                  <span className="font-semibold text-slate-100">रू {Math.round(averageBookingValue).toLocaleString()}</span>
+                  <span className="text-muted-foreground">Avg per Booking</span>
+                  <span className="font-semibold text-foreground">रू {Math.round(averageBookingValue).toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Last 30 Days</span>
+                  <span className="text-muted-foreground">Last 30 Days</span>
                   <span className="font-semibold text-amber-500">रू {recentRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Success Rate</span>
+                  <span className="text-muted-foreground">Success Rate</span>
                   <span className="font-semibold text-amber-500">
                     {totalBookings > 0 ? Math.round((successfulBookings.length / totalBookings) * 100) : 0}%
                   </span>
@@ -780,26 +780,26 @@ const AdminReports = () => {
             </CardContent>
           </Card>
 
-          <Card className="border border-slate-700 bg-slate-800 shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base text-slate-100">Business Health</CardTitle>
+          <Card className="border border-border bg-card shadow-sm">
+              <CardHeader className="pb-3">
+              <CardTitle className="text-base text-foreground">Business Health</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Total Customers</span>
-                  <span className="font-semibold text-slate-100">{activeUsers}</span>
+                  <span className="text-muted-foreground">Total Customers</span>
+                  <span className="font-semibold text-foreground">{activeUsers}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Active Fleet</span>
+                  <span className="text-muted-foreground">Active Fleet</span>
                   <span className="font-semibold text-amber-500">{availableTractors}/{totalTractors}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Fleet Size</span>
-                  <span className="font-semibold text-slate-100">{totalTractors}</span>
+                  <span className="text-muted-foreground">Fleet Size</span>
+                  <span className="font-semibold text-foreground">{totalTractors}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Growth Potential</span>
+                  <span className="text-muted-foreground">Growth Potential</span>
                   <span className="font-semibold text-amber-500">
                     {totalTractors > 0 ? Math.round((availableTractors / totalTractors) * 100) : 0}%
                   </span>

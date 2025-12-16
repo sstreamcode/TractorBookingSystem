@@ -712,22 +712,22 @@ const AdminTractors = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-100">Next Available Date</label>
+                      <label className="text-sm font-medium text-foreground">Next Available Date</label>
                       <Input
                         type="date"
                         value={form.nextAvailableDate}
                         onChange={e => setForm(s => ({ ...s, nextAvailableDate: e.target.value }))}
-                        className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500"
                         style={{ colorScheme: 'dark' }}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-100">Next Available Time</label>
+                      <label className="text-sm font-medium text-foreground">Next Available Time</label>
                       <Input
                         type="time"
                         value={form.nextAvailableTime}
                         onChange={e => setForm(s => ({ ...s, nextAvailableTime: e.target.value }))}
-                        className="bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
+                        className="bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500"
                       />
                     </div>
                     <div className="space-y-2">

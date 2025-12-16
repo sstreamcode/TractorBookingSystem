@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -30,38 +31,40 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <LanguageProvider>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/tractors" element={<UserOnly><Tractors /></UserOnly>} />
-              <Route path="/tractors/:id" element={<UserOnly><TractorDetail /></UserOnly>} />
-              <Route path="/dashboard" element={<UserOnly><UserDashboard /></UserOnly>} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/payment/success" element={<UserOnly><PaymentSuccess /></UserOnly>} />
-              <Route path="/payment/failure" element={<UserOnly><PaymentFailure /></UserOnly>} />
-              <Route path="/tracking" element={<UserOnly><Tracking /></UserOnly>} />
-              <Route path="/map-preview" element={<MapPreview />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
-              <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
-              <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
-              <Route path="/admin/reports" element={<AdminOnly><AdminReports /></AdminOnly>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </LanguageProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <LanguageProvider>
+            <AuthProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/tractors" element={<UserOnly><Tractors /></UserOnly>} />
+                <Route path="/tractors/:id" element={<UserOnly><TractorDetail /></UserOnly>} />
+                <Route path="/dashboard" element={<UserOnly><UserDashboard /></UserOnly>} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/payment/success" element={<UserOnly><PaymentSuccess /></UserOnly>} />
+                <Route path="/payment/failure" element={<UserOnly><PaymentFailure /></UserOnly>} />
+                <Route path="/tracking" element={<UserOnly><Tracking /></UserOnly>} />
+                <Route path="/map-preview" element={<MapPreview />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/admin/dashboard" element={<AdminOnly><AdminDashboard /></AdminOnly>} />
+                <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
+                <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
+                <Route path="/admin/reports" element={<AdminOnly><AdminReports /></AdminOnly>} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </LanguageProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

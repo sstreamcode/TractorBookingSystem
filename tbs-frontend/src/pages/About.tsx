@@ -49,11 +49,11 @@ const About = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
             <Navbar />
 
             {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+            <section className="relative pt-32 pb-20 overflow-hidden bg-background">
                 <div className="absolute inset-0 z-0 opacity-10">
                     <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500 rounded-full blur-3xl"></div>
                     <div className="absolute bottom-20 right-10 w-96 h-96 bg-emerald-500 rounded-full blur-3xl"></div>
@@ -62,48 +62,48 @@ const About = () => {
                     <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-2xl mb-6 border border-amber-500/20">
                         <Target className="h-10 w-10 text-amber-500" />
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-slate-100 leading-tight">
+                    <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-foreground leading-tight">
                         {t('about.hero.title')}
                     </h1>
-                    <p className="text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                    <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                         {t('about.hero.subtitle')}
                     </p>
                 </div>
             </section>
 
             {/* Mission & Vision Section */}
-            <section className="py-20 bg-slate-900">
+            <section className="py-20 bg-background">
                 <div className="container mx-auto px-4">
                     <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
-                        <Card className="border border-slate-700 bg-slate-800 hover:border-amber-500/50 transition-all">
+                        <Card className="border border-border bg-card hover:border-amber-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="p-3 bg-amber-500/10 rounded-xl">
                                         <Target className="h-8 w-8 text-amber-500" />
                                     </div>
-                                    <h2 className="text-3xl font-bold text-slate-100">{t('about.mission.title')}</h2>
+                                    <h2 className="text-3xl font-bold text-foreground">{t('about.mission.title')}</h2>
                                 </div>
-                                <p className="text-lg text-slate-300 leading-relaxed mb-4">
+                                <p className="text-lg text-muted-foreground leading-relaxed mb-4">
                                     {t('about.mission.desc1')}
                                 </p>
-                                <p className="text-base text-slate-400 leading-relaxed">
+                                <p className="text-base text-muted-foreground leading-relaxed">
                                     {t('about.mission.desc2')}
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-slate-700 bg-slate-800 hover:border-emerald-500/50 transition-all">
+                        <Card className="border border-border bg-card hover:border-emerald-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-6">
                                     <div className="p-3 bg-emerald-500/10 rounded-xl">
                                         <Zap className="h-8 w-8 text-emerald-500" />
                                     </div>
-                                    <h2 className="text-3xl font-bold text-slate-100">{t('about.vision.title')}</h2>
+                                    <h2 className="text-3xl font-bold text-foreground">{t('about.vision.title')}</h2>
                                 </div>
-                                <p className="text-lg text-slate-300 leading-relaxed mb-4">
+                                <p className="text-lg text-muted-foreground leading-relaxed mb-4">
                                     {t('about.vision.desc1')}
                                 </p>
-                                <p className="text-base text-slate-400 leading-relaxed">
+                                <p className="text-base text-muted-foreground leading-relaxed">
                                     {t('about.vision.desc2')}
                                 </p>
                             </CardContent>
@@ -113,23 +113,23 @@ const About = () => {
             </section>
 
             {/* Core Values Section */}
-            <section className="py-20 bg-slate-800/50">
+            <section className="py-20 bg-secondary/50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-100">{t('about.values.title')}</h2>
-                        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">{t('about.values.title')}</h2>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                             {t('about.values.subtitle')}
                         </p>
                     </div>
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
                         {values.map((value, index) => (
-                            <Card key={index} className="border border-slate-700 bg-slate-800 hover:border-amber-500/50 transition-all hover:-translate-y-2">
+                            <Card key={index} className="border border-border bg-card hover:border-amber-500/50 transition-all hover:-translate-y-2">
                                 <CardContent className="p-6 text-center">
                                     <div className={`inline-flex items-center justify-center p-4 ${value.bgColor} rounded-xl mb-4`}>
                                         <value.icon className={`h-8 w-8 ${value.color}`} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-100 mb-2">{value.title}</h3>
-                                    <p className="text-slate-400 text-sm leading-relaxed">{value.description}</p>
+                                    <h3 className="text-xl font-bold text-foreground mb-2">{value.title}</h3>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">{value.description}</p>
                                 </CardContent>
                             </Card>
                         ))}
@@ -138,41 +138,41 @@ const About = () => {
             </section>
 
             {/* Impact/Stats Section */}
-            <section className="py-20 bg-slate-900">
+            <section className="py-20 bg-background">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-100">{t('about.impact.title')}</h2>
-                        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">{t('about.impact.title')}</h2>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                             {t('about.impact.subtitle')}
                         </p>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
-                        <Card className="border border-slate-700 bg-slate-800 text-center hover:border-amber-500/50 transition-all">
+                        <Card className="border border-border bg-card text-center hover:border-amber-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="text-5xl font-extrabold text-amber-500 mb-2">1,200+</div>
-                                <div className="text-slate-300 font-medium">{t('about.impact.tractors')}</div>
-                                <div className="text-sm text-slate-500 mt-1">{t('about.impact.tractors.desc')}</div>
+                                <div className="text-foreground font-medium">{t('about.impact.tractors')}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{t('about.impact.tractors.desc')}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800 text-center hover:border-emerald-500/50 transition-all">
+                        <Card className="border border-border bg-card text-center hover:border-emerald-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="text-5xl font-extrabold text-emerald-500 mb-2">25k+</div>
-                                <div className="text-slate-300 font-medium">{t('about.impact.bookings')}</div>
-                                <div className="text-sm text-slate-500 mt-1">{t('about.impact.bookings.desc')}</div>
+                                <div className="text-foreground font-medium">{t('about.impact.bookings')}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{t('about.impact.bookings.desc')}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800 text-center hover:border-blue-500/50 transition-all">
+                        <Card className="border border-border bg-card text-center hover:border-blue-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="text-5xl font-extrabold text-blue-500 mb-2">70+</div>
-                                <div className="text-slate-300 font-medium">{t('about.impact.districts')}</div>
-                                <div className="text-sm text-slate-500 mt-1">{t('about.impact.districts.desc')}</div>
+                                <div className="text-foreground font-medium">{t('about.impact.districts')}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{t('about.impact.districts.desc')}</div>
                             </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800 text-center hover:border-purple-500/50 transition-all">
+                        <Card className="border border-border bg-card text-center hover:border-purple-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="text-5xl font-extrabold text-purple-500 mb-2">4.8/5</div>
-                                <div className="text-slate-300 font-medium">{t('about.impact.rating')}</div>
-                                <div className="text-sm text-slate-500 mt-1">{t('about.impact.rating.desc')}</div>
+                                <div className="text-foreground font-medium">{t('about.impact.rating')}</div>
+                                <div className="text-sm text-muted-foreground mt-1">{t('about.impact.rating.desc')}</div>
                             </CardContent>
                         </Card>
                     </div>
@@ -180,17 +180,17 @@ const About = () => {
             </section>
 
             {/* Journey/Timeline Section */}
-            <section className="py-20 bg-slate-800/50">
+            <section className="py-20 bg-secondary/50">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-100">{t('about.journey.title')}</h2>
-                        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">{t('about.journey.title')}</h2>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                             {t('about.journey.subtitle')}
                         </p>
                     </div>
                     <div className="max-w-4xl mx-auto">
                         <div className="relative">
-                            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-700"></div>
+                            <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-border"></div>
                             <div className="space-y-12">
                                 {milestones.map((milestone, index) => (
                                     <div key={index} className="relative flex items-start gap-6">
@@ -201,10 +201,10 @@ const About = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <Card className="flex-1 border border-slate-700 bg-slate-800 hover:border-amber-500/50 transition-all">
+                                        <Card className="flex-1 border border-border bg-card hover:border-amber-500/50 transition-all">
                                             <CardContent className="p-6">
-                                                <h3 className="text-xl font-bold text-slate-100 mb-2">{milestone.title}</h3>
-                                                <p className="text-slate-400">{milestone.description}</p>
+                                                <h3 className="text-xl font-bold text-foreground mb-2">{milestone.title}</h3>
+                                                <p className="text-muted-foreground">{milestone.description}</p>
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -216,52 +216,52 @@ const About = () => {
             </section>
 
             {/* Why Choose Us Section */}
-            <section className="py-20 bg-slate-900">
+            <section className="py-20 bg-background">
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
-                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-100">{t('about.why.title')}</h2>
-                        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+                        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">{t('about.why.title')}</h2>
+                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                             {t('about.why.subtitle')}
                         </p>
                     </div>
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                        <Card className="border border-slate-700 bg-slate-800 hover:border-amber-500/50 transition-all">
+                        <Card className="border border-border bg-card hover:border-amber-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="p-3 bg-amber-500/10 rounded-xl">
                                         <Globe className="h-6 w-6 text-amber-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-100">{t('about.why.network.title')}</h3>
+                                    <h3 className="text-xl font-bold text-foreground">{t('about.why.network.title')}</h3>
                                 </div>
-                                <p className="text-slate-400 leading-relaxed">
+                                <p className="text-muted-foreground leading-relaxed">
                                     {t('about.why.network.desc')}
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-slate-700 bg-slate-800 hover:border-emerald-500/50 transition-all">
+                        <Card className="border border-border bg-card hover:border-emerald-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="p-3 bg-emerald-500/10 rounded-xl">
                                         <Clock className="h-6 w-6 text-emerald-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-100">{t('about.why.tracking.title')}</h3>
+                                    <h3 className="text-xl font-bold text-foreground">{t('about.why.tracking.title')}</h3>
                                 </div>
-                                <p className="text-slate-400 leading-relaxed">
+                                <p className="text-muted-foreground leading-relaxed">
                                     {t('about.why.tracking.desc')}
                                 </p>
                             </CardContent>
                         </Card>
 
-                        <Card className="border border-slate-700 bg-slate-800 hover:border-blue-500/50 transition-all">
+                        <Card className="border border-border bg-card hover:border-blue-500/50 transition-all">
                             <CardContent className="p-8">
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="p-3 bg-blue-500/10 rounded-xl">
                                         <Award className="h-6 w-6 text-blue-500" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-100">{t('about.why.verified.title')}</h3>
+                                    <h3 className="text-xl font-bold text-foreground">{t('about.why.verified.title')}</h3>
                                 </div>
-                                <p className="text-slate-400 leading-relaxed">
+                                <p className="text-muted-foreground leading-relaxed">
                                     {t('about.why.verified.desc')}
                                 </p>
                             </CardContent>
@@ -273,15 +273,15 @@ const About = () => {
             {/* CTA Section */}
             <section className="py-20 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
                 <div className="container mx-auto px-4">
-                    <Card className="border border-amber-500/30 bg-slate-800/80 backdrop-blur-sm max-w-4xl mx-auto">
+                    <Card className="border border-amber-500/30 bg-card/80 backdrop-blur-sm max-w-4xl mx-auto">
                         <CardContent className="p-12 text-center">
                             <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-full mb-6">
                                 <Heart className="h-10 w-10 text-amber-500" />
                             </div>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-100">
+                            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">
                                 {t('about.cta.title')}
                             </h2>
-                            <p className="text-lg text-slate-300 mb-8 max-w-2xl mx-auto">
+                            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
                                 {t('about.cta.desc')}
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -292,7 +292,7 @@ const About = () => {
                                     </Button>
                                 </Link>
                                 <Link to="/contact">
-                                    <Button size="lg" variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-700 px-8">
+                                    <Button size="lg" variant="outline" className="border-border text-foreground hover:bg-muted px-8">
                                         {t('about.cta.contact')}
                                     </Button>
                                 </Link>

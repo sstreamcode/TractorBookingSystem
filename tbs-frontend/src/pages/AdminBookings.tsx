@@ -406,13 +406,13 @@ const AdminBookings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900">
+  <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-slate-100">Manage Bookings</h1>
-          <p className="text-slate-400">View and manage all tractor bookings</p>
+          <h1 className="text-3xl font-bold mb-2 text-foreground">Manage Bookings</h1>
+          <p className="text-muted-foreground">View and manage all tractor bookings</p>
         </div>
 
         <div className="mb-6 flex gap-4">
@@ -455,35 +455,35 @@ const AdminBookings = () => {
           </Select>
         </div>
 
-        <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="text-slate-100">All Bookings ({filteredBookings.length})</CardTitle>
+            <CardTitle className="text-foreground">All Bookings ({filteredBookings.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredBookings.length === 0 ? (
               <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-400">No bookings found</p>
+                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No bookings found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700">
-                      <TableHead className="w-[80px] text-slate-100">ID</TableHead>
-                    <TableHead className="text-slate-100">Customer</TableHead>
-                    <TableHead className="text-slate-100">Tractor</TableHead>
-                      <TableHead className="text-slate-100">Date</TableHead>
-                      <TableHead className="w-[100px] text-slate-100">Cost</TableHead>
-                      <TableHead className="w-[120px] text-slate-100">Status</TableHead>
-                      <TableHead className="w-[120px] text-slate-100">Actions</TableHead>
+                  <TableRow className="border-border">
+                      <TableHead className="w-[80px] text-foreground">ID</TableHead>
+                    <TableHead className="text-foreground">Customer</TableHead>
+                    <TableHead className="text-foreground">Tractor</TableHead>
+                      <TableHead className="text-foreground">Date</TableHead>
+                      <TableHead className="w-[100px] text-foreground">Cost</TableHead>
+                      <TableHead className="w-[120px] text-foreground">Status</TableHead>
+                      <TableHead className="w-[120px] text-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id} className="hover:bg-slate-700/50 border-slate-700">
-                        <TableCell className="font-mono text-sm text-slate-100">#{booking.id}</TableCell>
-                        <TableCell className="font-medium text-slate-100">{booking.userName}</TableCell>
+                      <TableRow key={booking.id} className="hover:bg-muted border-border">
+                        <TableCell className="font-mono text-sm text-foreground">#{booking.id}</TableCell>
+                        <TableCell className="font-medium text-foreground">{booking.userName}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                             <img 
@@ -491,19 +491,19 @@ const AdminBookings = () => {
                               alt={booking.tractorName}
                               className="w-10 h-10 rounded object-cover"
                             />
-                            <span className="text-sm text-slate-100">{booking.tractorName}</span>
+                            <span className="text-sm text-foreground">{booking.tractorName}</span>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                            <p className="font-medium text-slate-100">{new Date(booking.startDate).toLocaleDateString()}</p>
-                            <p className="text-slate-400 text-xs">
+                            <p className="font-medium text-foreground">{new Date(booking.startDate).toLocaleDateString()}</p>
+                            <p className="text-muted-foreground text-xs">
                             {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
                             {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </TableCell>
-                        <TableCell className="font-semibold text-slate-100">रू {booking.totalCost.toLocaleString()}</TableCell>
+                        <TableCell className="font-semibold text-foreground">रू {booking.totalCost.toLocaleString()}</TableCell>
                       <TableCell>
                         <Badge 
                           variant={getStatusColor(booking.status)}
@@ -534,19 +534,19 @@ const AdminBookings = () => {
 
         {/* Booking Details Modal */}
         <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
-          <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0 bg-slate-900 border-slate-700">
+        <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0 bg-background border-border">
             {selectedBooking && (
               <>
-                <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-700 bg-slate-800 relative pr-20">
+              <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-card relative pr-20">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <DialogTitle className="flex items-center gap-3 text-2xl mb-2 text-slate-100">
+                    <DialogTitle className="flex items-center gap-3 text-2xl mb-2 text-foreground">
                         <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600">
                           <Truck className="h-6 w-6 text-white" />
                         </div>
                         <span>Booking #{selectedBooking.id}</span>
                       </DialogTitle>
-                      <DialogDescription className="text-base mt-1 text-slate-400">
+                    <DialogDescription className="text-base mt-1 text-muted-foreground">
                         Complete booking information and management
                       </DialogDescription>
                     </div>
@@ -563,16 +563,16 @@ const AdminBookings = () => {
 
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   <Tabs defaultValue="overview" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3 mb-6 bg-slate-800 border-slate-700">
-                      <TabsTrigger value="overview" className="flex items-center gap-2 text-slate-100 data-[state=active]:bg-slate-700 data-[state=active]:text-amber-500">
+              <TabsList className="grid w-full grid-cols-3 mb-6 bg-muted border-border">
+                      <TabsTrigger value="overview" className="flex items-center gap-2 text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-amber-500">
                         <Info className="h-4 w-4" />
                         Overview
                       </TabsTrigger>
-                      <TabsTrigger value="status" className="flex items-center gap-2 text-slate-100 data-[state=active]:bg-slate-700 data-[state=active]:text-amber-500">
+                      <TabsTrigger value="status" className="flex items-center gap-2 text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-amber-500">
                         <Activity className="h-4 w-4" />
                         Status & Tracking
                       </TabsTrigger>
-                      <TabsTrigger value="actions" className="flex items-center gap-2 text-slate-100 data-[state=active]:bg-slate-700 data-[state=active]:text-amber-500">
+                      <TabsTrigger value="actions" className="flex items-center gap-2 text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-amber-500">
                         <Settings className="h-4 w-4" />
                         Actions
                       </TabsTrigger>
@@ -582,46 +582,46 @@ const AdminBookings = () => {
                     <TabsContent value="overview" className="space-y-4 mt-0">
                       {/* Quick Summary Cards */}
                       <div className="grid grid-cols-3 gap-4">
-                        <Card className="border-2 border-amber-500/30 bg-slate-800">
+                        <Card className="border-2 border-amber-500/30 bg-card">
                           <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
                               <DollarSign className="h-5 w-5 text-amber-500" />
-                              <span className="text-xs font-medium text-slate-400">Total Cost</span>
+                              <span className="text-xs font-medium text-muted-foreground">Total Cost</span>
                             </div>
                             <p className="text-2xl font-bold text-amber-500">रू {selectedBooking.totalCost.toLocaleString()}</p>
                           </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardContent className="pt-6">
                             <div className="flex items-center gap-2 mb-2">
-                              <User className="h-5 w-5 text-slate-400" />
-                              <span className="text-xs font-medium text-slate-400">Customer</span>
+                              <User className="h-5 w-5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Customer</span>
                             </div>
-                            <p className="text-lg font-semibold text-slate-100">{selectedBooking.userName}</p>
+                            <p className="text-lg font-semibold text-foreground">{selectedBooking.userName}</p>
                           </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardContent className="pt-6">
                             <div className="flex items-center gap-2 mb-2">
-                              <Truck className="h-5 w-5 text-slate-400" />
-                              <span className="text-xs font-medium text-slate-400">Tractor</span>
+                              <Truck className="h-5 w-5 text-muted-foreground" />
+                              <span className="text-xs font-medium text-muted-foreground">Tractor</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <img 
                                 src={selectedBooking.tractorImage} 
                                 alt={selectedBooking.tractorName}
-                                className="w-8 h-8 rounded object-cover border border-slate-700"
+                                className="w-8 h-8 rounded object-cover border border-border"
                               />
-                              <p className="text-lg font-semibold text-slate-100">{selectedBooking.tractorName}</p>
+                              <p className="text-lg font-semibold text-foreground">{selectedBooking.tractorName}</p>
                             </div>
                           </CardContent>
                         </Card>
                       </div>
 
                       {/* Booking Period */}
-                      <Card className="border border-slate-700 bg-slate-800">
+                      <Card className="border border-border bg-card">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2 text-slate-100">
+                          <CardTitle className="text-base flex items-center gap-2 text-foreground">
                             <Clock className="h-4 w-4" />
                             Booking Period
                           </CardTitle>
@@ -629,8 +629,8 @@ const AdminBookings = () => {
                         <CardContent>
                           <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-1">
-                              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Start Time</p>
-                              <p className="text-lg font-semibold text-slate-100">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Start Time</p>
+                              <p className="text-lg font-semibold text-foreground">
                                 {new Date(selectedBooking.startDate).toLocaleDateString('en-US', { 
                                   weekday: 'short', 
                                   year: 'numeric', 
@@ -638,13 +638,13 @@ const AdminBookings = () => {
                                   day: 'numeric' 
                                 })}
                               </p>
-                              <p className="text-sm text-slate-400">
+                              <p className="text-sm text-muted-foreground">
                                 {new Date(selectedBooking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
                             <div className="space-y-1">
-                              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">End Time</p>
-                              <p className="text-lg font-semibold text-slate-100">
+                              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">End Time</p>
+                              <p className="text-lg font-semibold text-foreground">
                                 {new Date(selectedBooking.endDate).toLocaleDateString('en-US', { 
                                   weekday: 'short', 
                                   year: 'numeric', 
@@ -652,7 +652,7 @@ const AdminBookings = () => {
                                   day: 'numeric' 
                                 })}
                               </p>
-                              <p className="text-sm text-slate-400">
+                              <p className="text-sm text-muted-foreground">
                                 {new Date(selectedBooking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </p>
                             </div>
@@ -662,15 +662,15 @@ const AdminBookings = () => {
 
                       {/* Delivery Address */}
                       {selectedBooking.deliveryAddress && (
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex items-center gap-2 text-slate-100">
+                            <CardTitle className="text-base flex items-center gap-2 text-foreground">
                               <MapPin className="h-4 w-4" />
                               Delivery Address
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <p className="text-sm leading-relaxed text-slate-100">{selectedBooking.deliveryAddress}</p>
+                            <p className="text-sm leading-relaxed text-foreground">{selectedBooking.deliveryAddress}</p>
                           </CardContent>
                         </Card>
                       )}
@@ -680,9 +680,9 @@ const AdminBookings = () => {
                     <TabsContent value="status" className="space-y-4 mt-0">
                       {/* Status Overview */}
                       <div className="grid grid-cols-3 gap-4">
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-slate-400">Booking Status</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Booking Status</CardTitle>
                           </CardHeader>
                           <CardContent>
                           <Badge 
@@ -693,9 +693,9 @@ const AdminBookings = () => {
                             </Badge>
                           </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-slate-400">Payment Status</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Payment Status</CardTitle>
                           </CardHeader>
                           <CardContent>
                             <Badge 
@@ -706,9 +706,9 @@ const AdminBookings = () => {
                             </Badge>
                           </CardContent>
                         </Card>
-                        <Card className="border border-slate-700 bg-slate-800">
+                        <Card className="border border-border bg-card">
                           <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium text-slate-400">Admin Status</CardTitle>
+                            <CardTitle className="text-sm font-medium text-muted-foreground">Admin Status</CardTitle>
                           </CardHeader>
                           <CardContent>
                             {selectedBooking.adminStatus ? (
@@ -725,16 +725,16 @@ const AdminBookings = () => {
                                 {selectedBooking.adminStatus === 'pending_approval' ? 'Pending Approval' : selectedBooking.adminStatus}
                           </Badge>
                             ) : (
-                              <span className="text-slate-400 text-sm">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </CardContent>
                         </Card>
                       </div>
 
                       {/* Tractor Location with Timeline */}
-                      <Card className="border border-slate-700 bg-slate-800">
+                      <Card className="border border-border bg-card">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base flex items-center gap-2 text-slate-100">
+                          <CardTitle className="text-base flex items-center gap-2 text-foreground">
                             <Package className="h-4 w-4" />
                             Tractor Location & Journey
                           </CardTitle>
@@ -746,7 +746,7 @@ const AdminBookings = () => {
                               'ORDERED': { label: 'Ready to Deliver', icon: '📦', color: '!border-blue-500/30 !bg-blue-500/10 !text-blue-400', step: 1 },
                               'DELIVERING': { label: 'On the Way', icon: '🚚', color: '!border-yellow-500/30 !bg-yellow-500/10 !text-yellow-400', step: 2 },
                               'DELIVERED': { label: 'At Customer', icon: '✅', color: '!border-green-500/30 !bg-green-500/10 !text-green-400', step: 3 },
-                              'RETURNED': { label: 'Back in Stock', icon: '🏠', color: '!border-slate-500/30 !bg-slate-500/10 !text-slate-400', step: 4 }
+                              'RETURNED': { label: 'Back in Stock', icon: '🏠', color: '!border-muted/60 !bg-muted !text-muted-foreground', step: 4 }
                             };
                             
                             const steps = [
@@ -787,18 +787,18 @@ const AdminBookings = () => {
                                           <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
                                             isActive 
                                               ? 'bg-gradient-to-br from-amber-500 to-orange-600 border-amber-400 text-white' 
-                                              : 'bg-slate-700 border-slate-600 text-slate-400'
+                                              : 'bg-muted border-border text-muted-foreground'
                                           } ${isCurrent ? 'ring-2 ring-amber-400 ring-offset-2 scale-110' : ''}`}>
                                             <span className="text-lg">{step.icon}</span>
                                           </div>
                                           <p className={`text-xs mt-2 text-center font-medium ${
-                                            isActive ? 'text-slate-100' : 'text-slate-400'
+                                            isActive ? 'text-foreground' : 'text-muted-foreground'
                                           }`}>
                                             {step.label}
                                           </p>
                                           {index < steps.length - 1 && (
                                             <div className={`absolute top-5 left-[60%] w-full h-0.5 ${
-                                              currentStep > (index + 1) ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-slate-600'
+                                              currentStep > (index + 1) ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-muted'
                                             }`} style={{ width: 'calc(100% - 2.5rem)' }} />
                                           )}
                                         </div>
@@ -815,9 +815,9 @@ const AdminBookings = () => {
 
                     {/* Actions Tab */}
                     <TabsContent value="actions" className="space-y-4 mt-0">
-                      <Card className="border border-slate-700 bg-slate-800">
+                      <Card className="border border-border bg-card">
                         <CardHeader>
-                          <CardTitle className="text-lg flex items-center gap-2 text-slate-100">
+                          <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                             <Settings className="h-5 w-5" />
                             Manage Booking
                           </CardTitle>
@@ -831,7 +831,7 @@ const AdminBookings = () => {
                             // If booking is already completed, no further actions
                             if (selectedBooking.status === 'completed') {
                               return (
-                                <p className="text-sm text-slate-400 text-center py-4">
+                                <p className="text-sm text-muted-foreground text-center py-4">
                                   Booking completed. No further actions available.
                                 </p>
                               );
@@ -937,7 +937,7 @@ const AdminBookings = () => {
                             
                             if (availableActions.length === 0) {
                               return (
-                                <p className="text-sm text-slate-400 text-center py-4">
+                                <p className="text-sm text-muted-foreground text-center py-4">
                                   No actions available for this booking
                                 </p>
                               );

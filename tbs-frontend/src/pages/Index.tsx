@@ -52,19 +52,19 @@ const Index = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+        <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
             <Navbar />
 
-            {/* Hero Section - Full Height - Dark Theme */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-900">
+            {/* Hero Section - Full Height */}
+            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
                 {/* Content */}
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="max-w-5xl mx-auto text-center space-y-8 md:space-y-12">
                         <div className="space-y-6 md:space-y-8">
-                            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-slate-100 leading-tight animate-fade-in">
+                            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-foreground leading-tight animate-fade-in">
                                 {t('landing.hero.mainTitle')}
                             </h1>
-                            <p className="text-xl sm:text-2xl md:text-3xl text-slate-300 max-w-4xl mx-auto leading-relaxed">
+                            <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
                                 {t('landing.hero.mainSubtitle')}
                             </p>
                         </div>
@@ -76,7 +76,7 @@ const Index = () => {
                                 </Button>
                             </Link>
                             <Link to="#how" className="w-full sm:w-auto">
-                                <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl border-2 border-slate-600 bg-slate-800/50 backdrop-blur-sm text-slate-100 hover:bg-slate-700 hover:text-white hover:border-amber-500/50 font-semibold transition-all duration-300">
+                                <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl border-2 border-border bg-card/50 backdrop-blur-sm text-foreground hover:bg-muted hover:border-amber-500/50 font-semibold transition-all duration-300">
                                     {t('landing.hero.howItWorksButton')}
                                 </Button>
                             </Link>
@@ -86,7 +86,7 @@ const Index = () => {
             </section>
 
             {/* Image Carousel Section */}
-            <section className="py-16 md:py-24 bg-slate-900 border-y border-slate-800">
+            <section className="py-16 md:py-24 bg-background border-y border-border">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="max-w-7xl mx-auto">
                         <Carousel
@@ -101,8 +101,8 @@ const Index = () => {
                                 {carouselImages.map((image, index) => (
                                     <CarouselItem key={index} className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3">
                                         <div className="p-3">
-                                            <div className="relative group overflow-hidden rounded-2xl border-2 border-slate-700 bg-slate-800 hover:border-amber-500/70 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-2">
-                                                <div className="aspect-[4/3] relative overflow-hidden bg-slate-700">
+                                            <div className="relative group overflow-hidden rounded-2xl border-2 border-border bg-card hover:border-amber-500/70 transition-all duration-500 hover:shadow-2xl hover:shadow-amber-500/20 hover:-translate-y-2">
+                                                <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                                                     <img
                                                         src={image}
                                                         alt={`Tractor showcase ${index + 1}`}
@@ -118,47 +118,47 @@ const Index = () => {
                                     </CarouselItem>
                                 ))}
                             </CarouselContent>
-                            <CarouselPrevious className="left-4 h-12 w-12 bg-slate-800/90 backdrop-blur-sm border-2 border-slate-700 text-slate-100 hover:bg-slate-700 hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
-                            <CarouselNext className="right-4 h-12 w-12 bg-slate-800/90 backdrop-blur-sm border-2 border-slate-700 text-slate-100 hover:bg-slate-700 hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
+                            <CarouselPrevious className="left-4 h-12 w-12 bg-card/90 backdrop-blur-sm border-2 border-border text-foreground hover:bg-muted hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
+                            <CarouselNext className="right-4 h-12 w-12 bg-card/90 backdrop-blur-sm border-2 border-border text-foreground hover:bg-muted hover:text-amber-500 hover:border-amber-500/50 transition-all duration-300 shadow-lg" />
                         </Carousel>
                     </div>
                 </div>
             </section>
 
             {/* Stats Section */}
-            <section className="py-12 md:py-16 bg-slate-900 border-y border-slate-800">
+            <section className="py-12 md:py-16 bg-background border-y border-border">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-6xl mx-auto">
                         <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">1,200+</div>
-                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.activeTractors')}</div>
+                            <div className="text-3xl md:text-4xl font-bold text-foreground mb-2">1,200+</div>
+                            <div className="text-sm md:text-base text-muted-foreground">{t('landing.stats.activeTractors')}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">25k+</div>
-                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.bookingsCompleted')}</div>
+                            <div className="text-3xl md:text-4xl font-bold text-foreground mb-2">25k+</div>
+                            <div className="text-sm md:text-base text-muted-foreground">{t('landing.stats.bookingsCompleted')}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">70+</div>
-                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.districtsCovered')}</div>
+                            <div className="text-3xl md:text-4xl font-bold text-foreground mb-2">70+</div>
+                            <div className="text-sm md:text-base text-muted-foreground">{t('landing.stats.districtsCovered')}</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">4.8/5</div>
-                            <div className="text-sm md:text-base text-slate-400">{t('landing.stats.avgRating')}</div>
+                            <div className="text-3xl md:text-4xl font-bold text-foreground mb-2">4.8/5</div>
+                            <div className="text-sm md:text-base text-muted-foreground">{t('landing.stats.avgRating')}</div>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Featured Tractors Section */}
-            <section id="browse" className="py-16 md:py-24 bg-slate-900">
+            <section id="browse" className="py-16 md:py-24 bg-background">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 md:mb-12 gap-4">
                         <div>
-                            <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-2">{t('landing.featured.title')}</h2>
-                            <p className="text-slate-400 text-base md:text-lg">{t('landing.featured.subtitle')}</p>
+                            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{t('landing.featured.title')}</h2>
+                            <p className="text-muted-foreground text-base md:text-lg">{t('landing.featured.subtitle')}</p>
                         </div>
                         <Link to="/tractors">
-                            <Button variant="outline" className="border-slate-600 text-slate-100 hover:bg-slate-800">
+                            <Button variant="outline" className="border-border text-foreground hover:bg-muted">
                                 {t('landing.featured.seeAll')}
                                 <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
@@ -181,8 +181,8 @@ const Index = () => {
                                             to={`/tractors/${tractor.id}`}
                                             className="group block"
                                         >
-                                            <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-amber-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1">
-                                                <div className="aspect-[4/3] relative overflow-hidden bg-slate-700">
+                                            <div className="bg-card rounded-xl overflow-hidden border border-border hover:border-amber-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/10 hover:-translate-y-1">
+                                                <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                                                     <img
                                                         src={imageUrl}
                                                         alt={tractor.name}
@@ -195,9 +195,9 @@ const Index = () => {
                                                         {tractor.horsePower || 'N/A'} HP
                                                     </div>
                                                     {tractor.rating && (
-                                                        <div className="absolute top-3 left-3 flex items-center gap-1 bg-slate-900/80 backdrop-blur-sm px-2 py-1 rounded-full">
+                                                        <div className="absolute top-3 left-3 flex items-center gap-1 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
                                                             <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                                                            <span className="text-xs font-semibold text-slate-100">{tractor.rating.toFixed(1)}</span>
+                                                            <span className="text-xs font-semibold text-foreground">{tractor.rating.toFixed(1)}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -211,12 +211,12 @@ const Index = () => {
                                                         </div>
                                                     </div>
                                                     {tractor.location && (
-                                                        <div className="flex items-center gap-1 text-sm text-slate-400 mb-3">
+                                                        <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                                                             <MapPin className="h-4 w-4" />
                                                             <span>{tractor.location}</span>
                                                         </div>
                                                     )}
-                                                    <div className="text-sm text-slate-300 group-hover:text-slate-200 transition-colors flex items-center gap-1">
+                                                    <div className="text-sm text-muted-foreground group-hover:text-foreground transition-colors flex items-center gap-1">
                                                         {t('landing.featured.viewDetails')}
                                                         <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                                     </div>
@@ -227,9 +227,9 @@ const Index = () => {
                                 })
                             ) : (
                                 <div className="col-span-full text-center py-16">
-                                    <TractorIcon className="h-16 w-16 mx-auto text-slate-600 mb-4" />
-                                    <p className="text-slate-400 text-lg">{t('landing.featured.noTractors')}</p>
-                                    <p className="text-slate-500 text-sm mt-2">{t('landing.featured.checkBack')}</p>
+                                    <TractorIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                                    <p className="text-muted-foreground text-lg">{t('landing.featured.noTractors')}</p>
+                                    <p className="text-muted-foreground text-sm mt-2">{t('landing.featured.checkBack')}</p>
                                 </div>
                             )}
                         </div>
@@ -238,11 +238,11 @@ const Index = () => {
             </section>
 
             {/* How it works Section */}
-            <section id="how" className="py-16 md:py-24 bg-slate-800/50">
+            <section id="how" className="py-16 md:py-24 bg-secondary/50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">{t('landing.howItWorks.title')}</h2>
-                        <p className="text-slate-400 text-base md:text-lg">{t('landing.howItWorks.subtitle')}</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{t('landing.howItWorks.title')}</h2>
+                        <p className="text-muted-foreground text-base md:text-lg">{t('landing.howItWorks.subtitle')}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 md:gap-8 max-w-7xl mx-auto">
@@ -279,17 +279,17 @@ const Index = () => {
                             },
                         ].map((item, index) => (
                             <div key={index} className="relative">
-                                <div className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-amber-500/50 transition-all duration-300 h-full">
+                                <div className="bg-card rounded-xl p-6 border border-border hover:border-amber-500/50 transition-all duration-300 h-full">
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="w-10 h-10 rounded-full bg-amber-500 text-slate-900 font-bold flex items-center justify-center text-lg">
                                             {item.step}
                                         </div>
-                                        <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center">
+                                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
                                             <item.icon className="h-6 w-6 text-amber-500" />
                                         </div>
                                     </div>
-                                    <h3 className="text-lg font-bold text-slate-100 mb-2">{item.title}</h3>
-                                    <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
+                                    <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
+                                    <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
                                 </div>
                             </div>
                         ))}
@@ -298,11 +298,11 @@ const Index = () => {
             </section>
 
             {/* Why choose TBS Section */}
-            <section className="py-16 md:py-24 bg-slate-900">
+            <section className="py-16 md:py-24 bg-background">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-100 mb-3">{t('landing.whyChoose.title')}</h2>
-                        <p className="text-slate-400 text-base md:text-lg">{t('landing.whyChoose.subtitle')}</p>
+                        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{t('landing.whyChoose.title')}</h2>
+                        <p className="text-muted-foreground text-base md:text-lg">{t('landing.whyChoose.subtitle')}</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 max-w-7xl mx-auto">
@@ -328,12 +328,12 @@ const Index = () => {
                                 icon: TractorIcon,
                             },
                         ].map((feature, index) => (
-                            <div key={index} className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1">
+                            <div key={index} className="bg-card rounded-xl p-6 border border-border hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1">
                                 <div className="w-12 h-12 rounded-lg bg-amber-500/10 flex items-center justify-center mb-4">
                                     <feature.icon className="h-6 w-6 text-amber-500" />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-100 mb-2">{feature.title}</h3>
-                                <p className="text-slate-400 text-sm leading-relaxed">{feature.desc}</p>
+                                <h3 className="text-xl font-bold text-foreground mb-2">{feature.title}</h3>
+                                <p className="text-muted-foreground text-sm leading-relaxed">{feature.desc}</p>
                             </div>
                         ))}
                     </div>
@@ -341,12 +341,12 @@ const Index = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-16 md:py-24 bg-slate-800/50">
+            <section className="py-16 md:py-24 bg-secondary/50">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="max-w-4xl mx-auto bg-slate-800 rounded-2xl p-8 md:p-12 border border-slate-700">
+                    <div className="max-w-4xl mx-auto bg-card rounded-2xl p-8 md:p-12 border border-border">
                         <div className="text-center space-y-6">
-                            <h3 className="text-2xl md:text-3xl font-bold text-slate-100">{t('landing.cta.title')}</h3>
-                            <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto">
+                            <h3 className="text-2xl md:text-3xl font-bold text-foreground">{t('landing.cta.title')}</h3>
+                            <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto">
                                 {t('landing.cta.subtitle')}
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -357,7 +357,7 @@ const Index = () => {
                                     </Button>
                                 </Link>
                                 <Link to="/login" className="w-full sm:w-auto">
-                                    <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-slate-600 bg-slate-800/50 text-slate-100 hover:bg-slate-700 hover:text-white">
+                                    <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-border bg-card/50 text-foreground hover:bg-muted">
                                         {t('landing.cta.signInButton')}
                                     </Button>
                                 </Link>

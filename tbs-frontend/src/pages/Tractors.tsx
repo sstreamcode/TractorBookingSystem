@@ -240,15 +240,15 @@ const Tractors = () => {
 
   return (
     <>
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         
         <div className="mx-auto max-w-7xl px-4 py-10">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-3 text-slate-100">{t('tractors.header.title')}</h1>
-            <p className="text-lg text-slate-400 font-medium">{t('tractors.header.subtitle')}</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-3 text-foreground">{t('tractors.header.title')}</h1>
+            <p className="text-lg text-muted-foreground font-medium">{t('tractors.header.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             {activeFilterCount > 0 && (
@@ -269,13 +269,13 @@ const Tractors = () => {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="rounded-2xl border border-slate-700 bg-slate-800 shadow-lg mb-8 overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-lg mb-8 overflow-hidden">
             {/* Quick Search Bar */}
-            <div className="p-4 border-b border-slate-700 bg-slate-800/50">
+            <div className="p-4 border-b border-border bg-muted/60">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input 
-                  className="pl-10 h-11 rounded-lg border-slate-700 bg-slate-900 text-slate-100 placeholder:text-slate-500 focus:border-amber-500" 
+                  className="pl-10 h-11 rounded-lg border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-amber-500" 
                   placeholder={t('tractors.filters.search')} 
                   value={searchQuery} 
                   onChange={(e)=>setSearchQuery(e.target.value)} 
@@ -327,13 +327,13 @@ const Tractors = () => {
               </div>
 
               {/* Collapsible Sections */}
-              <div className="space-y-3 pt-2 border-t border-slate-700">
+              <div className="space-y-3 pt-2 border-t border-border">
                 {/* Tractor Types */}
                 <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => setExpandedSections(s => ({ ...s, types: !s.types }))}
-                    className="flex items-center justify-between w-full text-sm font-semibold text-slate-200 hover:text-amber-500 transition-colors"
+                    className="flex items-center justify-between w-full text-sm font-semibold text-foreground hover:text-amber-500 transition-colors"
                   >
                     <span>{t('tractors.filters.types')}</span>
                     {expandedSections.types ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -353,8 +353,8 @@ const Tractors = () => {
                           onClick={() => setTypeFilter(s => ({ ...s, [key]: !s[key as keyof typeof s] }))}
                           className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                             typeFilter[key as keyof typeof typeFilter]
-                              ? 'bg-primary text-white shadow-md'
-                              : 'bg-muted text-slate-400 hover:bg-muted/80'
+                              ? 'bg-primary text-primary-foreground shadow-md'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
                           }`}
                         >
                           {label}
@@ -369,7 +369,7 @@ const Tractors = () => {
                   <button
                     type="button"
                     onClick={() => setExpandedSections(s => ({ ...s, price: !s.price }))}
-                    className="flex items-center justify-between w-full text-sm font-semibold text-slate-200 hover:text-amber-500 transition-colors"
+                    className="flex items-center justify-between w-full text-sm font-semibold text-foreground hover:text-amber-500 transition-colors"
                   >
                     <span>{t('tractors.filters.price')}</span>
                     {expandedSections.price ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -397,7 +397,7 @@ const Tractors = () => {
                   <button
                     type="button"
                     onClick={() => setExpandedSections(s => ({ ...s, specs: !s.specs }))}
-                    className="flex items-center justify-between w-full text-sm font-semibold text-slate-200 hover:text-amber-500 transition-colors"
+                    className="flex items-center justify-between w-full text-sm font-semibold text-foreground hover:text-amber-500 transition-colors"
                   >
                     <span>{t('tractors.filters.hp')}</span>
                     {expandedSections.specs ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -422,10 +422,10 @@ const Tractors = () => {
               </div>
 
               {/* Active Filters & Reset */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-700">
+              <div className="flex items-center justify-between pt-3 border-t border-border">
                 {activeFilterCount > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Active:</span>
+                    <span className="text-xs text-muted-foreground">Active:</span>
                     <Badge variant="secondary" className="text-xs">
                       {activeFilterCount}
                     </Badge>
@@ -450,10 +450,10 @@ const Tractors = () => {
         )}
 
         {/* Results */}
-        {loading && <p className="text-sm text-slate-400">{t('tractors.loading')}</p>}
+        {loading && <p className="text-sm text-muted-foreground">{t('tractors.loading')}</p>}
         {error && <p className="text-sm text-red-500">{t('tractors.error')}</p>}
         <div className="mb-4">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             {t('tractors.showing')} {filteredTractors.length}{' '}
             {filteredTractors.length === 1 ? t('tractors.showing.unit.single') : t('tractors.showing.unit')}
           </p>
@@ -470,7 +470,7 @@ const Tractors = () => {
               const activeImage = gallery[currentIndex] || tractor.image;
 
               return (
-                <div key={tractor.id} className="flex flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-800 shadow-sm h-full hover:border-amber-500/50 transition-colors">
+                <div key={tractor.id} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm h-full hover:border-amber-500/50 transition-colors">
                   <TractorImageCarousel
                     tractorId={tractor.id}
                     gallery={gallery}
@@ -496,37 +496,37 @@ const Tractors = () => {
                       </div>
                     )}
                     {typeof t.rating === 'number' && (
-                      <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-slate-900/90 px-2.5 py-1 text-xs font-medium text-amber-500 shadow z-10">
+                      <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium text-amber-500 shadow z-10">
                         ★ {t.rating.toFixed(1)}
                       </div>
                     )}
                     <div
-                      className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow z-10 ${
+                        className={`absolute right-3 top-3 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold shadow z-10 ${
                         tractor.available
-                          ? 'bg-emerald-500/20 text-emerald-400'
+                          ? 'bg-emerald-500/20 text-emerald-600'
                           : (tractor.status || '').includes('In Use')
-                          ? 'bg-amber-500/20 text-amber-500'
-                          : 'bg-slate-700 text-slate-400'
+                          ? 'bg-amber-500/20 text-amber-600'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {translateStatusText(tractor.status, tractor.available)}
                     </div>
                   </TractorImageCarousel>
                   <div className="flex flex-col flex-grow p-6">
-                    <h3 className="text-lg font-semibold text-slate-100">{tractor.name}</h3>
-                    <p className="text-sm text-slate-400">{tractor.model}</p>
+                    <h3 className="text-lg font-semibold text-foreground">{tractor.name}</h3>
+                    <p className="text-sm text-muted-foreground">{tractor.model}</p>
                     <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
                       <div className="flex items-center gap-2">
                         <Gauge className="h-4 w-4 text-amber-500" />
                         <div>
-                          <p className="text-xs text-slate-400">{t('tractors.power')}</p>
-                          <p className="font-medium text-slate-200">{tractor.horsePower != null ? `${tractor.horsePower} HP` : '—'}</p>
+                          <p className="text-xs text-muted-foreground">{t('tractors.power')}</p>
+                          <p className="font-medium text-foreground">{tractor.horsePower != null ? `${tractor.horsePower} HP` : '—'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-amber-500" />
                         <div>
-                          <p className="text-xs text-slate-400">{t('tractors.bookings')}</p>
+                          <p className="text-xs text-muted-foreground">{t('tractors.bookings')}</p>
                           <p className="font-medium">{tractor.totalBookings ?? '—'}</p>
                         </div>
                       </div>
@@ -536,10 +536,10 @@ const Tractors = () => {
                         <>
                           <div className="flex items-center gap-2 text-sm">
                             <Fuel className="h-4 w-4 text-amber-500" />
-                            <span className="text-slate-400">{t('tractors.fuelLevel')}</span>
-                            <span className="ml-auto text-xs font-medium text-slate-200">{tractor.fuelLevel}%</span>
+                            <span className="text-muted-foreground">{t('tractors.fuelLevel')}</span>
+                            <span className="ml-auto text-xs font-medium text-foreground">{tractor.fuelLevel}%</span>
                           </div>
-                          <div className="mt-1 h-2 rounded bg-slate-700">
+                          <div className="mt-1 h-2 rounded bg-muted">
                             <div
                               className="h-2 rounded bg-amber-500"
                               style={{ width: `${Math.min(100, tractor.fuelLevel)}%` }}
@@ -547,27 +547,27 @@ const Tractors = () => {
                           </div>
                         </>
                       ) : (
-                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Fuel className="h-4 w-4 text-amber-500" />
                           {t('tractors.fuelUnavailable')}
                         </div>
                       )}
                     </div>
-                    <div className="mt-3 flex items-center gap-2 text-sm text-slate-400">
+                    <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 text-amber-500" />
                       <span>{tractor.location || t('tractors.location')}</span>
                     </div>
                     {tractor.nextAvailableAt && (
-                      <div className="mt-3 rounded-lg bg-slate-700/50 p-3 text-xs text-slate-400">
+                      <div className="mt-3 rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
                         {t('tractors.card.nextAvailableLabel')}{' '}
-                        <span className="font-medium text-slate-200">{tractor.nextAvailableAt}</span>
+                        <span className="font-medium text-foreground">{tractor.nextAvailableAt}</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center justify-between border-t border-slate-700 bg-slate-800/50 p-4 mt-auto">
+                  <div className="flex items-center justify-between border-t border-border bg-muted/40 p-4 mt-auto">
                     <div>
                       <div className="text-2xl font-bold text-amber-500">NPR {tractor.hourlyRate}</div>
-                      <div className="text-xs text-slate-400 -mt-1">{t('tractors.pricePerHour')}</div>
+                      <div className="text-xs text-muted-foreground -mt-1">{t('tractors.pricePerHour')}</div>
                     </div>
                     <div className="relative">
                       {!tractor.available && (
@@ -602,26 +602,26 @@ const Tractors = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <SlidersHorizontal className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <SlidersHorizontal className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-xl font-semibold mb-2">{t('tractors.empty.title')}</h3>
-            <p className="text-slate-400">{t('tractors.empty.subtitle')}</p>
+            <p className="text-muted-foreground">{t('tractors.empty.subtitle')}</p>
           </div>
         )}
         </div>
       </div>
 
       <AlertDialog open={showAvailabilityDialog} onOpenChange={handleDialogToggle}>
-        <AlertDialogContent className="max-w-lg border border-slate-700 bg-slate-800 backdrop-blur-md">
+        <AlertDialogContent className="max-w-lg border border-border bg-card backdrop-blur-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
                 <Clock3 className="h-6 w-6" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-semibold text-slate-100">
+                <AlertDialogTitle className="text-xl font-semibold text-foreground">
                   {selectedTractor?.name || t('tractors.dialog.title')}
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-sm text-slate-400">
+                <AlertDialogDescription className="text-sm text-muted-foreground">
                   {t('tractors.dialog.subtitle')}
                 </AlertDialogDescription>
               </div>
@@ -631,26 +631,26 @@ const Tractors = () => {
           <div className="space-y-4">
             <div className="rounded-xl border border-primary/10 bg-primary/5 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">{t('tractors.dialog.currentStatus')}</span>
+                <span className="text-sm text-muted-foreground">{t('tractors.dialog.currentStatus')}</span>
                 <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary capitalize">
                   {dialogDetails?.status || t('status.unavailable')}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{t('tractors.dialog.nextAvailable')}</span>
-                <span className="font-medium text-secondary">
+                <span className="text-muted-foreground">{t('tractors.dialog.nextAvailable')}</span>
+                <span className="font-medium text-foreground">
                   {dialogDetails?.nextAvailableText || t('tractors.dialog.notScheduled')}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">{t('tractors.dialog.currentLocation')}</span>
-                <span className="font-medium text-secondary">
+                <span className="text-muted-foreground">{t('tractors.dialog.currentLocation')}</span>
+                <span className="font-medium text-foreground">
                   {dialogDetails?.location || t('tractors.dialog.locationNotSpecified')}
                 </span>
               </div>
             </div>
 
-            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-slate-400">
+            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
               <Info className="h-5 w-5 text-primary" />
               <p>{dialogDetails?.message || t('tractors.dialog.defaultMessage')}</p>
             </div>

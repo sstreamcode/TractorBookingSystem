@@ -80,10 +80,10 @@ const Tracking = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">{t('tracking.loading')}</p>
+          <p className="text-foreground">{t('tracking.loading')}</p>
         </div>
       </div>
     );
@@ -94,17 +94,17 @@ const Tracking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       <div className="mx-auto max-w-6xl px-4 py-6">
         <div className="mb-6 space-y-3 relative z-20">
-          <h1 className="text-2xl font-semibold text-slate-100">{t('tracking.title')}</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-2xl font-semibold text-foreground">{t('tracking.title')}</h1>
+          <p className="text-sm text-muted-foreground">
             {t('tracking.subtitle')}
           </p>
           {trackableBookings.length > 0 ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{t('tracking.selectBooking')}</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t('tracking.selectBooking')}</p>
               <Select
                 value={selectedBookingId ?? ''}
                 onValueChange={(value) => {
@@ -130,7 +130,7 @@ const Tracking = () => {
               </Select>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               You don’t have any bookings ready for tracking yet. Once a tractor is approved, its route will appear here.
             </p>
           )}
@@ -158,50 +158,50 @@ const Tracking = () => {
                   : undefined
               }
               route={trackingData.route}
-              className="h-[60vh] w-full rounded-xl border border-slate-700 bg-slate-800 relative z-10"
+              className="h-[60vh] w-full rounded-xl border border-border bg-card relative z-10"
             />
 
             {trackingLoading && (
-              <p className="text-xs text-slate-400">Refreshing tracking data...</p>
+              <p className="text-xs text-muted-foreground">Refreshing tracking data...</p>
             )}
 
             {trackingError && <p className="text-sm text-red-400">{trackingError}</p>}
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">ETA</p>
-                <p className="text-3xl font-semibold text-slate-100 mt-2">
+          <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">ETA</p>
+                <p className="text-3xl font-semibold text-foreground mt-2">
                   {trackingData.etaMinutes ? `${trackingData.etaMinutes} min` : '—'}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Distance</p>
-                <p className="text-3xl font-semibold text-slate-100 mt-2">
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Distance</p>
+                <p className="text-3xl font-semibold text-foreground mt-2">
                   {trackingData.distanceKm ? `${trackingData.distanceKm.toFixed(1)} km` : '—'}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Status</p>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
                 <p className="text-lg font-semibold text-amber-500 mt-2">
                   {trackingData.bookingStatus ? trackingData.bookingStatus.toUpperCase() : trackingData.status || '—'}
                 </p>
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-700 bg-slate-800 p-4 space-y-2 text-sm">
+            <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-sm">
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Current location</p>
-                <p className="text-slate-100 font-medium">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Current location</p>
+                <p className="text-foreground font-medium">
                   {trackingData.currentLocation?.address || 'Awaiting live update'}
                 </p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Destination</p>
-                <p className="text-slate-100 font-medium">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Destination</p>
+                <p className="text-foreground font-medium">
                   {trackingData.destination?.address || trackingData.deliveryAddress || 'Not assigned'}
                 </p>
                 {trackingData.deliveryWindow && (
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Window:{' '}
                     {new Date(trackingData.deliveryWindow.startAt).toLocaleString()} -{' '}
                     {new Date(trackingData.deliveryWindow.endAt).toLocaleString()}
@@ -210,8 +210,8 @@ const Tracking = () => {
               </div>
             </div>
           </div>
-        ) : trackableBookings.length > 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-800 p-8 text-center text-sm text-slate-400">
+          ) : trackableBookings.length > 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
             {trackingLoading ? 'Loading tracking data...' : 'Select a booking to view its route.'}
           </div>
         ) : null}

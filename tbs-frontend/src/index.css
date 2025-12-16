@@ -23,7 +23,7 @@
 
 @layer base {
   :root {
-    /* Base Colors - Dark Theme */
+    /* Base Colors - Dark Theme (default) */
     --background: 222 47% 11%; /* slate-900 */
     --foreground: 210 40% 98%; /* slate-100 */
 
@@ -81,6 +81,34 @@
     --gradient-subtle: linear-gradient(135deg, rgba(236, 253, 245, 0.5) 0%, rgba(255, 255, 255, 0.5) 100%);
   }
 
+  /* Light theme overrides (when html has class \"light\") */
+  .light {
+    --background: 0 0% 100%; /* white */
+    --foreground: 222 47% 11%; /* slate-900 */
+
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 222 47% 11%; /* slate-900 */
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --secondary: 210 40% 96%; /* slate-100 */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%; /* slate-100 */
+    --muted-foreground: 215 20% 35%; /* slate-600 */
+
+    --accent: 38 92% 50%; /* amber-500 */
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%; /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 38 92% 50%;
+  }
+
   * {
     @apply border-border;
   }
@@ -93,13 +121,17 @@
     line-height: 1.6;
   }
 
+  .light body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply text-slate-100 font-bold;
+    @apply text-foreground font-bold;
     letter-spacing: -0.025em;
     line-height: 1.2;
   }
@@ -439,6 +471,7 @@
     right: 20px !important;
   }
 
+  /* Default (dark mode) toast styling */
   [data-sonner-toast] {
     border: 2px solid !important;
     border-radius: 0.5rem !important;
@@ -448,6 +481,14 @@
     padding: 1rem !important;
     min-width: 300px !important;
     max-width: 400px !important;
+  }
+
+  /* Light mode toast styling */
+  .light [data-sonner-toast] {
+    background-color: #ffffff !important;
+    color: #020617 !important; /* slate-950-ish */
+    border-color: rgba(148, 163, 184, 0.6) !important; /* slate-400 */
+    box-shadow: 0 18px 30px -12px rgba(15, 23, 42, 0.18) !important;
   }
 
   [data-sonner-toast][data-type="success"] {
@@ -477,6 +518,14 @@
 
   [data-sonner-toast] [data-description] {
     color: rgb(203, 213, 225) !important; /* slate-300 */
+  }
+
+  .light [data-sonner-toast] [data-title] {
+    color: #020617 !important; /* dark text */
+  }
+
+  .light [data-sonner-toast] [data-description] {
+    color: #475569 !important; /* slate-600 */
   }
 
   [data-sonner-toast] [data-button] {

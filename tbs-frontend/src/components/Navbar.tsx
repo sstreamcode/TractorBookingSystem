@@ -11,6 +11,8 @@ import {
   Info,
   Phone,
   Shield,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +26,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 
 const PRIMARY_NAV = [
@@ -42,6 +45,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin, logout, user } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const activePath = useMemo(() => location.pathname, [location.pathname]);
@@ -63,17 +67,17 @@ const Navbar = () => {
   const isEnglish = language === 'en';
 
   return (
-    <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-6 h-16">
-        {/* Logo - Dark Theme */}
+        {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-slate-900 shadow-lg transition-transform group-hover:scale-105">
             <Tractor className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold text-slate-100 group-hover:text-amber-500 transition-colors">TBS</span>
+          <span className="text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors">TBS</span>
         </Link>
 
-        {/* Desktop Navigation - Clean & Minimal */}
+        {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
           {!isAdmin &&
             PRIMARY_NAV.map((item) => {
@@ -83,8 +87,8 @@ const Navbar = () => {
                   key={item.labelKey}
                   to={item.href}
                   className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
-                      ? 'text-amber-500 bg-slate-800 font-semibold'
-                      : 'text-slate-300 hover:text-amber-500 hover:bg-slate-800/50'
+                      ? 'text-amber-600 bg-muted font-semibold'
+                      : 'text-muted-foreground hover:text-amber-600 hover:bg-muted'
                     }`}
                 >
                   {t(item.labelKey)}
@@ -157,6 +161,25 @@ const Navbar = () => {
 
           {/* Divider */}
           <div className="h-6 w-px bg-border" />
+
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="h-4 w-4" />
+                <span className="hidden lg:inline">Light</span>
+              </>
+            ) : (
+              <>
+                <Moon className="h-4 w-4" />
+                <span className="hidden lg:inline">Dark</span>
+              </>
+            )}
+          </button>
 
           {/* Language Toggle */}
           <button
@@ -294,11 +317,29 @@ const Navbar = () => {
               </div>
 
               {/* Bottom Section */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-muted/30">
+              <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-muted/30 space-y-2">
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <span className="flex items-center gap-3">
+                    {theme === 'dark' ? (
+                      <Sun className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Moon className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    {t('nav.theme')}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {theme === 'dark' ? t('nav.darkMode') : t('nav.lightMode')}
+                  </span>
+                </button>
+
                 {/* Language Toggle */}
                 <button
                   onClick={toggleLanguage}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors mb-2"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
                 >
                   <span className="flex items-center gap-3">
                     <Globe className="h-4 w-4 text-muted-foreground" />

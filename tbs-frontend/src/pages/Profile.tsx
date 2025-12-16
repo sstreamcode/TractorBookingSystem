@@ -35,7 +35,7 @@ const Profile = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-slate-900">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
           <p className="text-slate-100">{t('common.loading')}</p>
@@ -138,7 +138,7 @@ const Profile = () => {
 
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
