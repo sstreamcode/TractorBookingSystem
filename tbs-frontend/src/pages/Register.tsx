@@ -57,7 +57,7 @@ const Register = () => {
             </div>
             <div className="flex flex-col items-start">
               <span className="text-3xl font-bold leading-tight text-foreground group-hover:text-amber-500 transition-colors">
-                TBS
+                Tractor Sewa
               </span>
               <span className="text-xs uppercase tracking-wider text-muted-foreground leading-tight font-semibold">
                 {t('brand.subtitle')}

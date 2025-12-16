@@ -74,7 +74,9 @@ const Navbar = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-slate-900 shadow-lg transition-transform group-hover:scale-105">
             <Tractor className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors">TBS</span>
+          <span className="text-lg font-bold text-foreground group-hover:text-amber-500 transition-colors">
+            Tractor Sewa
+          </span>
         </Link>
 
         {/* Desktop Navigation */}

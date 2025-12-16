@@ -13,7 +13,7 @@ const Footer = () => {
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-slate-900 shadow-lg">
                                 <Tractor className="h-6 w-6" />
                             </div>
-                            <span className="text-xl font-bold text-slate-100">TBS</span>
+                            <span className="text-xl font-bold text-slate-100">Tractor Sewa</span>
                         </div>
                         <p className="text-slate-400 leading-relaxed">
                             Empowering farmers with accessible, reliable, and efficient tractor rental services across Nepal.

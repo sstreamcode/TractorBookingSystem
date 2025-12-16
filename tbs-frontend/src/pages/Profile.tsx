@@ -143,14 +143,14 @@ const Profile = () => {
       
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-slate-100">{t('profile.title')}</h1>
-          <p className="text-slate-400">{t('profile.subtitle')}</p>
+          <h1 className="text-3xl font-bold mb-2 text-foreground">{t('profile.title')}</h1>
+          <p className="text-muted-foreground">{t('profile.subtitle')}</p>
         </div>
 
         {/* Profile Card */}
-        <Card className="border border-slate-700 bg-slate-800 shadow-sm">
+        <Card className="border border-border bg-card shadow-sm">
           <CardHeader>
-            <CardTitle className="text-slate-100 flex items-center">
+            <CardTitle className="text-foreground flex items-center">
               <Settings className="mr-2 h-5 w-5" />
               {t('profile.information')}
             </CardTitle>
@@ -181,19 +181,19 @@ const Profile = () => {
                   className="hidden"
                 />
               </div>
-              <h2 className="text-2xl font-bold text-slate-100">{name}</h2>
-              <p className="text-slate-400">{email}</p>
-              {uploading && <p className="text-sm text-slate-400">{t('profile.uploading')}</p>}
+              <h2 className="text-2xl font-bold text-foreground">{name}</h2>
+              <p className="text-muted-foreground">{email}</p>
+              {uploading && <p className="text-sm text-muted-foreground">{t('profile.uploading')}</p>}
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-700"></div>
+            <div className="border-t border-border"></div>
 
             {/* Form Fields */}
             <div className="space-y-6 max-w-2xl mx-auto">
               {/* Name Field */}
               <div className="space-y-2">
-                <Label htmlFor="name" className="flex items-center text-sm font-medium text-slate-200">
+                <Label htmlFor="name" className="flex items-center text-sm font-medium text-foreground">
                   <User className="mr-2 h-4 w-4" />
                   {t('profile.fullName')}
                 </Label>
@@ -202,14 +202,14 @@ const Profile = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   disabled={!editing}
-                  className="w-full bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500"
+                  className="w-full bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                   placeholder={t('profile.enterName')}
                 />
               </div>
 
               {/* Email Field */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center text-sm font-medium text-slate-200">
+                <Label htmlFor="email" className="flex items-center text-sm font-medium text-foreground">
                   <Mail className="mr-2 h-4 w-4" />
                   {t('profile.emailAddress')}
                 </Label>
@@ -217,10 +217,10 @@ const Profile = () => {
                   id="email"
                   value={email}
                   disabled
-                  className="w-full bg-slate-900 border-slate-700 text-slate-400"
+                  className="w-full bg-muted border-border text-muted-foreground"
                   placeholder="your.email@example.com"
                 />
-                <p className="text-xs text-slate-500">{t('profile.emailCannotChange')}</p>
+                <p className="text-xs text-muted-foreground">{t('profile.emailCannotChange')}</p>
               </div>
 
               {/* Action Buttons */}
@@ -234,7 +234,7 @@ const Profile = () => {
                         setName(user?.name || '');
                       }}
                       disabled={saving}
-                      className="border-slate-700 text-slate-300 hover:bg-slate-700"
+                      className="border-border text-muted-foreground hover:bg-muted"
                     >
                       {t('profile.cancel')}
                     </Button>

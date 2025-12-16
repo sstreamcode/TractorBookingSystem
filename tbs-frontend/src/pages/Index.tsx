@@ -55,31 +55,129 @@ const Index = () => {
         <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
             <Navbar />
 
-            {/* Hero Section - Full Height */}
-            <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-background">
+            {/* Hero Section */}
+            <section className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden bg-background">
+                {/* Decorative background */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-amber-50/70 via-background to-background dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
+                <div className="pointer-events-none absolute -left-40 -top-40 h-80 w-80 rounded-full bg-amber-500/20 blur-3xl dark:bg-amber-500/15" />
+                <div className="pointer-events-none absolute -right-40 -bottom-40 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl dark:bg-emerald-500/15" />
+
                 {/* Content */}
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="max-w-5xl mx-auto text-center space-y-8 md:space-y-12">
-                        <div className="space-y-6 md:space-y-8">
-                            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-foreground leading-tight animate-fade-in">
-                                {t('landing.hero.mainTitle')}
-                            </h1>
-                            <p className="text-xl sm:text-2xl md:text-3xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-                                {t('landing.hero.mainSubtitle')}
-                            </p>
+                    <div className="max-w-6xl mx-auto grid gap-10 md:grid-cols-[minmax(0,1.6fr),minmax(0,1.2fr)] items-center">
+                        {/* Left: copy + actions */}
+                        <div className="space-y-8 md:space-y-10">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-4 py-1.5 text-xs font-semibold shadow-sm border border-amber-100 dark:bg-amber-500/10 dark:text-amber-100 dark:border-amber-500/40">
+                                <TractorIcon className="h-4 w-4" />
+                                <span>{t('landing.hero.badge') ?? 'Modern tractor rental for every farmer'}</span>
+                            </div>
+
+                            <div className="space-y-4 md:space-y-6">
+                                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-tight animate-fade-in">
+                                    {t('landing.hero.mainTitle')}
+                                </h1>
+                                <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+                                    {t('landing.hero.mainSubtitle')}
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                                <Link to="/tractors" className="w-full sm:w-auto">
+                                    <Button
+                                        size="lg"
+                                        className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105"
+                                    >
+                                        {t('landing.hero.browseButton')}
+                                        <ArrowRight className="ml-2 h-6 w-6" />
+                                    </Button>
+                                </Link>
+                                <Link to="#how" className="w-full sm:w-auto">
+                                    <Button
+                                        variant="outline"
+                                        size="lg"
+                                        className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl border-2 border-border bg-card/60 backdrop-blur-sm text-foreground hover:bg-muted hover:border-amber-500/50 font-semibold transition-all duration-300"
+                                    >
+                                        {t('landing.hero.howItWorksButton')}
+                                    </Button>
+                                </Link>
+                            </div>
+
+                            {/* Trust indicators */}
+                            <div className="grid gap-4 sm:grid-cols-3 pt-4 text-left">
+                                <div className="flex items-center gap-3 rounded-xl bg-card/70 border border-border px-4 py-3 shadow-sm">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                                    <div className="text-xs">
+                                        <p className="font-semibold text-foreground">1,200+ tractors</p>
+                                        <p className="text-muted-foreground">Verified and well-maintained</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 rounded-xl bg-card/70 border border-border px-4 py-3 shadow-sm">
+                                    <Navigation className="h-5 w-5 text-sky-500" />
+                                    <div className="text-xs">
+                                        <p className="font-semibold text-foreground">Live GPS tracking</p>
+                                        <p className="text-muted-foreground">Know where your tractor is</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3 rounded-xl bg-card/70 border border-border px-4 py-3 shadow-sm">
+                                    <Clock className="h-5 w-5 text-amber-500" />
+                                    <div className="text-xs">
+                                        <p className="font-semibold text-foreground">24/7 booking</p>
+                                        <p className="text-muted-foreground">Book in minutes, anytime</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-                            <Link to="/tractors" className="w-full sm:w-auto">
-                                <Button size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105">
-                                    {t('landing.hero.browseButton')}
-                                    <ArrowRight className="ml-2 h-6 w-6" />
-                                </Button>
-                            </Link>
-                            <Link to="#how" className="w-full sm:w-auto">
-                                <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl border-2 border-border bg-card/50 backdrop-blur-sm text-foreground hover:bg-muted hover:border-amber-500/50 font-semibold transition-all duration-300">
-                                    {t('landing.hero.howItWorksButton')}
-                                </Button>
-                            </Link>
+
+                        {/* Right: floating preview card */}
+                        <div className="hidden md:block">
+                            <div className="relative">
+                                <div className="absolute -top-10 -right-6 h-32 w-32 rounded-full bg-amber-400/40 blur-3xl dark:bg-amber-500/25" />
+                                <div className="relative rounded-3xl border border-border bg-card/90 shadow-2xl backdrop-blur-md p-5 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                                                Smart booking overview
+                                            </p>
+                                            <h3 className="text-lg font-semibold text-foreground">Today&apos;s highlights</h3>
+                                        </div>
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600">
+                                            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            Live
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-3 text-xs">
+                                        <div className="rounded-2xl bg-muted/60 px-3 py-2.5">
+                                            <p className="text-muted-foreground">Active bookings</p>
+                                            <p className="mt-1 text-xl font-bold text-foreground">18</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-muted/60 px-3 py-2.5">
+                                            <p className="text-muted-foreground">Today&apos;s revenue</p>
+                                            <p className="mt-1 text-xl font-bold text-foreground">रू 1.2L</p>
+                                        </div>
+                                        <div className="rounded-2xl bg-muted/60 px-3 py-2.5">
+                                            <p className="text-muted-foreground">On-time rate</p>
+                                            <p className="mt-1 text-xl font-bold text-foreground">98%</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-2xl border border-dashed border-border bg-muted/50 px-3 py-3 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-9 w-9 rounded-full bg-amber-500/15 flex items-center justify-center">
+                                                <TractorIcon className="h-5 w-5 text-amber-500" />
+                                            </div>
+                                            <div className="text-xs">
+                                                <p className="font-semibold text-foreground">Mahindra 475 DI XP Plus</p>
+                                                <p className="text-muted-foreground">Next booking in 32 min</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right text-xs">
+                                            <p className="font-semibold text-amber-500">रू 1,800/hr</p>
+                                            <p className="text-muted-foreground">Bhaktapur • 45 HP</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -297,7 +395,7 @@ const Index = () => {
                 </div>
             </section>
 
-            {/* Why choose TBS Section */}
+            {/* Why choose Tractor Sewa Section */}
             <section className="py-16 md:py-24 bg-background">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
