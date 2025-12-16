@@ -397,6 +397,18 @@ public class BookingController {
         }
 
         booking.setStatus("DELIVERED");
+        
+        // For COD bookings, consider payment as received when delivery is confirmed
+        // and mark the COD payment record as SUCCESS so that frontend paymentStatus shows "paid"
+        if (isCOD && booking.getPayments() != null) {
+            booking.getPayments().stream()
+                .filter(p -> "CASH_ON_DELIVERY".equals(p.getMethod()) && !"SUCCESS".equals(p.getStatus()))
+                .forEach(p -> {
+                    p.setStatus("SUCCESS");
+                    paymentRepository.save(p);
+                });
+        }
+        
         bookingRepository.save(booking);
 
         Tractor tractor = booking.getTractor();
@@ -474,6 +486,19 @@ public class BookingController {
                 "error", 
                 "Cannot complete booking before the scheduled end time. Booking ends at: " + booking.getEndAt()
             ));
+        }
+
+        // For COD bookings, if payment was never explicitly marked as SUCCESS earlier,
+        // mark it as SUCCESS at completion time so the final payment status is "paid".
+        boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+            .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+        if (isCOD && booking.getPayments() != null) {
+            booking.getPayments().stream()
+                .filter(p -> "CASH_ON_DELIVERY".equals(p.getMethod()) && !"SUCCESS".equals(p.getStatus()))
+                .forEach(p -> {
+                    p.setStatus("SUCCESS");
+                    paymentRepository.save(p);
+                });
         }
 
         booking.setStatus("COMPLETED");
