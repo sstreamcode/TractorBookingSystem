@@ -301,7 +301,7 @@ const Index = () => {
                                                 </div>
                                                 <div className="p-4 md:p-5">
                                                     <div className="flex items-start justify-between mb-2">
-                                                        <h3 className="text-lg md:text-xl font-bold text-slate-100 group-hover:text-amber-500 transition-colors">
+                                                        <h3 className="text-lg md:text-xl font-bold text-foreground group-hover:text-amber-500 transition-colors">
                                                             {tractor.name}
                                                         </h3>
                                                         <div className="text-lg font-bold text-amber-500">

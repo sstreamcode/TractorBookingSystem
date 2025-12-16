@@ -271,9 +271,9 @@ const About = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-800">
+            <section className="py-20 bg-background">
                 <div className="container mx-auto px-4">
-                    <Card className="border border-amber-500/30 bg-card/80 backdrop-blur-sm max-w-4xl mx-auto">
+                    <Card className="border border-border bg-card max-w-4xl mx-auto shadow-lg">
                         <CardContent className="p-12 text-center">
                             <div className="inline-flex items-center justify-center p-4 bg-amber-500/10 rounded-full mb-6">
                                 <Heart className="h-10 w-10 text-amber-500" />
