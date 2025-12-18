@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Tractor } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, Navigate } from 'react-router-dom';
+import { Tractor, MapPin, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,14 +14,88 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState<'customer' | 'tractor_owner'>('customer');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+  const { register, isAuthenticated, isSuperAdmin, isAdmin, isTractorOwner, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      if (isSuperAdmin) {
+        window.location.href = '/super-admin/dashboard';
+      } else if (isTractorOwner) {
+        window.location.href = '/tractor-owner/dashboard';
+      } else if (isAdmin) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/tractors';
+      }
+    }
+  }, [isAuthenticated, isSuperAdmin, isAdmin, isTractorOwner, authLoading]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    if (isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />;
+    if (isTractorOwner) return <Navigate to="/tractor-owner/dashboard" replace />;
+    if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/tractors" replace />;
+  }
+
+  const handleFetchCurrentAddress = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsFetchingAddress(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data.display_name) {
+            setAddress(data.display_name);
+            toast.success('Address fetched successfully!');
+          } else {
+            toast.error('Could not determine address from location.');
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          toast.error('Failed to fetch address. Please enter manually.');
+        } finally {
+          setIsFetchingAddress(false);
+        }
+      },
+      (error) => {
+        setIsFetchingAddress(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error('Location permission denied. Please allow location access or enter address manually.');
+        } else {
+          toast.error('Unable to access your location. Please enter address manually.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword || !phone || !address) {
       toast.error(t('auth.fillAllFields'));
       return;
     }
@@ -38,7 +112,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, role, phone, address);
     } catch (error) {
       console.error('Registration error:', error);
     } finally {
@@ -77,6 +151,35 @@ const Register = () => {
           </CardHeader>
           <CardContent className="pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Role selection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-foreground">Account Type</Label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole('customer')}
+                    className={`flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                      role === 'customer'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                        : 'border-input bg-background text-foreground hover:border-amber-500/60'
+                    }`}
+                  >
+                    Customer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('tractor_owner')}
+                    className={`flex-1 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                      role === 'tractor_owner'
+                        ? 'border-amber-500 bg-amber-500/10 text-amber-500'
+                        : 'border-input bg-background text-foreground hover:border-amber-500/60'
+                    }`}
+                  >
+                    Tractor Owner
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-bold text-foreground">{t('auth.fullName')}</Label>
                 <Input
@@ -101,6 +204,47 @@ const Register = () => {
                   className="h-12 text-base rounded-xl border-2 border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-amber-500"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-sm font-bold text-foreground">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="98XXXXXXXX"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-12 text-base rounded-xl border-2 border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-amber-500"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address" className="text-sm font-bold text-foreground">Address</Label>
+                <div className="relative">
+                  <Input
+                    id="address"
+                    type="text"
+                    placeholder="City, District"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="h-12 text-base rounded-xl border-2 border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-amber-500 pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFetchCurrentAddress}
+                    disabled={isFetchingAddress}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Fetch current location address"
+                  >
+                    {isFetchingAddress ? (
+                      <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
+                    ) : (
+                      <MapPin className="h-5 w-5 text-amber-500" />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">

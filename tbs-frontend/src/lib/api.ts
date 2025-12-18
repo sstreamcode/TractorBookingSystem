@@ -42,12 +42,14 @@ export interface TrackingResponse {
   bookingId?: number;
   bookingStatus?: string;
   deliveryAddress?: string;
+  deliveryStatus?: string; // Tractor delivery status: ORDERED, DELIVERING, DELIVERED, RETURNED
   deliveryWindow?: {
     startAt: string;
     endAt: string;
   };
   currentLocation: TrackingLocation | null;
   destination: TrackingLocation | null;
+  originalLocation?: TrackingLocation | null; // Original location when tractor is returned
   distanceKm?: number;
   etaMinutes?: number;
   route: Array<{ lat: number; lng: number }>;
@@ -89,11 +91,18 @@ export interface AuthResponse {
   token: string;
 }
 
-export async function apiRegister(email: string, password: string, name?: string): Promise<AuthResponse> {
+export async function apiRegister(
+  email: string,
+  password: string,
+  name?: string,
+  role: 'customer' | 'tractor_owner' = 'customer',
+  phone?: string,
+  address?: string
+): Promise<AuthResponse | { message: string; pendingApproval: boolean }> {
   const res = await fetch(`${BASE_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, name })
+    body: JSON.stringify({ email, password, name, role, phone, address })
   });
   if (!res.ok) {
     let message = 'Registration failed';
@@ -103,7 +112,12 @@ export async function apiRegister(email: string, password: string, name?: string
     } catch {}
     throw new ApiError(message, res.status);
   }
-  return res.json();
+  const data = await res.json();
+  // Handle pending approval response for tractor owners (201 status)
+  if (data.pendingApproval) {
+    return { message: data.message, pendingApproval: true };
+  }
+  return data;
 }
 
 export async function apiLogin(email: string, password: string): Promise<AuthResponse> {
@@ -114,19 +128,27 @@ export async function apiLogin(email: string, password: string): Promise<AuthRes
   });
   if (!res.ok) {
     let message = 'Login failed';
+    let pendingApproval = false;
     try {
       const data = await res.json();
       message = (data && (data.error || data.message)) ?? message;
+      pendingApproval = data.pendingApproval || false;
     } catch {}
-    throw new ApiError(message, res.status);
+    const error = new ApiError(message, res.status);
+    if (pendingApproval) {
+      (error as any).pendingApproval = true;
+    }
+    throw error;
   }
   return res.json();
 }
 
-export async function updateProfile(name?: string, profilePictureUrl?: string): Promise<{ message: string; user: { name: string; email: string; role: string; profilePictureUrl: string } }> {
-  const body: { name?: string; profilePictureUrl?: string } = {};
+export async function updateProfile(name?: string, profilePictureUrl?: string, phone?: string, address?: string): Promise<{ message: string; user: { name: string; email: string; role: string; phone: string; address: string; profilePictureUrl: string } }> {
+  const body: { name?: string; profilePictureUrl?: string; phone?: string; address?: string } = {};
   if (name) body.name = name;
   if (profilePictureUrl) body.profilePictureUrl = profilePictureUrl;
+  if (phone !== undefined) body.phone = phone;
+  if (address !== undefined) body.address = address;
   
   const res = await fetch(`${BASE_URL}/api/auth/profile`, {
     method: 'PUT',
@@ -144,7 +166,33 @@ export async function updateProfile(name?: string, profilePictureUrl?: string): 
 }
 
 export async function fetchTractors(): Promise<TractorApiModel[]> {
-  const res = await fetch(`${BASE_URL}/api/tractors`);
+  // For tractor owners, use the authenticated endpoint that returns only their tractors.
+  // For all other users (including anonymous), use the public tractors listing.
+  let isTractorOwner = false;
+  try {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      if (parsed?.role === 'tractor_owner') {
+        isTractorOwner = true;
+      }
+    }
+  } catch {
+    // Fallback to public endpoint on any parsing error
+    isTractorOwner = false;
+  }
+
+  const url = isTractorOwner
+    ? `${BASE_URL}/api/tractors/my-tractors`
+    : `${BASE_URL}/api/tractors`;
+
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem('token');
+  if (isTractorOwner && token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, Object.keys(headers).length ? { headers } : undefined);
   if (!res.ok) throw new Error('Failed to fetch tractors');
   return res.json();
 }
@@ -338,9 +386,11 @@ function normalizeTrackingResponse(payload: any): TrackingResponse {
     bookingId: payload.bookingId,
     bookingStatus: payload.bookingStatus,
     deliveryAddress: payload.deliveryAddress,
+    deliveryStatus: payload.deliveryStatus || payload.tractorDeliveryStatus,
     deliveryWindow: payload.deliveryWindow,
     currentLocation: payload.currentLocation || null,
     destination: payload.destination || null,
+    originalLocation: payload.originalLocation || null,
     distanceKm: payload.distanceKm ?? undefined,
     etaMinutes: payload.etaMinutes ?? undefined,
     route: Array.isArray(payload.route)
@@ -430,6 +480,7 @@ export interface BookingApiModel {
     id: number;
     name: string;
     email: string;
+    phone?: string;
   };
   tractor: {
     id: number;
@@ -449,6 +500,8 @@ export interface BookingApiModel {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliveryAddress?: string;
+  commissionAmount?: number;
+  paymentReleased?: boolean;
   payments?: Array<{
     id: number;
     method: string;
@@ -619,6 +672,194 @@ export async function markBookingCompleted(bookingId: string): Promise<{ status:
   return res.json();
 }
 
+export async function releasePayment(bookingId: string): Promise<{ 
+  status: string; 
+  message: string; 
+  totalAmount: number; 
+  commissionAmount: number; 
+  ownerAmount: number;
+  tractorOwner: string;
+}> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/release-payment`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to release payment', res.status);
+  }
+  return res.json();
+}
+
+// Super Admin APIs
+export interface SuperAdminUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  profilePictureUrl?: string;
+}
+
+export interface SuperAdminTractorOwner {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  tractorCount: number;
+  approved: boolean;
+  profilePictureUrl?: string;
+}
+
+export interface SuperAdminStats {
+  totalUsers: number;
+  totalCustomers: number;
+  totalTractorOwners: number;
+  totalTractors: number;
+  approvedTractors: number;
+  pendingTractors: number;
+  totalBookings: number;
+  completedBookings: number;
+  totalRevenue: number;
+  totalCommission: number;
+}
+
+export async function getSuperAdminUsers(): Promise<SuperAdminUser[]> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/users`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch users', res.status);
+  }
+  return res.json();
+}
+
+export async function getSuperAdminTractorOwners(): Promise<SuperAdminTractorOwner[]> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/tractor-owners`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch tractor owners', res.status);
+  }
+  return res.json();
+}
+
+export async function getSuperAdminTractors(): Promise<TractorApiModel[]> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/tractors`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch tractors', res.status);
+  }
+  return res.json();
+}
+
+export async function getSuperAdminBookings(): Promise<BookingApiModel[]> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/bookings`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch bookings', res.status);
+  }
+  return res.json();
+}
+
+export async function getSuperAdminStats(): Promise<SuperAdminStats> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/stats`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch stats', res.status);
+  }
+  return res.json();
+}
+
+export async function getTractorsByOwner(ownerId: number): Promise<TractorApiModel[]> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/tractor-owners/${ownerId}/tractors`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch tractors', res.status);
+  }
+  return res.json();
+}
+
+export async function approveTractorOwner(ownerId: number): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/tractor-owners/${ownerId}/approve`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to approve tractor owner', res.status);
+  }
+  return res.json();
+}
+
+export async function rejectTractorOwner(ownerId: number): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/tractor-owners/${ownerId}/reject`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to reject tractor owner', res.status);
+  }
+  return res.json();
+}
+
+export async function approveTractor(tractorId: string | number): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${tractorId}/approve`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to approve tractor', res.status);
+  }
+  return res.json();
+}
+
+export async function rejectTractor(tractorId: string | number): Promise<{ status: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/tractors/${tractorId}/reject`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to reject tractor', res.status);
+  }
+  return res.json();
+}
+
 export async function updateTractorDeliveryStatus(
   bookingId: string,
   deliveryStatus: 'ORDERED' | 'DELIVERING' | 'DELIVERED' | 'RETURNED'
@@ -714,7 +955,8 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
   const totalCost = apiBooking.totalAmount ?? (() => {
     const start = new Date(apiBooking.startAt);
     const end = new Date(apiBooking.endAt);
-    const hours = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+    const minutes = (end.getTime() - start.getTime()) / (1000 * 60);
+    const hours = minutes / 60.0; // Convert to hours as decimal (e.g., 0.75 for 45 minutes)
     const hourlyRate = apiBooking.tractor.hourlyRate || 0;
     return hours * hourlyRate;
   })();
@@ -809,6 +1051,8 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     deliveryLatitude: apiBooking.deliveryLatitude || undefined,
     deliveryLongitude: apiBooking.deliveryLongitude || undefined,
     deliveryAddress: apiBooking.deliveryAddress || undefined,
+    commissionAmount: apiBooking.commissionAmount || undefined,
+    paymentReleased: apiBooking.paymentReleased || false,
     tractorDeliveryStatus: apiBooking.tractor.deliveryStatus || undefined
   } as Booking & { tractorDeliveryStatus?: string };
 }
@@ -816,6 +1060,97 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
 export async function getMyBookingsForUI(): Promise<Booking[]> {
   const items = await fetchMyBookings();
   return items.map(toUiBooking);
+}
+
+export async function getTractorOwnerBookings(): Promise<BookingApiModel[]> {
+  const res = await fetch(`${BASE_URL}/api/bookings/tractor-owner`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch bookings', res.status);
+  }
+  const bookings = await res.json();
+  return bookings.map((b: any) => ({
+    id: b.id,
+    tractor: {
+      id: b.tractor?.id,
+      name: b.tractor?.name || 'N/A',
+      model: b.tractor?.model || 'N/A',
+      hourlyRate: b.tractor?.hourlyRate || 0,
+      imageUrl: b.tractor?.imageUrl,
+      imageUrls: b.tractor?.imageUrls || (b.tractor?.imageUrl ? [b.tractor.imageUrl] : []),
+      deliveryStatus: b.tractor?.deliveryStatus,
+    },
+    user: {
+      id: b.user?.id,
+      name: b.user?.name || 'N/A',
+      email: b.user?.email || 'N/A',
+      phone: b.user?.phone || 'N/A',
+    },
+    startAt: b.startAt,
+    endAt: b.endAt,
+    status: b.status,
+    adminStatus: b.adminStatus,
+    totalAmount: b.totalAmount || 0,
+    paymentMethod: b.paymentMethod,
+    payments: b.payments || [],
+    deliveryLatitude: b.deliveryLatitude,
+    deliveryLongitude: b.deliveryLongitude,
+    deliveryAddress: b.deliveryAddress,
+    originalTractorLatitude: b.originalTractorLatitude,
+    originalTractorLongitude: b.originalTractorLongitude,
+    originalTractorLocation: b.originalTractorLocation,
+    commissionAmount: b.commissionAmount,
+    paymentReleased: b.paymentReleased,
+  }));
+}
+
+export async function getTractorOwnerBookingsForUI(): Promise<Booking[]> {
+  const items = await getTractorOwnerBookings();
+  return items.map(toUiBooking);
+}
+
+// Custom mapping for tractor owner bookings with nested structure
+export function mapTractorOwnerBookingToUI(apiBooking: BookingApiModel): Booking & { 
+  tractor?: { id: string; name: string; model?: string; image?: string; images?: string[]; hourlyRate?: number };
+  user?: { id: string; name: string; email?: string };
+  totalAmount?: number;
+  tractorDeliveryStatus?: string;
+} {
+  const baseBooking = toUiBooking(apiBooking);
+  const tractorData = apiBooking.tractor as any;
+  return {
+    ...baseBooking,
+    tractor: {
+      id: String(apiBooking.tractor.id),
+      name: apiBooking.tractor.name || baseBooking.tractorName || 'N/A',
+      model: tractorData?.model || 'N/A',
+      image: (apiBooking.tractor.imageUrls && apiBooking.tractor.imageUrls[0]) || apiBooking.tractor.imageUrl || baseBooking.tractorImage || PLACEHOLDER_IMAGE,
+      images: apiBooking.tractor.imageUrls || (apiBooking.tractor.imageUrl ? [apiBooking.tractor.imageUrl] : []) || baseBooking.tractorImages || [],
+      hourlyRate: tractorData?.hourlyRate || 0,
+    },
+    user: {
+      id: String(apiBooking.user.id),
+      name: apiBooking.user.name || baseBooking.userName || 'N/A',
+      email: apiBooking.user.email || 'N/A',
+      phone: (apiBooking.user as any).phone || 'N/A',
+    },
+    totalAmount: apiBooking.totalAmount || baseBooking.totalCost || 0,
+    tractorDeliveryStatus: tractorData?.deliveryStatus,
+  };
+}
+
+export async function getTractorOwnerBookingsForUIWithNested(): Promise<Array<Booking & { 
+  tractor?: { id: string; name: string; model?: string; image?: string; images?: string[]; hourlyRate?: number };
+  user?: { id: string; name: string; email?: string };
+  totalAmount?: number;
+  tractorDeliveryStatus?: string;
+}>> {
+  const items = await getTractorOwnerBookings();
+  return items.map(mapTractorOwnerBookingToUI);
 }
 
 export async function getAllBookingsForUI(): Promise<Booking[]> {

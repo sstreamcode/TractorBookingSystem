@@ -52,6 +52,12 @@ public class Booking {
     @Column(nullable = false)
     private Boolean retrievalReminderSent = false; // Track if 30-min reminder email was sent
     
+    @Column(nullable = false)
+    private Double commissionAmount = 0.0; // 15% commission on total amount
+
+    @Column(nullable = false)
+    private Boolean paymentReleased = false; // Track if payment has been released to tractor owner
+    
     // Helper method to get payment method for JSON serialization
     @com.fasterxml.jackson.annotation.JsonProperty("paymentMethod")
     public String getPaymentMethod() {
@@ -116,6 +122,10 @@ public class Booking {
     public void setOriginalTractorLocation(String originalTractorLocation) { this.originalTractorLocation = originalTractorLocation; }
     public List<Payment> getPayments() { return payments; }
     public void setPayments(List<Payment> payments) { this.payments = payments; }
+    public Double getCommissionAmount() { return commissionAmount != null ? commissionAmount : 0.0; }
+    public void setCommissionAmount(Double commissionAmount) { this.commissionAmount = commissionAmount; }
+    public Boolean getPaymentReleased() { return paymentReleased != null ? paymentReleased : false; }
+    public void setPaymentReleased(Boolean paymentReleased) { this.paymentReleased = paymentReleased; }
 }
 
 

@@ -22,6 +22,7 @@ import { getTractorForUI, createBooking, confirmCashOnDelivery, verifyEsewaPayme
 import type { Feedback as FeedbackType } from '@/lib/api';
 import type { Tractor as TractorType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { toast } from 'sonner';
 import { CreditCard, Wallet } from 'lucide-react';
 import CryptoJS from 'crypto-js';
@@ -83,14 +84,14 @@ const TractorGallery = ({ tractor }: { tractor: TractorType }) => {
           <div className="absolute inset-0 pointer-events-none">
             <button
               type="button"
-              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-800/90 rounded-full p-2 shadow z-10"
+              className="pointer-events-auto absolute left-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10 border border-border"
               onClick={() => go(-1)}
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <button
               type="button"
-              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-800/90 rounded-full p-2 shadow z-10"
+              className="pointer-events-auto absolute right-2 top-1/2 -translate-y-1/2 bg-background/70 hover:bg-background/90 rounded-full p-2 shadow z-10 border border-border"
               onClick={() => go(1)}
             >
               <ChevronRight className="h-5 w-5" />
@@ -124,6 +125,7 @@ const TractorDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const [tractor, setTractor] = useState<TractorType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +206,7 @@ const TractorDetail = () => {
       <div className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-slate-100">{error ?? 'Tractor not found'}</p>
+          <p className="text-foreground">{error ?? 'Tractor not found'}</p>
         </div>
       </div>
     );
@@ -215,7 +217,8 @@ const TractorDetail = () => {
     
     const start = new Date(`${startDate}T${startTime}`);
     const end = new Date(`${endDate}T${endTime}`);
-    const hours = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+    const minutes = (end.getTime() - start.getTime()) / (1000 * 60);
+    const hours = minutes / 60.0; // Convert to hours as decimal (e.g., 0.75 for 45 minutes)
     
     return hours > 0 ? hours * tractor.hourlyRate : 0;
   };
@@ -438,73 +441,73 @@ const TractorDetail = () => {
 
             <div className="space-y-6">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{tractor.name}</h1>
-                <p className="text-lg text-slate-400">{tractor.model}</p>
-                <div className="mt-2 flex items-center gap-4 text-sm text-slate-400">
+                <h1 className="text-3xl font-bold mb-2 text-foreground">{tractor.name}</h1>
+                <p className="text-lg text-muted-foreground">{tractor.model}</p>
+                <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                   {avgRating != null && (
                     <span className="inline-flex items-center gap-1">
-                      ★ <span className="font-semibold text-slate-100">{avgRating.toFixed(1)}</span>
+                      ★ <span className="font-semibold text-foreground">{avgRating.toFixed(1)}</span>
                     </span>
                   )}
                   {totalBookings != null && (
                     <span className="inline-flex items-center gap-1">
-                      Bookings <span className="font-semibold text-slate-100">{totalBookings}</span>
+                      Bookings <span className="font-semibold text-foreground">{totalBookings}</span>
                     </span>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg border border-border">
                   <MapPin className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-slate-400">Location</p>
-                    <p className="font-medium">{tractor.location}</p>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    <p className="font-medium text-foreground">{tractor.location}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg border border-border">
                   <Zap className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-slate-400">Power</p>
-                    <p className="font-medium">{tractor.horsePower} HP</p>
+                    <p className="text-sm text-muted-foreground">Power</p>
+                    <p className="font-medium text-foreground">{tractor.horsePower} HP</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg border border-border">
                   <Fuel className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-slate-400">Fuel Type</p>
-                    <p className="font-medium">{tractor.fuelType}</p>
+                    <p className="text-sm text-muted-foreground">Fuel Type</p>
+                    <p className="font-medium text-foreground">{tractor.fuelType}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-slate-800/50 rounded-lg">
+                <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg border border-border">
                   <Clock className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm text-slate-400">Rate</p>
-                    <p className="font-medium">रू {tractor.hourlyRate}/hr</p>
+                    <p className="text-sm text-muted-foreground">Rate</p>
+                    <p className="font-medium text-foreground">रू {tractor.hourlyRate}/hr</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2">Description</h3>
-                <p className="text-slate-400 leading-relaxed">{tractor.description}</p>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Description</h3>
+                <p className="text-muted-foreground leading-relaxed">{tractor.description}</p>
               </div>
             </div>
           </div>
 
           {/* Right Column - Booking Form */}
           <div>
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Book This Tractor</CardTitle>
+            <Card className="sticky top-4 bg-card/95 dark:bg-slate-700/60 border-border shadow-lg">
+              <CardHeader className="bg-muted/30 dark:bg-slate-600/40 rounded-t-lg">
+                <CardTitle className="text-foreground">Book This Tractor</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 bg-card/50 dark:bg-slate-700/40">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startDate" className="text-slate-100">Start Date</Label>
+                    <Label htmlFor="startDate" className="text-foreground">Start Date</Label>
                     <Input
                       id="startDate"
                       type="date"
@@ -517,46 +520,48 @@ const TractorDetail = () => {
                         }
                       }}
                       min={today}
-                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
-                      style={{ colorScheme: 'dark' }}
+                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="startTime" className="text-slate-100">Start Time</Label>
+                    <Label htmlFor="startTime" className="text-foreground">Start Time</Label>
                     <Input
                       id="startTime"
                       type="time"
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
-                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500"
+                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
+                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endDate" className="text-slate-100">End Date</Label>
+                    <Label htmlFor="endDate" className="text-foreground">End Date</Label>
                     <Input
                       id="endDate"
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       min={startDate || today}
-                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-[2] [&::-webkit-calendar-picker-indicator]:contrast-150"
-                      style={{ colorScheme: 'dark' }}
+                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:opacity-100"
+                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
                       disabled={!startDate}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="endTime" className="text-slate-100">End Time</Label>
+                    <Label htmlFor="endTime" className="text-foreground">End Time</Label>
                     <Input
                       id="endTime"
                       type="time"
                       value={endTime}
                       onChange={(e) => setEndTime(e.target.value)}
-                      className="cursor-pointer bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-400 focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-[2] [&::-webkit-calendar-picker-indicator]:contrast-150"
+                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:opacity-100"
+                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
                       disabled={!endDate}
                     />
                   </div>
@@ -564,11 +569,11 @@ const TractorDetail = () => {
 
                 {/* Delivery Location Map */}
                 <div className="space-y-2">
-                  <Label>Delivery Location</Label>
-                  <div className="relative rounded-lg border border-slate-700 overflow-hidden">
+                  <Label className="text-foreground">Delivery Location</Label>
+                  <div className="relative rounded-lg border border-border overflow-hidden">
                     <button
                       type="button"
-                      className="absolute right-3 top-3 z-10 rounded-full bg-slate-800/90 px-3 py-1 text-xs font-medium text-amber-500 shadow hover:bg-slate-800"
+                      className="absolute right-3 top-3 z-10 rounded-full bg-background/90 backdrop-blur-sm px-3 py-1 text-xs font-medium text-amber-500 shadow hover:bg-background border border-border"
                       onClick={handleUseCurrentLocation}
                     >
                       Use my location
@@ -579,33 +584,48 @@ const TractorDetail = () => {
                       className="h-64 w-full"
                     />
                     {deliveryLocation && (
-                      <div className="absolute top-2 left-2 bg-slate-800/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md text-sm max-w-xs">
-                        <p className="font-semibold text-slate-100">Selected Location</p>
-                        <p className="text-xs text-slate-400 truncate">{deliveryLocation.address}</p>
-                        <p className="text-xs text-slate-400">
+                      <div className="absolute top-2 left-2 bg-background/95 backdrop-blur-sm px-3 py-2 rounded-lg shadow-md text-sm max-w-xs border border-border">
+                        <p className="font-semibold text-foreground">Selected Location</p>
+                        <p className="text-xs text-muted-foreground truncate">{deliveryLocation.address}</p>
+                        <p className="text-xs text-muted-foreground">
                           {deliveryLocation.lat.toFixed(6)}, {deliveryLocation.lng.toFixed(6)}
                         </p>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     Click on the map to select where you want the tractor delivered
                   </p>
                 </div>
 
                 {totalCost > 0 && (
-                  <div className="p-4 bg-slate-800/50 rounded-lg space-y-2">
+                  <div className="p-4 bg-muted/50 dark:bg-slate-600/40 rounded-lg space-y-2 border border-border">
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Hourly Rate</span>
-                      <span className="font-medium text-slate-200">NPR {tractor.hourlyRate}</span>
+                      <span className="text-muted-foreground">Hourly Rate</span>
+                      <span className="font-medium text-foreground">NPR {tractor.hourlyRate}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-400">Duration</span>
-                      <span className="font-medium text-slate-200">{Math.ceil((new Date(`${endDate}T${endTime}`).getTime() - new Date(`${startDate}T${startTime}`).getTime()) / (1000 * 60 * 60))} hours</span>
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-medium text-foreground">
+                        {(() => {
+                          const start = new Date(`${startDate}T${startTime}`);
+                          const end = new Date(`${endDate}T${endTime}`);
+                          const minutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+                          const hours = Math.floor(minutes / 60);
+                          const mins = minutes % 60;
+                          if (hours > 0 && mins > 0) {
+                            return `${hours} hour${hours !== 1 ? 's' : ''} ${mins} minute${mins !== 1 ? 's' : ''}`;
+                          } else if (hours > 0) {
+                            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+                          } else {
+                            return `${mins} minute${mins !== 1 ? 's' : ''}`;
+                          }
+                        })()}
+                      </span>
                     </div>
-                    <div className="pt-2 border-t border-slate-700">
+                    <div className="pt-2 border-t border-border">
                       <div className="flex justify-between">
-                        <span className="font-semibold text-slate-100">Total Cost</span>
+                        <span className="font-semibold text-foreground">Total Cost</span>
                         <span className="text-2xl font-bold text-amber-500">NPR {totalCost}</span>
                       </div>
                     </div>
@@ -640,13 +660,13 @@ const TractorDetail = () => {
                       </Button>
                     </div>
                     {!tractor.available && tractor.nextAvailableAt && (
-                      <p className="text-xs text-slate-400 text-center">
+                      <p className="text-xs text-muted-foreground text-center">
                         Booked until {new Date(tractor.nextAvailableAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                       </p>
                     )}
 
                     {!isAuthenticated && (
-                      <p className="text-sm text-center text-slate-400">
+                      <p className="text-sm text-center text-muted-foreground">
                         You need to <Button variant="link" className="p-0" onClick={() => navigate('/login')}>login</Button> to book this tractor
                       </p>
                     )}
@@ -664,7 +684,7 @@ const TractorDetail = () => {
                               <Wallet className="h-5 w-5 text-amber-500" />
                               <div>
                                 <p className="font-semibold">Pay with eSewa</p>
-                                <p className="text-sm text-slate-400">Secure online payment</p>
+                                <p className="text-sm text-muted-foreground">Secure online payment</p>
                               </div>
                             </div>
                             <Badge variant="secondary">Instant</Badge>
@@ -677,7 +697,7 @@ const TractorDetail = () => {
                               <CreditCard className="h-5 w-5 text-amber-500" />
                               <div>
                                 <p className="font-semibold">Cash on Delivery</p>
-                                <p className="text-sm text-slate-400">Pay when you receive</p>
+                                <p className="text-sm text-muted-foreground">Pay when you receive</p>
                               </div>
                             </div>
                             <Badge variant="outline">COD</Badge>
@@ -696,9 +716,9 @@ const TractorDetail = () => {
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Recent Feedback Section */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
+          <div className="rounded-xl border border-border bg-card shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-slate-100 flex items-center gap-2">
+              <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
                 <span>Recent Feedback</span>
                 {feedback.length > 0 && (
                   <Badge variant="secondary" className="ml-2">
@@ -711,9 +731,9 @@ const TractorDetail = () => {
               {feedback.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                    <Info className="h-8 w-8 text-slate-400" />
+                    <Info className="h-8 w-8 text-muted-foreground" />
                   </div>
-                  <p className="text-sm text-slate-400 font-medium">
+                  <p className="text-sm text-muted-foreground font-medium">
                     No feedback yet. Be the first to rate this tractor!
                   </p>
                 </div>
@@ -722,7 +742,7 @@ const TractorDetail = () => {
                   {feedback.map((f) => (
                     <div 
                       key={f.id} 
-                      className="rounded-lg border border-slate-700 bg-gradient-to-br from-slate-800 to-slate-700/20 p-4 hover:shadow-md transition-all duration-300"
+                      className="rounded-lg border border-border bg-muted/50 p-4 hover:shadow-md transition-all duration-300"
                     >
                       <div className="flex items-start gap-3">
                         <Avatar className="h-10 w-10 flex-shrink-0">
@@ -734,8 +754,8 @@ const TractorDetail = () => {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div>
-                              <p className="font-semibold text-slate-100 text-sm">{f.authorName || 'Anonymous'}</p>
-                              <p className="text-xs text-slate-400 mt-0.5">
+                              <p className="font-semibold text-foreground text-sm">{f.authorName || 'Anonymous'}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
                                 {new Date(f.createdAt).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'short',
@@ -748,7 +768,7 @@ const TractorDetail = () => {
                             <StarRating rating={f.rating} size="sm" />
                           </div>
                           {f.comment && (
-                            <p className="text-sm text-slate-400 leading-relaxed mt-2 whitespace-pre-wrap">
+                            <p className="text-sm text-muted-foreground leading-relaxed mt-2 whitespace-pre-wrap">
                               {f.comment}
                             </p>
                           )}
@@ -762,35 +782,35 @@ const TractorDetail = () => {
           </div>
 
           {/* Leave a Rating Section */}
-          <div className="rounded-xl border border-slate-700 bg-slate-800 shadow-sm">
+          <div className="rounded-xl border border-border bg-card shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold text-slate-100">Leave a Rating</CardTitle>
-              <p className="text-sm text-slate-400 mt-1">Share your experience with this tractor</p>
+              <CardTitle className="text-xl font-bold text-foreground">Leave a Rating</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Share your experience with this tractor</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-5">
                 <div>
-                  <Label className="text-sm font-semibold text-slate-100 mb-3 block">Your Rating</Label>
-                  <div className="flex items-center gap-3 p-4 rounded-lg border border-slate-700 bg-muted/30">
+                  <Label className="text-sm font-semibold text-foreground mb-3 block">Your Rating</Label>
+                  <div className="flex items-center gap-3 p-4 rounded-lg border border-border bg-muted/30">
                     <StarRating 
                       rating={newRating} 
                       onRatingChange={setNewRating}
                       interactive={true}
                       size="lg"
                     />
-                    <span className="text-sm font-medium text-slate-100 ml-2">
+                    <span className="text-sm font-medium text-foreground ml-2">
                       {newRating} {newRating === 1 ? 'star' : 'stars'}
                     </span>
                   </div>
                 </div>
                 
                 <div>
-                  <Label htmlFor="comment" className="text-sm font-semibold text-slate-100 mb-2 block">
+                  <Label htmlFor="comment" className="text-sm font-semibold text-foreground mb-2 block">
                     Comment (optional)
                   </Label>
                   <textarea
                     id="comment"
-                    className="w-full min-h-[120px] rounded-lg border border-slate-700 bg-slate-900 text-slate-100 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-slate-500"
+                    className="w-full min-h-[120px] rounded-lg border border-input bg-background text-foreground px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all placeholder:text-muted-foreground"
                     value={newComment}
                     onChange={(e) => {
                       if (e.target.value.length <= 500) {
@@ -800,7 +820,7 @@ const TractorDetail = () => {
                     placeholder="Share your experience with this tractor..."
                     maxLength={500}
                   />
-                    <p className={`text-xs mt-1.5 ${newComment.length >= 450 ? 'text-orange-400' : 'text-slate-400'}`}>
+                    <p className={`text-xs mt-1.5 ${newComment.length >= 450 ? 'text-orange-500' : 'text-muted-foreground'}`}>
                     {newComment.length} / 500 characters
                   </p>
                 </div>
@@ -836,7 +856,7 @@ const TractorDetail = () => {
                         toast.error(e?.message || 'Failed to submit feedback');
                       }
                     }}
-                    className="bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
                   >
                     Submit Feedback
                   </Button>
@@ -847,17 +867,17 @@ const TractorDetail = () => {
         </div>
       </div>
       <AlertDialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
-        <AlertDialogContent className="max-w-lg border border-amber-500/20 bg-slate-800/95 backdrop-blur-md">
+        <AlertDialogContent className="max-w-lg border border-amber-500/20 bg-background backdrop-blur-md">
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
                 <Clock className="h-6 w-6" />
               </div>
               <div>
-                <AlertDialogTitle className="text-xl font-semibold text-slate-100">
+                <AlertDialogTitle className="text-xl font-semibold text-foreground">
                   {tractor?.name || 'Tractor Availability'}
                 </AlertDialogTitle>
-                <p className="text-sm text-slate-400">Current booking status & availability</p>
+                <p className="text-sm text-muted-foreground">Current booking status & availability</p>
               </div>
             </div>
           </AlertDialogHeader>
@@ -865,22 +885,22 @@ const TractorDetail = () => {
           <div className="space-y-4">
             <div className="rounded-xl border border-amber-500/10 bg-amber-500/5 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">Current Status</span>
+                <span className="text-sm text-muted-foreground">Current Status</span>
                 <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-500 capitalize">
                   {availabilityDialogData?.status || 'unavailable'}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Next Available</span>
-                <span className="font-medium text-slate-100">{availabilityDialogData?.nextAvailableText || 'Not scheduled'}</span>
+                <span className="text-muted-foreground">Next Available</span>
+                <span className="font-medium text-foreground">{availabilityDialogData?.nextAvailableText || 'Not scheduled'}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Current Location</span>
-                <span className="font-medium text-slate-100">{availabilityDialogData?.location || 'Not specified'}</span>
+                <span className="text-muted-foreground">Current Location</span>
+                <span className="font-medium text-foreground">{availabilityDialogData?.location || 'Not specified'}</span>
               </div>
             </div>
 
-            <div className="flex gap-3 rounded-xl border border-slate-700 bg-muted/30 p-4 text-sm leading-relaxed text-slate-400">
+            <div className="flex gap-3 rounded-xl border border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
               <Info className="h-5 w-5 text-amber-500" />
               <p>{availabilityDialogData?.message || 'This tractor is currently fulfilling another booking. Please check back later or choose a different tractor.'}</p>
             </div>

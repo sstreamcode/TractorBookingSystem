@@ -23,16 +23,17 @@ public class DemoApplication {
 	}
 
     @Bean
-    public org.springframework.boot.CommandLineRunner seedAdmin(UserRepository users) {
+    public org.springframework.boot.CommandLineRunner seedSuperAdmin(UserRepository users) {
         return args -> {
-            String adminEmail = "admin@tbs.local";
-            if (!users.existsByEmail(adminEmail)) {
-                User admin = new User();
-                admin.setName("Administrator");
-                admin.setEmail(adminEmail);
-                admin.setPasswordHash(HashUtil.sha256("admin123"));
-                admin.setRole("ADMIN");
-                users.save(admin);
+            String superAdminEmail = "superadmin@tbs.local";
+            if (!users.existsByEmail(superAdminEmail)) {
+                User superAdmin = new User();
+                superAdmin.setName("Super Administrator");
+                superAdmin.setEmail(superAdminEmail);
+                superAdmin.setPasswordHash(HashUtil.sha256("superadmin123"));
+                // Core platform owner role
+                superAdmin.setRole("SUPER_ADMIN");
+                users.save(superAdmin);
             }
         };
     }

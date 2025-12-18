@@ -43,6 +43,13 @@ public class Tractor {
     private Double destinationLongitude;
     private String destinationAddress;
 
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "owner_id", foreignKey = @ForeignKey(name = "fk_tractor_owner"))
+    private User owner; // Tractor owner who owns this tractor
+
+    @Column(length = 20)
+    private String approvalStatus; // PENDING, APPROVED, REJECTED - for super admin verification
+
     @OneToMany(mappedBy = "tractor", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Booking> bookings;
@@ -253,6 +260,22 @@ public class Tractor {
 
     public void setBookings(List<Booking> bookings) {
         this.bookings = bookings;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public String getApprovalStatus() {
+        return approvalStatus;
+    }
+
+    public void setApprovalStatus(String approvalStatus) {
+        this.approvalStatus = approvalStatus;
     }
 }
 

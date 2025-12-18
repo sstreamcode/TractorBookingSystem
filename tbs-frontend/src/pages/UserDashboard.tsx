@@ -77,7 +77,7 @@ const ImageCarousel = ({
 };
 
 const UserDashboard = () => {
-  const { isAuthenticated, isAdmin, user, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner, user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
   const [userBookings, setUserBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ const UserDashboard = () => {
   const [bookingImageIndices, setBookingImageIndices] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (!isAuthenticated || isAdmin) {
+    if (!isAuthenticated || isAdmin || isSuperAdmin || isTractorOwner) {
       setLoading(false);
       return;
     }
@@ -100,7 +100,7 @@ const UserDashboard = () => {
         setLoading(false);
       }
     })();
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner]);
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
@@ -118,6 +118,13 @@ const UserDashboard = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect based on role
+  if (isSuperAdmin) {
+    return <Navigate to="/super-admin/dashboard" replace />;
+  }
+  if (isTractorOwner) {
+    return <Navigate to="/tractor-owner/dashboard" replace />;
+  }
   if (isAdmin) {
     return <Navigate to="/admin/dashboard" replace />;
   }

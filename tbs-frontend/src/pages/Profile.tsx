@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { User, Mail, Settings, Save, Camera } from 'lucide-react';
+import { User, Mail, Settings, Save, Camera, MapPin, Loader2, Phone } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,17 @@ import { toast } from 'sonner';
 import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
 
 const Profile = () => {
-  const { isAuthenticated, user, loading: authLoading, refreshUser } = useAuth();
+  const { isAuthenticated, user, loading: authLoading, refreshUser, isSuperAdmin } = useAuth();
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [profilePictureUrl, setProfilePictureUrl] = useState('');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -30,8 +33,68 @@ const Profile = () => {
       setName(user.name || '');
       setEmail(user.email || '');
       setProfilePictureUrl(user.profilePictureUrl || '');
+      // Fetch phone and address from backend /api/auth/me endpoint
+      const fetchUserDetails = async () => {
+        try {
+          const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+          const token = localStorage.getItem('token');
+          if (token) {
+            const meResponse = await fetch(`${BASE_URL}/api/auth/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (meResponse.ok) {
+              const me = await meResponse.json();
+              setPhone(me.phone || '');
+              setAddress(me.address || '');
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch user details:', error);
+        }
+      };
+      fetchUserDetails();
     }
   }, [user, editing, saving]);
+
+  const handleFetchCurrentAddress = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    setIsFetchingAddress(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data.display_name) {
+            setAddress(data.display_name);
+            toast.success('Address fetched successfully!');
+          } else {
+            toast.error('Could not determine address from location.');
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          toast.error('Failed to fetch address. Please enter manually.');
+        } finally {
+          setIsFetchingAddress(false);
+        }
+      },
+      (error) => {
+        setIsFetchingAddress(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error('Location permission denied. Please allow location access or enter address manually.');
+        } else {
+          toast.error('Unable to access your location. Please enter address manually.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   if (authLoading) {
     return (
@@ -46,6 +109,11 @@ const Profile = () => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect super admin to their portal if they try to access profile
+  if (isSuperAdmin) {
+    return <Navigate to="/super-admin/dashboard" replace />;
   }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,7 +137,7 @@ const Profile = () => {
       const { url } = await uploadImage(file);
       
       // Auto-save the profile picture
-      const response = await updateProfile(undefined, url);
+      const response = await updateProfile(undefined, url, phone, address);
       
       // Update local storage with response from backend
       const storedUser = localStorage.getItem('user');
@@ -101,14 +169,18 @@ const Profile = () => {
     
     setSaving(true);
     try {
-      const response = await updateProfile(name);
+      const response = await updateProfile(name, undefined, phone, address);
       
       // Update local state immediately from response (before refreshing context)
       const updatedName = response.user.name;
+      const updatedPhone = response.user.phone || '';
+      const updatedAddress = response.user.address || '';
       // Preserve existing profilePictureUrl if response doesn't have one (when only updating name)
       const updatedProfilePic = response.user.profilePictureUrl || profilePictureUrl;
       
       setName(updatedName);
+      setPhone(updatedPhone);
+      setAddress(updatedAddress);
       setProfilePictureUrl(updatedProfilePic);
       
       // Update local storage with response from backend
@@ -223,6 +295,57 @@ const Profile = () => {
                 <p className="text-xs text-muted-foreground">{t('profile.emailCannotChange')}</p>
               </div>
 
+              {/* Phone Field */}
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="flex items-center text-sm font-medium text-foreground">
+                  <Phone className="mr-2 h-4 w-4" />
+                  Phone Number
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  disabled={!editing}
+                  className="w-full bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-amber-500"
+                  placeholder="98XXXXXXXX"
+                />
+              </div>
+
+              {/* Address Field */}
+              <div className="space-y-2">
+                <Label htmlFor="address" className="flex items-center text-sm font-medium text-foreground">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Address
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="address"
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    disabled={!editing}
+                    className="w-full bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-amber-500 pr-12"
+                    placeholder="City, District"
+                  />
+                  {editing && (
+                    <button
+                      type="button"
+                      onClick={handleFetchCurrentAddress}
+                      disabled={isFetchingAddress}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Fetch current location address"
+                    >
+                      {isFetchingAddress ? (
+                        <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
+                      ) : (
+                        <MapPin className="h-5 w-5 text-amber-500" />
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4">
                 {editing ? (
@@ -232,6 +355,26 @@ const Profile = () => {
                       onClick={() => {
                         setEditing(false);
                         setName(user?.name || '');
+                        // Reset phone and address from backend
+                        const fetchUserDetails = async () => {
+                          try {
+                            const BASE_URL = (import.meta as any).env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+                            const token = localStorage.getItem('token');
+                            if (token) {
+                              const meResponse = await fetch(`${BASE_URL}/api/auth/me`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                              });
+                              if (meResponse.ok) {
+                                const me = await meResponse.json();
+                                setPhone(me.phone || '');
+                                setAddress(me.address || '');
+                              }
+                            }
+                          } catch (error) {
+                            console.error('Failed to fetch user details:', error);
+                          }
+                        };
+                        fetchUserDetails();
                       }}
                       disabled={saving}
                       className="border-border text-muted-foreground hover:bg-muted"

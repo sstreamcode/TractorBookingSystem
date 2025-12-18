@@ -52,10 +52,37 @@ public class BookingController {
     @GetMapping("/all")
     public List<Booking> allBookings(Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            throw new RuntimeException("Only admins can view all bookings");
+        String role = user.getRole();
+        if (!"SUPER_ADMIN".equals(role) && !"ADMIN".equals(role)) {
+            throw new RuntimeException("Only super admins can view all bookings");
         }
         return bookingRepository.findAll();
+    }
+
+    @GetMapping("/tractor-owner")
+    public ResponseEntity<?> tractorOwnerBookings(Principal principal) {
+        if (principal == null || principal.getName() == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+        }
+        User user = userRepository.findByEmail(principal.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "User not found"));
+        }
+        
+        if (!"TRACTOR_OWNER".equals(user.getRole())) {
+            return ResponseEntity.status(403).body(Map.of("error", "Only tractor owners can view their bookings"));
+        }
+        
+        // Get all tractors owned by this user
+        List<Tractor> ownerTractors = tractorRepository.findByOwner(user);
+        List<Long> tractorIds = ownerTractors.stream().map(Tractor::getId).collect(java.util.stream.Collectors.toList());
+        
+        // Get all bookings for these tractors
+        List<Booking> bookings = bookingRepository.findAll().stream()
+            .filter(b -> b.getTractor() != null && tractorIds.contains(b.getTractor().getId()))
+            .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(bookings);
     }
 
     @PostMapping
@@ -69,9 +96,13 @@ public class BookingController {
 
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
 
-        // Calculate total amount based on duration
-        long hours = java.time.Duration.between(startAt, endAt).toHours();
+        // Calculate total amount based on duration (in hours as decimal, e.g., 0.75 for 45 minutes)
+        java.time.Duration duration = java.time.Duration.between(startAt, endAt);
+        double hours = duration.toMinutes() / 60.0; // Convert to hours as decimal
         double totalAmount = hours * tractor.getHourlyRate();
+        
+        // Calculate 15% commission
+        double commissionAmount = totalAmount * 0.15;
 
         // Get delivery location from request
         Double deliveryLat = body.get("deliveryLatitude") != null ? 
@@ -89,6 +120,8 @@ public class BookingController {
         booking.setStatus("PENDING");
         booking.setAdminStatus("PENDING_APPROVAL"); // New bookings require admin approval
         booking.setTotalAmount(totalAmount);
+        booking.setCommissionAmount(commissionAmount);
+        booking.setPaymentReleased(false);
         booking.setDeliveryLatitude(deliveryLat);
         booking.setDeliveryLongitude(deliveryLng);
         booking.setDeliveryAddress(deliveryAddress);
@@ -122,7 +155,13 @@ public class BookingController {
             return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
         }
         Booking booking = bookingOpt.get();
-        if (!"ADMIN".equals(requester.getRole()) && !booking.getUser().getId().equals(requester.getId())) {
+        String role = requester.getRole();
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(role);
+        boolean isTractorOwner = "TRACTOR_OWNER".equals(role) && booking.getTractor().getOwner() != null 
+            && booking.getTractor().getOwner().getId().equals(requester.getId());
+        boolean isBookingOwner = booking.getUser().getId().equals(requester.getId());
+        
+        if (!isSuperAdmin && !isTractorOwner && !isBookingOwner) {
             return ResponseEntity.status(403).body(Map.of("error", "Unauthorized"));
         }
         Tractor tractor = booking.getTractor();
@@ -155,8 +194,14 @@ public class BookingController {
             }
             Booking booking = bookingOpt.get();
             
-            // Verify booking belongs to user (unless admin)
-            if (!"ADMIN".equals(user.getRole()) && !booking.getUser().getId().equals(user.getId())) {
+            // Verify booking belongs to user (unless super admin or tractor owner)
+            String role = user.getRole();
+            boolean isSuperAdmin = "SUPER_ADMIN".equals(role);
+            boolean isTractorOwner = "TRACTOR_OWNER".equals(role) && booking.getTractor().getOwner() != null 
+                && booking.getTractor().getOwner().getId().equals(user.getId());
+            boolean isBookingOwner = booking.getUser().getId().equals(user.getId());
+            
+            if (!isSuperAdmin && !isTractorOwner && !isBookingOwner) {
                 logger.error("Unauthorized cancellation attempt - booking {} belongs to user {} but requested by {}", 
                     bookingId, booking.getUser().getId(), user.getId());
                 return ResponseEntity.badRequest().body(Map.of("error", "Unauthorized"));
@@ -190,8 +235,8 @@ public class BookingController {
     @PostMapping("/{bookingId}/approve-refund")
     public ResponseEntity<?> approveRefund(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can approve refunds"));
+        if (!"SUPER_ADMIN".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins can approve refunds"));
         }
 
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
@@ -222,8 +267,8 @@ public class BookingController {
     @PostMapping("/{bookingId}/reject-refund")
     public ResponseEntity<?> rejectRefund(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can reject refunds"));
+        if (!"SUPER_ADMIN".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins can reject refunds"));
         }
 
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
@@ -244,8 +289,8 @@ public class BookingController {
     @PostMapping("/{bookingId}/approve")
     public ResponseEntity<?> approveBooking(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can approve bookings"));
+        if (!"SUPER_ADMIN".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins can approve bookings"));
         }
 
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
@@ -288,8 +333,8 @@ public class BookingController {
     @PostMapping("/{bookingId}/deny")
     public ResponseEntity<?> denyBooking(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can deny bookings"));
+        if (!"SUPER_ADMIN".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins can deny bookings"));
         }
 
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
@@ -306,8 +351,8 @@ public class BookingController {
     @PostMapping("/{bookingId}/mark-paid")
     public ResponseEntity<?> markBookingPaid(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can update payment status"));
+        if (!"SUPER_ADMIN".equals(user.getRole()) && !"ADMIN".equals(user.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins can update payment status"));
         }
 
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
@@ -372,12 +417,20 @@ public class BookingController {
     @PostMapping("/{bookingId}/mark-delivered")
     public ResponseEntity<?> markBookingDelivered(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can update delivery status"));
-        }
-
+        String role = user.getRole();
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
-        if (booking == null) return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        if (booking == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+        
+        // Super admin, admin, or tractor owner of the booked tractor can mark as delivered
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(role) || "ADMIN".equals(role);
+        boolean isTractorOwner = "TRACTOR_OWNER".equals(role) && booking.getTractor().getOwner() != null 
+            && booking.getTractor().getOwner().getId().equals(user.getId());
+        
+        if (!isSuperAdmin && !isTractorOwner) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins or tractor owners can update delivery status"));
+        }
 
         // Check if booking has COD payment method
         boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
@@ -449,13 +502,19 @@ public class BookingController {
     @PostMapping("/{bookingId}/mark-completed")
     public ResponseEntity<?> markBookingCompleted(@PathVariable Long bookingId, Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can mark bookings as completed"));
-        }
-
+        String role = user.getRole();
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+        
+        // Super admin, admin, or tractor owner of the booked tractor can mark as completed
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(role) || "ADMIN".equals(role);
+        boolean isTractorOwner = "TRACTOR_OWNER".equals(role) && booking.getTractor().getOwner() != null 
+            && booking.getTractor().getOwner().getId().equals(user.getId());
+        
+        if (!isSuperAdmin && !isTractorOwner) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins or tractor owners can mark bookings as completed"));
         }
 
         Tractor tractor = booking.getTractor();
@@ -564,13 +623,19 @@ public class BookingController {
             @RequestBody Map<String, String> body,
             Principal principal) {
         User user = userRepository.findByEmail(principal.getName()).orElseThrow();
-        if (!"ADMIN".equals(user.getRole())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Only admins can update delivery status"));
-        }
-
+        String role = user.getRole();
         Booking booking = bookingRepository.findById(bookingId).orElse(null);
         if (booking == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+        
+        // Super admin, admin, or tractor owner of the booked tractor can update delivery status
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(role) || "ADMIN".equals(role);
+        boolean isTractorOwner = "TRACTOR_OWNER".equals(role) && booking.getTractor().getOwner() != null 
+            && booking.getTractor().getOwner().getId().equals(user.getId());
+        
+        if (!isSuperAdmin && !isTractorOwner) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Only super admins or tractor owners can update delivery status"));
         }
 
         String deliveryStatus = body.get("deliveryStatus");
@@ -643,19 +708,42 @@ public class BookingController {
                 bookingRepository.save(booking); // Save booking with original location
                 break;
             case "RETURNED":
-                // Check if booking end time has passed
-                java.time.LocalDateTime now = java.time.LocalDateTime.now();
-                if (booking.getEndAt().isAfter(now)) {
-                    return ResponseEntity.badRequest().body(Map.of(
-                        "error", 
-                        "Cannot mark tractor as returned before booking end time. Booking ends at: " + booking.getEndAt()
-                    ));
-                }
-                
+                // Allow marking as returned even before booking end time (for testing purposes)
+                // In production, you may want to add a check here:
+                // java.time.LocalDateTime now = java.time.LocalDateTime.now();
+                // if (booking.getEndAt().isAfter(now)) {
+                //     return ResponseEntity.badRequest().body(Map.of(
+                //         "error",
+                //         "Cannot mark tractor as returned before booking end time. Booking ends at: " + booking.getEndAt()
+                //     ));
+                // }
+
                 tractor.setStatus("Available");
                 tractor.setAvailable(true);
-                // Don't auto-complete booking when returned - admin must mark as completed after booking time ends
-                // Booking status remains as DELIVERED until explicitly marked as COMPLETED
+                
+                // Restore tractor to original location when returned
+                if (booking.getOriginalTractorLatitude() != null && booking.getOriginalTractorLongitude() != null) {
+                    tractor.setLatitude(booking.getOriginalTractorLatitude());
+                    tractor.setLongitude(booking.getOriginalTractorLongitude());
+                    tractor.setLocationUpdatedAt(LocalDateTime.now());
+                }
+                if (booking.getOriginalTractorLocation() != null) {
+                    tractor.setLocation(booking.getOriginalTractorLocation());
+                } else {
+                    // Fallback to default location if original not stored
+                    tractor.setLatitude(27.7172); // Kathmandu default
+                    tractor.setLongitude(85.3240);
+                    tractor.setLocation("Kathmandu, Nepal");
+                }
+                
+                // Clear destination
+                tractor.setDestinationLatitude(null);
+                tractor.setDestinationLongitude(null);
+                tractor.setDestinationAddress(null);
+                
+                // Automatically mark booking as COMPLETED when tractor is returned
+                booking.setStatus("COMPLETED");
+                bookingRepository.save(booking);
                 break;
         }
         
@@ -694,7 +782,10 @@ public class BookingController {
     // Email notification helper methods
     private String formatBookingDetails(Booking booking) {
         Tractor tractor = booking.getTractor();
-        long hours = java.time.Duration.between(booking.getStartAt(), booking.getEndAt()).toHours();
+        java.time.Duration duration = java.time.Duration.between(booking.getStartAt(), booking.getEndAt());
+        long totalMinutes = duration.toMinutes();
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
         
         StringBuilder details = new StringBuilder();
         details.append("<div style='background-color: #f9fafb; border-radius: 6px; padding: 20px; margin: 20px 0;'>");
@@ -718,7 +809,13 @@ public class BookingController {
         details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getEndAt().format(DATE_FORMATTER)).append("</td></tr>");
         
         details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Duration:</td>");
-        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(hours).append(" hour(s)</td></tr>");
+        if (hours > 0 && minutes > 0) {
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(hours).append(" hour").append(hours != 1 ? "s" : "").append(" ").append(minutes).append(" minute").append(minutes != 1 ? "s" : "").append("</td></tr>");
+        } else if (hours > 0) {
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(hours).append(" hour").append(hours != 1 ? "s" : "").append("</td></tr>");
+        } else {
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(minutes).append(" minute").append(minutes != 1 ? "s" : "").append("</td></tr>");
+        }
         
         if (booking.getDeliveryAddress() != null) {
             details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Delivery Address:</td>");
@@ -929,6 +1026,47 @@ public class BookingController {
         } catch (Exception e) {
             logger.error("Failed to send refund rejected email", e);
         }
+    }
+
+    @PostMapping("/{bookingId}/release-payment")
+    public ResponseEntity<?> releasePayment(@PathVariable Long bookingId, Principal principal) {
+        User user = userRepository.findByEmail(principal.getName()).orElseThrow();
+        if (!"SUPER_ADMIN".equals(user.getRole())) {
+            return ResponseEntity.status(403).body(Map.of("error", "Only super admins can release payments"));
+        }
+
+        Booking booking = bookingRepository.findById(bookingId).orElse(null);
+        if (booking == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Booking not found"));
+        }
+
+        // Only release payment for completed bookings
+        if (!"COMPLETED".equals(booking.getStatus())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Payment can only be released for completed bookings"));
+        }
+
+        // Check if payment already released
+        if (Boolean.TRUE.equals(booking.getPaymentReleased())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Payment has already been released for this booking"));
+        }
+
+        // Calculate amounts
+        double totalAmount = booking.getTotalAmount();
+        double commissionAmount = booking.getCommissionAmount() != null ? booking.getCommissionAmount() : totalAmount * 0.15;
+        double ownerAmount = totalAmount - commissionAmount;
+
+        // Mark payment as released
+        booking.setPaymentReleased(true);
+        bookingRepository.save(booking);
+
+        return ResponseEntity.ok(Map.of(
+            "status", "SUCCESS",
+            "message", "Payment released successfully",
+            "totalAmount", totalAmount,
+            "commissionAmount", commissionAmount,
+            "ownerAmount", ownerAmount,
+            "tractorOwner", booking.getTractor().getOwner() != null ? booking.getTractor().getOwner().getName() : "N/A"
+        ));
     }
 }
 

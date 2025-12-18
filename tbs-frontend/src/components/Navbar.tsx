@@ -43,7 +43,7 @@ const SECONDARY_NAV = [
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, isAdmin, logout, user } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner, logout, user } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -81,7 +81,7 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-1">
-          {!isAdmin &&
+          {!isAdmin && !isSuperAdmin && !isTractorOwner &&
             PRIMARY_NAV.map((item) => {
               const isActive = activePath === item.href;
               return (
@@ -99,7 +99,7 @@ const Navbar = () => {
             })}
 
           {/* More dropdown for secondary links */}
-          {!isAdmin && (
+          {!isAdmin && !isSuperAdmin && !isTractorOwner && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
@@ -123,8 +123,22 @@ const Navbar = () => {
             </DropdownMenu>
           )}
 
-          {/* Admin Link */}
-          {isAuthenticated && isAdmin && (
+          {/* Super Admin Link */}
+          {isAuthenticated && isSuperAdmin && (
+            <Link
+              to="/super-admin/dashboard"
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activePath === '/super-admin/dashboard'
+                  ? 'text-amber-700 bg-amber-50 font-semibold'
+                  : 'text-muted-foreground hover:text-amber-700 hover:bg-amber-50/50'
+                }`}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Super Admin Portal
+            </Link>
+          )}
+
+          {/* Regular Admin Link */}
+          {isAuthenticated && isAdmin && !isSuperAdmin && (
             <Link
               to="/admin/dashboard"
               className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activePath === '/admin/dashboard'
@@ -140,8 +154,8 @@ const Navbar = () => {
 
         {/* Right Section - Actions */}
         <div className="hidden md:flex items-center gap-3">
-          {/* My Bookings for authenticated non-admin users */}
-          {isAuthenticated && !isAdmin && (
+          {/* My Bookings for authenticated customers only */}
+          {isAuthenticated && !isAdmin && !isSuperAdmin && !isTractorOwner && (
             <Link
               to="/dashboard"
               className={`text-sm font-medium transition-colors ${activePath === '/dashboard' ? 'text-amber-700 font-semibold' : 'text-muted-foreground hover:text-amber-700'
@@ -151,8 +165,8 @@ const Navbar = () => {
             </Link>
           )}
 
-          {/* CTA Button */}
-          {!isAdmin && (
+          {/* CTA Button - only for customers */}
+          {!isAdmin && !isSuperAdmin && !isTractorOwner && (
             <Link to="/tractors">
               <Button className="h-9 px-4 font-medium bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white border-0 shadow-md hover:shadow-amber-500/50">
                 <Tractor className="mr-2 h-4 w-4" />
@@ -208,13 +222,18 @@ const Navbar = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-3 py-2">
                   <p className="text-sm font-medium">{user?.name}</p>
-                  <p className="text-xs text-muted-foreground">{isAdmin ? t('nav.administrator') : user?.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isSuperAdmin ? 'Super Administrator' : isAdmin ? t('nav.administrator') : isTractorOwner ? 'Tractor Owner' : user?.email}
+                  </p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  {t('nav.profileSettings')}
-                </DropdownMenuItem>
+                {/* Profile link - not for super admin */}
+                {!isSuperAdmin && (
+                  <DropdownMenuItem onClick={handleProfileClick} className="cursor-pointer">
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    {t('nav.profileSettings')}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogoutClick}
@@ -236,7 +255,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         <div className="flex md:hidden items-center gap-2">
-          {!isAdmin && (
+          {!isAdmin && !isSuperAdmin && !isTractorOwner && (
             <Link to="/tractors">
               <Button size="sm" className="h-8 px-3 text-xs">
                 {t('nav.bookTractor')}
@@ -261,8 +280,8 @@ const Navbar = () => {
               </SheetHeader>
 
               <div className="p-4 space-y-1">
-                {/* Primary Navigation */}
-                {!isAdmin &&
+                {/* Primary Navigation - only for customers */}
+                {!isAdmin && !isSuperAdmin && !isTractorOwner &&
                   PRIMARY_NAV.map((item) => {
                     const isActive = activePath === item.href;
                     return (
@@ -278,8 +297,8 @@ const Navbar = () => {
                     );
                   })}
 
-                {/* Secondary Navigation */}
-                {!isAdmin && (
+                {/* Secondary Navigation - only for customers */}
+                {!isAdmin && !isSuperAdmin && !isTractorOwner && (
                   <div className="pt-2 mt-2 border-t border-border">
                     <p className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {t('nav.more')}
@@ -305,8 +324,20 @@ const Navbar = () => {
                   </div>
                 )}
 
-                {/* Admin Panel */}
-                {isAuthenticated && isAdmin && (
+                {/* Super Admin Panel */}
+                {isAuthenticated && isSuperAdmin && (
+                  <Link
+                    to="/super-admin/dashboard"
+                    onClick={handleLinkClick}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Super Admin Portal
+                  </Link>
+                )}
+
+                {/* Regular Admin Panel */}
+                {isAuthenticated && isAdmin && !isSuperAdmin && (
                   <Link
                     to="/admin/dashboard"
                     onClick={handleLinkClick}
@@ -377,7 +408,7 @@ const Navbar = () => {
                       </div>
                     </div>
 
-                    {!isAdmin && (
+                    {!isAdmin && !isSuperAdmin && !isTractorOwner && (
                       <Link to="/dashboard" onClick={handleLinkClick}>
                         <Button variant="ghost" className="w-full justify-start">
                           {t('nav.myBookings')}

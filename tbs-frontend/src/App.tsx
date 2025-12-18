@@ -18,6 +18,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminTractors from "./pages/AdminTractors";
 import AdminBookings from "./pages/AdminBookings";
 import AdminReports from "./pages/AdminReports";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import TractorOwnerDashboard from "./pages/TractorOwnerDashboard";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailure from "./pages/PaymentFailure";
 import MapPreview from "./pages/MapPreview";
@@ -57,6 +59,13 @@ const App = () => (
                 <Route path="/admin/tractors" element={<AdminOnly><AdminTractors /></AdminOnly>} />
                 <Route path="/admin/bookings" element={<AdminOnly><AdminBookings /></AdminOnly>} />
                 <Route path="/admin/reports" element={<AdminOnly><AdminReports /></AdminOnly>} />
+
+                {/* Super admin routes - only accessible to super admins */}
+                <Route path="/super-admin/dashboard" element={<SuperAdminOnly><SuperAdminDashboard /></SuperAdminOnly>} />
+                <Route path="/super-admin/*" element={<SuperAdminOnly><Navigate to="/super-admin/dashboard" replace /></SuperAdminOnly>} />
+
+                {/* Tractor owner dashboard */}
+                <Route path="/tractor-owner/dashboard" element={<TractorOwnerOnly><TractorOwnerDashboard /></TractorOwnerOnly>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -70,9 +79,9 @@ const App = () => (
 
 export default App;
 
-// Admin route guard - only admins can access
+// Admin route guard - only regular admins can access (NOT super admins)
 function AdminOnly({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, loading: authLoading } = useAuth();
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
@@ -84,13 +93,15 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Super admins should be redirected to their own portal
+  if (isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />;
   if (!isAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
-// User route guard - only regular users can access (not admins)
+// User route guard - only regular customers can access (not admins, super admins, or tractor owners)
 function UserOnly({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner, loading: authLoading } = useAuth();
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
@@ -102,6 +113,46 @@ function UserOnly({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Redirect based on role
+  if (isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />;
+  if (isTractorOwner) return <Navigate to="/tractor-owner/dashboard" replace />;
   if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
+  return <>{children}</>;
+}
+
+// Tractor owner route guard - only tractor owners can access
+function TractorOwnerOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isTractorOwner, isSuperAdmin, isAdmin, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  // Redirect based on role
+  if (isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />;
+  if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
+  if (!isTractorOwner) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+// Super admin route guard - ONLY super admins can access
+function SuperAdminOnly({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isSuperAdmin, loading: authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isSuperAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
 }

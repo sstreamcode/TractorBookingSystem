@@ -23,7 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAllBookingsForUI, approveRefund, rejectRefund, approveBooking, denyBooking, markBookingPaid, markBookingDelivered, markBookingCompleted, updateTractorDeliveryStatus } from '@/lib/api';
+import { getAllBookingsForUI, approveRefund, rejectRefund, approveBooking, denyBooking, markBookingPaid, markBookingDelivered, markBookingCompleted, updateTractorDeliveryStatus, releasePayment } from '@/lib/api';
 import type { Booking } from '@/types';
 import { toast } from 'sonner';
 
@@ -80,7 +80,7 @@ const SmallImageCarousel = ({
 };
 
 const AdminBookings = () => {
-  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isSuperAdmin, loading: authLoading } = useAuth();
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [adminStatusFilter, setAdminStatusFilter] = useState('all');
@@ -96,7 +96,7 @@ const AdminBookings = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated || !isAdmin) {
+    if (!isAuthenticated || (!isAdmin && !isSuperAdmin)) {
       setLoading(false);
       return;
     }
@@ -110,7 +110,7 @@ const AdminBookings = () => {
         setLoading(false);
       }
     })();
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isSuperAdmin]);
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
@@ -124,7 +124,7 @@ const AdminBookings = () => {
     );
   }
 
-  if (!isAuthenticated || !isAdmin) {
+  if (!isAuthenticated || (!isAdmin && !isSuperAdmin)) {
     return <Navigate to="/" replace />;
   }
 
@@ -898,6 +898,11 @@ const AdminBookings = () => {
                               }
                             }
                             
+                            // Release payment action (only for super admin, on completed bookings that haven't been released)
+                            if (isSuperAdmin && selectedBooking.status === 'completed' && !selectedBooking.paymentReleased) {
+                              availableActions.push({ value: 'release_payment', label: '💰 Release Payment (15% Commission)' });
+                            }
+                            
                             // Only allow delivery status changes if not already returned
                             // For COD: Allow after approval (even if not paid yet)
                             // For eSewa: Allow after payment (already confirmed, no approval needed)
@@ -916,22 +921,8 @@ const AdminBookings = () => {
                               if (currentDeliveryStatus === 'DELIVERING') {
                                 availableActions.push({ value: 'set_delivered', label: '✅ Mark as "At Customer"' });
                               }
-                              // Only allow "returned" if booking end time has passed
                               if (currentDeliveryStatus === 'DELIVERED') {
-                                const bookingEndTime = new Date(selectedBooking.endDate);
-                                const now = new Date();
-                                
-                                if (bookingEndTime <= now) {
-                                  availableActions.push({ value: 'set_returned', label: '🏠 Mark as "Back in Stock"' });
-                                } else {
-                                  // Show when it will be available
-                                  const timeUntilEnd = Math.ceil((bookingEndTime.getTime() - now.getTime()) / (1000 * 60 * 60));
-                                  availableActions.push({ 
-                                    value: 'set_returned_disabled', 
-                                    label: `🏠 Mark as "Back in Stock" (Available in ${timeUntilEnd} hour${timeUntilEnd !== 1 ? 's' : ''})`,
-                                    disabled: true 
-                                  });
-                                }
+                                availableActions.push({ value: 'set_returned', label: '🏠 Mark as "Back in Stock"' });
                               }
                             }
                             
@@ -983,9 +974,9 @@ const AdminBookings = () => {
                                         case 'mark_completed':
                                           await handleMarkCompleted(selectedBooking.id);
                                           break;
-                                        case 'set_returned_disabled':
-                                          // This action is disabled, do nothing
-                                          return;
+                                        case 'release_payment':
+                                          await handleReleasePayment(selectedBooking.id);
+                                          break;
                                       }
                                       const bookings = await getAllBookingsForUI();
                                       setAllBookings(bookings);

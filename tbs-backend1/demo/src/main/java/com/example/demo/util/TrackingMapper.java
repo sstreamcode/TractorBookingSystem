@@ -98,6 +98,24 @@ public final class TrackingMapper {
                 "endAt", booking.getEndAt()
             ));
             payload.put("deliveryAddress", booking.getDeliveryAddress());
+            
+            // Include original tractor location if available (for RETURNED status)
+            if (booking.getOriginalTractorLatitude() != null && booking.getOriginalTractorLongitude() != null) {
+                Map<String, Object> originalLocation = new HashMap<>();
+                originalLocation.put("lat", booking.getOriginalTractorLatitude());
+                originalLocation.put("lng", booking.getOriginalTractorLongitude());
+                if (booking.getOriginalTractorLocation() != null) {
+                    originalLocation.put("address", booking.getOriginalTractorLocation());
+                }
+                payload.put("originalLocation", originalLocation);
+            } else {
+                payload.put("originalLocation", null);
+            }
+        }
+        
+        // Include tractor delivery status
+        if (tractor.getDeliveryStatus() != null) {
+            payload.put("deliveryStatus", tractor.getDeliveryStatus());
         }
         return payload;
     }

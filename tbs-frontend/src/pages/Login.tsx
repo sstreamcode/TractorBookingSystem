@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { Tractor } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,8 +13,38 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated, isSuperAdmin, isAdmin, isTractorOwner, loading: authLoading } = useAuth();
   const { t } = useLanguage();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      if (isSuperAdmin) {
+        window.location.href = '/super-admin/dashboard';
+      } else if (isTractorOwner) {
+        window.location.href = '/tractor-owner/dashboard';
+      } else if (isAdmin) {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/tractors';
+      }
+    }
+  }, [isAuthenticated, isSuperAdmin, isAdmin, isTractorOwner, authLoading]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    if (isSuperAdmin) return <Navigate to="/super-admin/dashboard" replace />;
+    if (isTractorOwner) return <Navigate to="/tractor-owner/dashboard" replace />;
+    if (isAdmin) return <Navigate to="/admin/dashboard" replace />;
+    return <Navigate to="/tractors" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

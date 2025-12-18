@@ -44,6 +44,8 @@ export interface Booking {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliveryAddress?: string;
+  commissionAmount?: number;
+  paymentReleased?: boolean;
 }
 
 export interface BookingFormData {

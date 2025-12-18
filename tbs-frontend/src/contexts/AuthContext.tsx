@@ -7,18 +7,27 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'tractor_owner' | 'super_admin';
   profilePictureUrl?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role: 'customer' | 'tractor_owner',
+    phone?: string,
+    address?: string
+  ) => Promise<void>;
   logout: () => void;
   refreshUser: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isTractorOwner: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
 }
 
@@ -58,11 +67,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
               .then(async (r) => (r.ok ? r.json() : Promise.reject()))
               .then((me) => {
+                let roleFromBackend: 'customer' | 'admin' | 'tractor_owner' | 'super_admin' = 'customer';
+                if (me.role === 'SUPER_ADMIN') {
+                  roleFromBackend = 'super_admin';
+                } else if (me.role === 'TRACTOR_OWNER') {
+                  roleFromBackend = 'tractor_owner';
+                } else if (me.role === 'ADMIN') {
+                  roleFromBackend = 'admin';
+                }
+                
                 const updatedUser: User = {
                   id: parsedUser.id || 'self',
                   email: me.email || parsedUser.email,
                   name: me.name || parsedUser.name || me.email?.split('@')[0] || 'User',
-                  role: me.role === 'ADMIN' ? 'admin' : 'customer',
+                  role: roleFromBackend,
                   profilePictureUrl: me.profilePictureUrl || parsedUser.profilePictureUrl
                 };
                 setUser(updatedUser);
@@ -144,7 +162,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const me = await meResponse.json();
-      const roleFromToken = me.role === 'ADMIN' ? 'admin' : 'customer';
+      let roleFromToken: 'customer' | 'admin' | 'tractor_owner' | 'super_admin' = 'customer';
+      if (me.role === 'SUPER_ADMIN') {
+        roleFromToken = 'super_admin';
+      } else if (me.role === 'TRACTOR_OWNER') {
+        roleFromToken = 'tractor_owner';
+      } else if (me.role === 'ADMIN') {
+        roleFromToken = 'admin';
+      }
+      
       const fullUser: User = {
         id: 'self',
         email: me.email || email,
@@ -156,8 +182,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(fullUser);
       localStorage.setItem('user', JSON.stringify(fullUser));
       toast.success('Login successful!');
-      navigate(roleFromToken === 'admin' ? '/admin/dashboard' : '/tractors');
+      
+      // Navigate based on role
+      if (roleFromToken === 'super_admin') {
+        navigate('/super-admin/dashboard');
+      } else if (roleFromToken === 'tractor_owner') {
+        navigate('/tractor-owner/dashboard');
+      } else if (roleFromToken === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/tractors');
+      }
     } catch (error: any) {
+      // Handle pending approval error
+      if (error instanceof ApiError && error.status === 403 && (error as any).pendingApproval) {
+        toast.error(error.message || 'Your account is pending approval. Please check your email for updates.');
+        return;
+      }
       if (error instanceof ApiError && error.status === 401) {
         toast.error('Invalid email or password');
       } else {
@@ -167,9 +208,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: 'customer' | 'tractor_owner',
+    phone?: string,
+    address?: string
+  ) => {
     try {
-      const { token } = await apiRegister(email, password, name);
+      const result = await apiRegister(email, password, name, role, phone, address);
+      
+      // Check if registration returned pending approval (for tractor owners)
+      if ('pendingApproval' in result && result.pendingApproval) {
+        toast.success(result.message || 'Registration successful! Your tractor owner account is pending approval. Please check your email for updates.');
+        navigate('/login');
+        return;
+      }
+      
+      // Normal registration flow for customers
+      const { token } = result as AuthResponse;
       localStorage.setItem('token', token);
       localStorage.setItem('loginTime', Date.now().toString());
       
@@ -184,16 +242,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       const me = await meResponse.json();
+      let roleFromBackend: 'customer' | 'admin' | 'tractor_owner' | 'super_admin' = 'customer';
+      if (me.role === 'SUPER_ADMIN') {
+        roleFromBackend = 'super_admin';
+      } else if (me.role === 'TRACTOR_OWNER') {
+        roleFromBackend = 'tractor_owner';
+      } else if (me.role === 'ADMIN') {
+        roleFromBackend = 'admin';
+      }
       const fullUser: User = {
         id: 'self',
         email: me.email || email,
         name: me.name || name,
-        role: 'customer',
+        role: roleFromBackend,
         profilePictureUrl: me.profilePictureUrl || undefined,
       };
       
       setUser(fullUser);
       localStorage.setItem('user', JSON.stringify(fullUser));
+
       toast.success('Registration successful!');
       navigate('/tractors');
     } catch (error: any) {
@@ -226,11 +293,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (meResponse.ok) {
           const me = await meResponse.json();
+          let roleFromBackend: 'customer' | 'admin' | 'tractor_owner' | 'super_admin' = 'customer';
+          if (me.role === 'SUPER_ADMIN') {
+            roleFromBackend = 'super_admin';
+          } else if (me.role === 'TRACTOR_OWNER') {
+            roleFromBackend = 'tractor_owner';
+          } else if (me.role === 'ADMIN') {
+            roleFromBackend = 'admin';
+          }
+          
           const updatedUser: User = {
             id: 'self',
             email: me.email || '',
             name: me.name || me.email?.split('@')[0] || 'User',
-            role: me.role === 'ADMIN' ? 'admin' : 'customer',
+            role: roleFromBackend,
             profilePictureUrl: me.profilePictureUrl || undefined,
           };
           setUser(updatedUser);
@@ -263,6 +339,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         refreshUser,
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
+        isTractorOwner: user?.role === 'tractor_owner',
+        isSuperAdmin: user?.role === 'super_admin',
         loading,
       }}
     >
