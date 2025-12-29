@@ -76,7 +76,9 @@ export interface DispatchSummaryResponse {
   terrain?: string;
 }
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8082';
+// Use proxy in development, full URL in production
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 
+  (import.meta.env.DEV ? '' : 'http://localhost:8082');
 
 // Auth APIs
 export class ApiError extends Error {
@@ -99,25 +101,39 @@ export async function apiRegister(
   phone?: string,
   address?: string
 ): Promise<AuthResponse | { message: string; pendingApproval: boolean }> {
-  const res = await fetch(`${BASE_URL}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, name, role, phone, address })
-  });
-  if (!res.ok) {
-    let message = 'Registration failed';
-    try {
-      const data = await res.json();
-      message = (data && (data.error || data.message)) ?? message;
-    } catch {}
-    throw new ApiError(message, res.status);
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name, role, phone, address })
+    });
+    if (!res.ok) {
+      let message = 'Registration failed';
+      try {
+        const data = await res.json();
+        message = (data && (data.error || data.message)) ?? message;
+      } catch {}
+      throw new ApiError(message, res.status);
+    }
+    const data = await res.json();
+    // Handle pending approval response for tractor owners (201 status)
+    if (data.pendingApproval) {
+      return { message: data.message, pendingApproval: true };
+    }
+    return data;
+  } catch (error: any) {
+    // Handle network errors (ERR_BLOCKED_BY_CLIENT, CORS, etc.)
+    if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      throw new ApiError(
+        'Unable to connect to the server. Please check:\n' +
+        '1. The backend server is running on port 8082\n' +
+        '2. No browser extensions are blocking the request\n' +
+        '3. Your firewall/antivirus is not blocking localhost connections',
+        0
+      );
+    }
+    throw error;
   }
-  const data = await res.json();
-  // Handle pending approval response for tractor owners (201 status)
-  if (data.pendingApproval) {
-    return { message: data.message, pendingApproval: true };
-  }
-  return data;
 }
 
 export async function apiLogin(email: string, password: string): Promise<AuthResponse> {
@@ -502,6 +518,13 @@ export interface BookingApiModel {
   deliveryAddress?: string;
   commissionAmount?: number;
   paymentReleased?: boolean;
+  actualUsageStartTime?: string;
+  actualUsageStopTime?: string;
+  actualUsageMinutes?: number;
+  bookedMinutes?: number;
+  initialPrice?: number;
+  finalPrice?: number;
+  refundAmount?: number;
   payments?: Array<{
     id: number;
     method: string;
@@ -668,6 +691,89 @@ export async function markBookingCompleted(bookingId: string): Promise<{ status:
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new ApiError(data.error || 'Failed to mark booking as completed', res.status);
+  }
+  return res.json();
+}
+
+export async function startUsage(bookingId: string): Promise<{ 
+  status: string; 
+  startTime: string; 
+  message: string;
+}> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/start-usage`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to start usage timer', res.status);
+  }
+  return res.json();
+}
+
+export async function stopUsage(bookingId: string): Promise<{ 
+  status: string; 
+  stopTime: string; 
+  actualUsageMinutes: number;
+  finalPrice: number;
+  refundAmount?: number;
+  initialPrice?: number;
+  message: string;
+}> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/stop-usage`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to stop usage timer', res.status);
+  }
+  return res.json();
+}
+
+export async function calculateFinalPrice(bookingId: string): Promise<{ 
+  initialPrice: number;
+  finalPrice: number;
+  actualUsageMinutes: number;
+  bookedMinutes: number;
+  message: string;
+}> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/calculate-final-price`, {
+    method: 'POST',
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to calculate final price', res.status);
+  }
+  return res.json();
+}
+
+export async function getUsageDetails(bookingId: string): Promise<{ 
+  bookedMinutes: number;
+  actualUsageMinutes: number | null;
+  currentUsageMinutes: number | null;
+  minimumChargeMinutes: number;
+  initialPrice: number;
+  finalPrice: number | null;
+  startTime: string | null;
+  stopTime: string | null;
+  isRunning: boolean;
+}> {
+  const res = await fetch(`${BASE_URL}/api/bookings/${bookingId}/usage-details`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to get usage details', res.status);
   }
   return res.json();
 }
@@ -1053,7 +1159,15 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     deliveryAddress: apiBooking.deliveryAddress || undefined,
     commissionAmount: apiBooking.commissionAmount || undefined,
     paymentReleased: apiBooking.paymentReleased || false,
-    tractorDeliveryStatus: apiBooking.tractor.deliveryStatus || undefined
+    actualUsageStartTime: apiBooking.actualUsageStartTime || undefined,
+    actualUsageStopTime: apiBooking.actualUsageStopTime || undefined,
+    actualUsageMinutes: apiBooking.actualUsageMinutes || undefined,
+    bookedMinutes: apiBooking.bookedMinutes || undefined,
+    initialPrice: apiBooking.initialPrice || undefined,
+    finalPrice: apiBooking.finalPrice || undefined,
+    refundAmount: apiBooking.refundAmount || undefined,
+    minimumChargeMinutes: 30,
+    tractorDeliveryStatus: apiBooking.deliveryStatus || undefined // Use booking-level deliveryStatus
   } as Booking & { tractorDeliveryStatus?: string };
 }
 
@@ -1082,7 +1196,7 @@ export async function getTractorOwnerBookings(): Promise<BookingApiModel[]> {
       hourlyRate: b.tractor?.hourlyRate || 0,
       imageUrl: b.tractor?.imageUrl,
       imageUrls: b.tractor?.imageUrls || (b.tractor?.imageUrl ? [b.tractor.imageUrl] : []),
-      deliveryStatus: b.tractor?.deliveryStatus,
+      deliveryStatus: b.deliveryStatus, // Use booking-level deliveryStatus
     },
     user: {
       id: b.user?.id,

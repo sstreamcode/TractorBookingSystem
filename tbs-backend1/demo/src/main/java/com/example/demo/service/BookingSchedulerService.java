@@ -118,38 +118,17 @@ public class BookingSchedulerService {
     }
     
     /**
-     * Check every 5 minutes for completed bookings and auto-update status
+     * DISABLED: Auto-complete bookings functionality
+     * Status changes are now manual and controlled by tractor owner
+     * This method is kept for reference but disabled to prevent automatic status changes
      */
-    @Scheduled(fixedRate = 300000) // Run every 5 minutes
-    @Transactional
-    public void autoCompleteBookings() {
-        try {
-            LocalDateTime now = LocalDateTime.now();
-            List<Booking> completedBookings = bookingRepository.findCompletedBookings(now);
-            
-            for (Booking booking : completedBookings) {
-                try {
-                    Tractor tractor = booking.getTractor();
-                    
-                    // Update booking status to COMPLETED
-                    booking.setStatus("COMPLETED");
-                    bookingRepository.save(booking);
-                    
-                    // Update tractor status to RETURNED and make available
-                    tractor.setDeliveryStatus("RETURNED");
-                    tractor.setStatus("Available");
-                    tractor.setAvailable(true);
-                    tractorRepository.save(tractor);
-                    
-                    logger.info("Auto-completed booking ID: {} and set tractor {} to RETURNED", 
-                        booking.getId(), tractor.getName());
-                } catch (Exception e) {
-                    logger.error("Error auto-completing booking ID: {}", booking.getId(), e);
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Error in autoCompleteBookings scheduler", e);
-        }
-    }
+    // @Scheduled(fixedRate = 300000) // Run every 5 minutes - DISABLED
+    // @Transactional
+    // public void autoCompleteBookings() {
+    //     // DISABLED: All status changes must be manual by tractor owner
+    //     // Tractor owner must manually:
+    //     // 1. Mark tractor as RETURNED via update delivery status
+    //     // 2. Mark booking as COMPLETED via mark-completed endpoint (after customer stops timer)
+    // }
 }
 

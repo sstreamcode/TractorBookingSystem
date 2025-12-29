@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import type { Tractor } from '@/types';
 
 const Index = () => {
     const { t } = useLanguage();
+    const { user } = useAuth();
     const [tractors, setTractors] = useState<Tractor[]>([]);
     const [loading, setLoading] = useState(true);
     const [api2, setApi2] = useState<CarouselApi>();
@@ -82,15 +84,17 @@ const Index = () => {
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                                <Link to="/tractors" className="w-full sm:w-auto">
-                                    <Button
-                                        size="lg"
-                                        className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105"
-                                    >
-                                        {t('landing.hero.browseButton')}
-                                        <ArrowRight className="ml-2 h-6 w-6" />
-                                    </Button>
-                                </Link>
+                                {user && (
+                                    <Link to="/tractors" className="w-full sm:w-auto">
+                                        <Button
+                                            size="lg"
+                                            className="w-full sm:w-auto h-14 md:h-16 px-8 md:px-12 text-lg md:text-xl rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold shadow-2xl hover:shadow-amber-500/50 transition-all duration-300 transform hover:scale-105"
+                                        >
+                                            {t('landing.hero.browseButton')}
+                                            <ArrowRight className="ml-2 h-6 w-6" />
+                                        </Button>
+                                    </Link>
+                                )}
                                 <Link to="#how" className="w-full sm:w-auto">
                                     <Button
                                         variant="outline"
@@ -448,17 +452,21 @@ const Index = () => {
                                 {t('landing.cta.subtitle')}
                             </p>
                             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                                <Link to="/tractors" className="w-full sm:w-auto">
-                                    <Button size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold">
-                                        {t('landing.cta.browseButton')}
-                                        <ArrowRight className="ml-2 h-5 w-5" />
-                                    </Button>
-                                </Link>
-                                <Link to="/login" className="w-full sm:w-auto">
-                                    <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-border bg-card/50 text-foreground hover:bg-muted">
-                                        {t('landing.cta.signInButton')}
-                                    </Button>
-                                </Link>
+                                {user && (
+                                    <Link to="/tractors" className="w-full sm:w-auto">
+                                        <Button size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold">
+                                            {t('landing.cta.browseButton')}
+                                            <ArrowRight className="ml-2 h-5 w-5" />
+                                        </Button>
+                                    </Link>
+                                )}
+                                {!user && (
+                                    <Link to="/login" className="w-full sm:w-auto">
+                                        <Button variant="outline" size="lg" className="w-full sm:w-auto h-12 md:h-14 px-6 md:px-10 text-base md:text-lg rounded-lg border-2 border-border bg-card/50 text-foreground hover:bg-muted">
+                                            {t('landing.cta.signInButton')}
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -46,6 +46,14 @@ export interface Booking {
   deliveryAddress?: string;
   commissionAmount?: number;
   paymentReleased?: boolean;
+  actualUsageStartTime?: string;
+  actualUsageStopTime?: string;
+  actualUsageMinutes?: number;
+  bookedMinutes?: number;
+  initialPrice?: number;
+  finalPrice?: number;
+  refundAmount?: number;
+  minimumChargeMinutes?: number;
 }
 
 export interface BookingFormData {

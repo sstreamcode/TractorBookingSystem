@@ -218,7 +218,10 @@ const TractorDetail = () => {
     const start = new Date(`${startDate}T${startTime}`);
     const end = new Date(`${endDate}T${endTime}`);
     const minutes = (end.getTime() - start.getTime()) / (1000 * 60);
-    const hours = minutes / 60.0; // Convert to hours as decimal (e.g., 0.75 for 45 minutes)
+    
+    // Enforce minimum 30 minutes
+    const chargeableMinutes = Math.max(minutes, 30);
+    const hours = chargeableMinutes / 60.0; // Convert to hours as decimal
     
     return hours > 0 ? hours * tractor.hourlyRate : 0;
   };
@@ -298,6 +301,16 @@ const TractorDetail = () => {
 
     if (!startDate || !endDate || !startTime || !endTime) {
       toast.error('Please fill in all booking details');
+      return;
+    }
+
+    // Validate minimum booking duration (30 minutes)
+    const start = new Date(`${startDate}T${startTime}`);
+    const end = new Date(`${endDate}T${endTime}`);
+    const minutes = (end.getTime() - start.getTime()) / (1000 * 60);
+    
+    if (minutes < 30) {
+      toast.error('Minimum booking time is 30 minutes');
       return;
     }
 
@@ -625,9 +638,12 @@ const TractorDetail = () => {
                     </div>
                     <div className="pt-2 border-t border-border">
                       <div className="flex justify-between">
-                        <span className="font-semibold text-foreground">Total Cost</span>
-                        <span className="text-2xl font-bold text-amber-500">NPR {totalCost}</span>
+                        <span className="font-semibold text-foreground">Initial Cost</span>
+                        <span className="text-2xl font-bold text-amber-500">NPR {totalCost.toFixed(2)}</span>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Minimum 30 minutes. Final price will be calculated based on actual usage time.
+                      </p>
                     </div>
                   </div>
                 )}

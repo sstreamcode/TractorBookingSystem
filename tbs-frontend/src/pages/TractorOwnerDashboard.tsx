@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { 
-  Plus, Edit, Trash2, MapPin, Loader2, Calendar, DollarSign, Tractor, Users, 
+  Plus, Edit, Trash2, MapPin, Loader2, Calendar, DollarSign, Tractor as TractorIcon, Users, 
   TrendingUp, Download, Eye, Filter, CheckCircle, XCircle, Play, Clock, 
   Package, Activity, BarChart3, PieChart, AlertCircle, CheckCircle2, X,
   Truck, Info, Settings, User
@@ -31,6 +31,8 @@ import {
   updateTractorDeliveryStatus,
   markBookingDelivered,
   markBookingCompleted,
+  approveBooking,
+  denyBooking,
   type TractorApiModel,
   type TrackingResponse,
 } from '@/lib/api';
@@ -268,6 +270,14 @@ const TractorOwnerDashboard = () => {
     try {
       const bookingData = await getTractorOwnerBookingsForUIWithNested();
       setBookings(bookingData as any);
+      
+      // Also update selectedBooking if it exists
+      if (selectedBooking) {
+        const updated = bookingData.find((b: any) => String(b.id) === String(selectedBooking.id));
+        if (updated) {
+          setSelectedBooking(updated);
+        }
+      }
     } catch (e) {
       toast.error('Failed to load bookings');
     }
@@ -585,11 +595,9 @@ const TractorOwnerDashboard = () => {
     try {
       await updateTractorDeliveryStatus(bookingId, status);
       toast.success(`Delivery status updated to ${status}`);
+      
+      // Refresh bookings - this will also update selectedBooking automatically
       await refreshBookings();
-      if (selectedBooking && selectedBooking.id === bookingId) {
-        const updated = bookings.find(b => b.id === bookingId);
-        if (updated) setSelectedBooking(updated);
-      }
     } catch (error: any) {
       toast.error(error?.message || 'Failed to update delivery status');
     } finally {
@@ -626,6 +634,40 @@ const TractorOwnerDashboard = () => {
       await refreshBookings();
     } catch (error: any) {
       toast.error(error?.message || 'Failed to mark as completed');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
+  const handleApproveBooking = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      await approveBooking(bookingId);
+      toast.success('Booking approved');
+      await refreshBookings();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to approve booking');
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
+  const handleDenyBooking = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      await denyBooking(bookingId);
+      toast.success('Booking denied');
+      await refreshBookings();
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to deny booking');
     } finally {
       setProcessingBookings(prev => {
         const updated = new Set(prev);
@@ -839,7 +881,7 @@ const TractorOwnerDashboard = () => {
                       </p>
                     </div>
                     <div className="w-14 h-14 bg-amber-500 rounded-xl flex items-center justify-center shadow-md">
-                      <Tractor className="h-7 w-7 text-slate-900" />
+                      <TractorIcon className="h-7 w-7 text-slate-900" />
                     </div>
                   </div>
                 </CardContent>
@@ -1498,7 +1540,7 @@ const TractorOwnerDashboard = () => {
                                   />
                                 ) : (
                                   <div className="w-10 h-10 rounded border border-border bg-muted flex items-center justify-center">
-                                    <Tractor className="h-5 w-5 text-muted-foreground" />
+                                    <TractorIcon className="h-5 w-5 text-muted-foreground" />
                                   </div>
                                 )}
                                 <span className="text-sm font-medium text-foreground">{tractorName}</span>
@@ -1604,7 +1646,7 @@ const TractorOwnerDashboard = () => {
                         <Card className="border border-border bg-card shadow-sm">
                           <CardHeader className="pb-3">
                             <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-                              <Tractor className="h-5 w-5 text-amber-500" />
+                              <TractorIcon className="h-5 w-5 text-amber-500" />
                               Tractor Information
                             </CardTitle>
                           </CardHeader>
@@ -1652,7 +1694,7 @@ const TractorOwnerDashboard = () => {
                                   }
                                   return (
                                     <div className="w-full h-48 rounded-lg border border-border bg-muted flex items-center justify-center">
-                                      <Tractor className="h-16 w-16 text-muted-foreground" />
+                                      <TractorIcon className="h-16 w-16 text-muted-foreground" />
                                     </div>
                                   );
                                 })()}
@@ -1927,7 +1969,8 @@ const TractorOwnerDashboard = () => {
                           <CardContent>
                             {(() => {
                               const bookingData = selectedBooking as any;
-                              const currentDeliveryStatus = bookingData.tractorDeliveryStatus || 'ORDERED';
+                              // Get current delivery status - should be null/undefined for new bookings
+                              const currentDeliveryStatus = bookingData.tractorDeliveryStatus || null;
                               const availableActions: Array<{ value: string; label: string; disabled?: boolean; icon?: any }> = [];
                               
                               // Check if customer has paid
@@ -1942,7 +1985,21 @@ const TractorOwnerDashboard = () => {
                               // For eSewa: allow actions after payment
                               const isCOD = selectedBooking.paymentMethod === 'CASH_ON_DELIVERY';
                               
-                              // Determine if actions can be taken
+                              // Approval actions for COD bookings - show before delivery status actions
+                              if (isCOD && selectedBooking.adminStatus === 'pending_approval') {
+                                availableActions.push({ 
+                                  value: 'approve_booking', 
+                                  label: 'Approve Booking', 
+                                  icon: CheckCircle 
+                                });
+                                availableActions.push({ 
+                                  value: 'deny_booking', 
+                                  label: 'Deny Booking', 
+                                  icon: XCircle 
+                                });
+                              }
+                              
+                              // Determine if delivery status actions can be taken
                               const canChangeDeliveryStatus = 
                                 selectedBooking.status !== 'cancelled' &&
                                 currentDeliveryStatus !== 'RETURNED' &&
@@ -1953,20 +2010,32 @@ const TractorOwnerDashboard = () => {
                                   selectedBooking.status === 'completed'
                                 );
                               
-                              if (canChangeDeliveryStatus) {
-                                // Show "On the Way" if status is ORDERED or null/undefined
+                              // Always show return action if delivery status is DELIVERED (regardless of other conditions)
+                              // This ensures the return action is visible after delivery
+                              if (currentDeliveryStatus === 'DELIVERED') {
+                                availableActions.push({ value: 'set_returned', label: 'Mark as "Back in Stock"', icon: Package });
+                              } else if (canChangeDeliveryStatus) {
+                                // Show "On the Way" if status is null/undefined or ORDERED (first step)
                                 if (!currentDeliveryStatus || currentDeliveryStatus === 'ORDERED') {
                                   availableActions.push({ value: 'set_delivering', label: 'Mark as "On the Way"', icon: Truck });
                                 }
-                                // Show "At Customer" if status is DELIVERING
+                                // Show "At Customer" if status is DELIVERING (next step)
                                 if (currentDeliveryStatus === 'DELIVERING') {
                                   availableActions.push({ value: 'set_delivered', label: 'Mark as "At Customer"', icon: CheckCircle2 });
                                 }
-                                // Show "Back in Stock" if status is DELIVERED
-                                if (currentDeliveryStatus === 'DELIVERED') {
-                                  availableActions.push({ value: 'set_returned', label: 'Mark as "Back in Stock"', icon: Package });
-                                }
-                              } else {
+                              }
+                              
+                              // Show "Mark as Completed" action when tractor is RETURNED and booking is not already completed
+                              // This allows superadmin to release payment
+                              if (currentDeliveryStatus === 'RETURNED' && selectedBooking.status !== 'completed' && selectedBooking.status !== 'cancelled') {
+                                availableActions.push({ 
+                                  value: 'mark_completed', 
+                                  label: 'Mark Booking as Completed', 
+                                  icon: CheckCircle2 
+                                });
+                              }
+                              
+                              if (!canChangeDeliveryStatus && currentDeliveryStatus !== 'DELIVERED' && currentDeliveryStatus !== 'RETURNED') {
                                 // Show why actions are not available
                                 if (selectedBooking.status === 'cancelled') {
                                   availableActions.push({ 
@@ -1974,13 +2043,6 @@ const TractorOwnerDashboard = () => {
                                     label: 'Booking is cancelled', 
                                     disabled: true,
                                     icon: XCircle 
-                                  });
-                                } else if (currentDeliveryStatus === 'RETURNED') {
-                                  availableActions.push({ 
-                                    value: 'info', 
-                                    label: 'Tractor already returned', 
-                                    disabled: true,
-                                    icon: CheckCircle 
                                   });
                                 } else if (isCOD && selectedBooking.adminStatus !== 'approved') {
                                   availableActions.push({ 
@@ -2021,9 +2083,15 @@ const TractorOwnerDashboard = () => {
                                     const Icon = action.icon || Play;
                                     const handleAction = async () => {
                                       if (isDisabled || action.value === 'info') return;
-                                      setProcessingBookings(prev => new Set(prev).add(selectedBooking.id));
+                                      // All handlers (approve, deny, updateDeliveryStatus) already handle processing state and refresh
                                       try {
                                         switch (action.value) {
+                                          case 'approve_booking':
+                                            await handleApproveBooking(selectedBooking.id);
+                                            break;
+                                          case 'deny_booking':
+                                            await handleDenyBooking(selectedBooking.id);
+                                            break;
                                           case 'set_delivering':
                                             await handleUpdateDeliveryStatus(selectedBooking.id, 'DELIVERING');
                                             break;
@@ -2033,18 +2101,13 @@ const TractorOwnerDashboard = () => {
                                           case 'set_returned':
                                             await handleUpdateDeliveryStatus(selectedBooking.id, 'RETURNED');
                                             break;
+                                          case 'mark_completed':
+                                            await handleMarkCompleted(selectedBooking.id);
+                                            break;
                                         }
-                                        await refreshBookings();
-                                        const updated = bookings.find(b => b.id === selectedBooking.id);
-                                        if (updated) setSelectedBooking(updated);
+                                        // All handlers already refresh bookings and update selectedBooking
                                       } catch (error: any) {
                                         toast.error(error?.message || 'Action failed');
-                                      } finally {
-                                        setProcessingBookings(prev => {
-                                          const updated = new Set(prev);
-                                          updated.delete(selectedBooking.id);
-                                          return updated;
-                                        });
                                       }
                                     };
                                     
@@ -2125,7 +2188,7 @@ const TractorOwnerDashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Tractor className="h-5 w-5" />
+                    <TractorIcon className="h-5 w-5" />
                     Tractors
                   </CardTitle>
                 </CardHeader>

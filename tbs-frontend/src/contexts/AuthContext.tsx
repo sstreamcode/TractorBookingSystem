@@ -45,8 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem('token');
       const loginTime = localStorage.getItem('loginTime');
       
-      // Check if session has expired (5 minutes = 300000 ms)
-      if (loginTime && Date.now() - parseInt(loginTime) > 5 * 60 * 1000) {
+      // Check if session has expired (30 minutes = 1800000 ms)
+      if (loginTime && Date.now() - parseInt(loginTime) > 30 * 60 * 1000) {
         // Session expired
         localStorage.removeItem('user');
         localStorage.removeItem('token');
@@ -113,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  // Session timeout warning - show warning at 4 minutes, auto logout at 5 minutes
+  // Session timeout warning - show warning at 25 minutes, auto logout at 30 minutes
   useEffect(() => {
     if (!user) return;
     
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!loginTime) return;
       
       const elapsed = Date.now() - parseInt(loginTime);
-      const remaining = 5 * 60 * 1000 - elapsed; // 5 minutes total
+      const remaining = 30 * 60 * 1000 - elapsed; // 30 minutes total
       
       if (remaining <= 0) {
         // Session expired - logout
@@ -132,9 +132,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('token');
         localStorage.removeItem('loginTime');
         navigate('/login');
-      } else if (remaining <= 60 * 1000 && remaining > 50000) {
-        // Show warning at 1 minute remaining
-        toast.warning('Your session will expire in 1 minute');
+      } else if (remaining <= 5 * 60 * 1000 && remaining > 4.5 * 60 * 1000) {
+        // Show warning at 5 minutes remaining
+        toast.warning('Your session will expire in 5 minutes');
       }
     };
     

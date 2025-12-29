@@ -58,6 +58,19 @@ public class Booking {
     @Column(nullable = false)
     private Boolean paymentReleased = false; // Track if payment has been released to tractor owner
     
+    // Time tracking fields for actual usage
+    private LocalDateTime actualUsageStartTime; // When customer starts using the tractor (after delivery)
+    private LocalDateTime actualUsageStopTime; // When customer stops using the tractor
+    private Long actualUsageMinutes; // Calculated actual usage in minutes
+    private Long bookedMinutes; // Original booked duration in minutes
+    private static final Long MINIMUM_CHARGE_MINUTES = 30L; // Minimum charge is 30 minutes
+    private Double initialPrice; // Price for booked time (minimum 30 min)
+    private Double finalPrice; // Final price based on actual usage
+    private Double refundAmount; // Refund amount if initialPrice > finalPrice (for overpayment)
+    
+    @Column(length = 20)
+    private String deliveryStatus; // ORDERED, DELIVERING, DELIVERED, RETURNED - per booking delivery status
+    
     // Helper method to get payment method for JSON serialization
     @com.fasterxml.jackson.annotation.JsonProperty("paymentMethod")
     public String getPaymentMethod() {
@@ -126,6 +139,32 @@ public class Booking {
     public void setCommissionAmount(Double commissionAmount) { this.commissionAmount = commissionAmount; }
     public Boolean getPaymentReleased() { return paymentReleased != null ? paymentReleased : false; }
     public void setPaymentReleased(Boolean paymentReleased) { this.paymentReleased = paymentReleased; }
+    
+    public LocalDateTime getActualUsageStartTime() { return actualUsageStartTime; }
+    public void setActualUsageStartTime(LocalDateTime actualUsageStartTime) { this.actualUsageStartTime = actualUsageStartTime; }
+    
+    public LocalDateTime getActualUsageStopTime() { return actualUsageStopTime; }
+    public void setActualUsageStopTime(LocalDateTime actualUsageStopTime) { this.actualUsageStopTime = actualUsageStopTime; }
+    
+    public Long getActualUsageMinutes() { return actualUsageMinutes; }
+    public void setActualUsageMinutes(Long actualUsageMinutes) { this.actualUsageMinutes = actualUsageMinutes; }
+    
+    public Long getBookedMinutes() { return bookedMinutes; }
+    public void setBookedMinutes(Long bookedMinutes) { this.bookedMinutes = bookedMinutes; }
+    
+    public static Long getMinimumChargeMinutes() { return MINIMUM_CHARGE_MINUTES; }
+    
+    public Double getInitialPrice() { return initialPrice; }
+    public void setInitialPrice(Double initialPrice) { this.initialPrice = initialPrice; }
+    
+    public Double getFinalPrice() { return finalPrice; }
+    public void setFinalPrice(Double finalPrice) { this.finalPrice = finalPrice; }
+    
+    public Double getRefundAmount() { return refundAmount; }
+    public void setRefundAmount(Double refundAmount) { this.refundAmount = refundAmount; }
+    
+    public String getDeliveryStatus() { return deliveryStatus; }
+    public void setDeliveryStatus(String deliveryStatus) { this.deliveryStatus = deliveryStatus; }
 }
 
 

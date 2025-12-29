@@ -182,7 +182,18 @@ const Tracking = () => {
             <div className="rounded-xl border border-border bg-card p-6">
               <h3 className="text-sm font-semibold text-foreground mb-4">Delivery Journey</h3>
               {(() => {
-                const deliveryStatus = trackingData.deliveryStatus || trackingData.status;
+                // Only use deliveryStatus if it's explicitly set and booking is in a relevant state
+                // Don't use status as fallback - deliveryStatus should be null until owner sets it
+                const deliveryStatus = trackingData.deliveryStatus;
+                const bookingStatus = trackingData.bookingStatus;
+                
+                // For PENDING or CONFIRMED bookings, delivery status should be null
+                // Only show delivery status for PAID, DELIVERED, or COMPLETED bookings
+                const shouldShowDeliveryStatus = deliveryStatus && 
+                  (bookingStatus === 'PAID' || bookingStatus === 'DELIVERED' || bookingStatus === 'COMPLETED');
+                
+                const effectiveDeliveryStatus = shouldShowDeliveryStatus ? deliveryStatus : null;
+                
                 const statusConfig: Record<string, { label: string; icon: string; color: string; step: number }> = {
                   'ORDERED': { label: 'Ready to Deliver', icon: '📦', color: '!border-blue-500/30 !bg-blue-500/10 !text-blue-400', step: 1 },
                   'DELIVERING': { label: 'On the Way', icon: '🚚', color: '!border-yellow-500/30 !bg-yellow-500/10 !text-yellow-400', step: 2 },
@@ -197,21 +208,23 @@ const Tracking = () => {
                   { key: 'RETURNED', label: 'Returned', icon: '🏠' }
                 ];
                 
-                const currentStep = deliveryStatus ? (statusConfig[deliveryStatus]?.step || 0) : 0;
-                const isCompleted = trackingData.bookingStatus === 'COMPLETED' || deliveryStatus === 'RETURNED';
+                const currentStep = effectiveDeliveryStatus ? (statusConfig[effectiveDeliveryStatus]?.step || 0) : 0;
+                const isCompleted = bookingStatus === 'COMPLETED' || effectiveDeliveryStatus === 'RETURNED';
                 
                 return (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-4">
-                      {!deliveryStatus ? (
+                      {!effectiveDeliveryStatus ? (
                         <span className="text-sm px-3 py-1.5 rounded-md bg-muted text-muted-foreground">
                           <span className="mr-1">⏳</span>
-                          Not Started
+                          {bookingStatus === 'PENDING' || bookingStatus === 'CONFIRMED' 
+                            ? 'Awaiting Tractor Owner Action' 
+                            : 'Not Started'}
                         </span>
                       ) : (
-                        <span className={`text-sm px-3 py-1.5 rounded-md border ${statusConfig[deliveryStatus]?.color || 'border-border bg-muted text-muted-foreground'}`}>
-                          <span className="mr-1">{statusConfig[deliveryStatus]?.icon}</span>
-                          {statusConfig[deliveryStatus]?.label}
+                        <span className={`text-sm px-3 py-1.5 rounded-md border ${statusConfig[effectiveDeliveryStatus]?.color || 'border-border bg-muted text-muted-foreground'}`}>
+                          <span className="mr-1">{statusConfig[effectiveDeliveryStatus]?.icon}</span>
+                          {statusConfig[effectiveDeliveryStatus]?.label}
                         </span>
                       )}
                       {isCompleted && (
@@ -228,7 +241,7 @@ const Tracking = () => {
                         {steps.map((step, index) => {
                           const stepConfig = statusConfig[step.key];
                           const isActive = currentStep >= (index + 1);
-                          const isCurrent = deliveryStatus === step.key;
+                          const isCurrent = effectiveDeliveryStatus === step.key;
                           
                           return (
                             <div key={step.key} className="flex flex-col items-center flex-1 relative">

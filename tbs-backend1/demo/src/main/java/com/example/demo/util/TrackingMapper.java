@@ -113,9 +113,22 @@ public final class TrackingMapper {
             }
         }
         
-        // Include tractor delivery status
-        if (tractor.getDeliveryStatus() != null) {
-            payload.put("deliveryStatus", tractor.getDeliveryStatus());
+        // Include booking-specific delivery status (per-booking, not tractor-level)
+        if (booking != null) {
+            String bookingDeliveryStatus = booking.getDeliveryStatus();
+            String bookingStatus = booking.getStatus();
+            // Only include delivery status if booking is PAID, DELIVERED, or COMPLETED
+            // For PENDING bookings, delivery status should be null
+            if (bookingDeliveryStatus != null && 
+                ("PAID".equals(bookingStatus) || "DELIVERED".equals(bookingStatus) || "COMPLETED".equals(bookingStatus))) {
+                payload.put("deliveryStatus", bookingDeliveryStatus);
+            } else {
+                // For PENDING or other early statuses, don't show delivery status
+                payload.put("deliveryStatus", null);
+            }
+        } else {
+            // No booking provided - no delivery status
+            payload.put("deliveryStatus", null);
         }
         return payload;
     }

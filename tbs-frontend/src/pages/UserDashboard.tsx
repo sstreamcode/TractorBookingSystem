@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Calendar, Clock, CreditCard, XCircle } from 'lucide-react';
+import { Calendar, Clock, CreditCard, XCircle, Play, Square } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getMyBookingsForUI, requestBookingCancellation } from '@/lib/api';
+import { getMyBookingsForUI, requestBookingCancellation, startUsage, stopUsage, getUsageDetails } from '@/lib/api';
 import type { Booking } from '@/types';
 import { toast } from 'sonner';
 import {
@@ -84,6 +84,9 @@ const UserDashboard = () => {
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
   // Track active image index for each booking
   const [bookingImageIndices, setBookingImageIndices] = useState<Record<string, number>>({});
+  // Track usage details for each booking
+  const [usageDetails, setUsageDetails] = useState<Record<string, { isRunning: boolean; currentMinutes: number | null }>>({});
+  const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated || isAdmin || isSuperAdmin || isTractorOwner) {
@@ -94,6 +97,24 @@ const UserDashboard = () => {
       try {
         const bookings = await getMyBookingsForUI();
         setUserBookings(bookings);
+        
+        // Fetch usage details for delivered bookings
+        for (const booking of bookings) {
+          if (booking.status === 'delivered') {
+            try {
+              const details = await getUsageDetails(booking.id);
+              setUsageDetails(prev => ({
+                ...prev,
+                [booking.id]: {
+                  isRunning: details.isRunning,
+                  currentMinutes: details.currentUsageMinutes
+                }
+              }));
+            } catch (error) {
+              console.error(`Failed to fetch usage details for booking ${booking.id}:`, error);
+            }
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch bookings:', error);
       } finally {
@@ -101,6 +122,118 @@ const UserDashboard = () => {
       }
     })();
   }, [isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner]);
+
+  // Update running timers every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Object.keys(usageDetails).forEach(bookingId => {
+        const details = usageDetails[bookingId];
+        if (details.isRunning && details.currentMinutes !== null) {
+          setUsageDetails(prev => ({
+            ...prev,
+            [bookingId]: {
+              ...prev[bookingId],
+              currentMinutes: (prev[bookingId]?.currentMinutes || 0) + 1
+            }
+          }));
+        }
+      });
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [usageDetails]);
+
+  const handleStartUsage = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      const result = await startUsage(bookingId);
+      toast.success('Usage timer started');
+      
+      // Fetch updated usage details
+      try {
+        const details = await getUsageDetails(bookingId);
+        setUsageDetails(prev => ({
+          ...prev,
+          [bookingId]: {
+            isRunning: details.isRunning,
+            currentMinutes: details.currentUsageMinutes || 0
+          }
+        }));
+      } catch (detailError) {
+        // If getting details fails, still mark as running
+        setUsageDetails(prev => ({
+          ...prev,
+          [bookingId]: {
+            isRunning: true,
+            currentMinutes: 0
+          }
+        }));
+      }
+      
+      // Refresh bookings
+      const bookings = await getMyBookingsForUI();
+      setUserBookings(bookings);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to start usage timer';
+      toast.error(errorMessage);
+      console.error('Start usage error:', error);
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
+  const handleStopUsage = async (bookingId: string) => {
+    setProcessingBookings(prev => new Set(prev).add(bookingId));
+    try {
+      const result = await stopUsage(bookingId);
+      const finalPrice = result.finalPrice || 0;
+      const refundAmount = result.refundAmount || 0;
+      const refundMsg = refundAmount > 0 
+        ? ` Refund: NPR ${refundAmount.toFixed(2)}` 
+        : '';
+      toast.success(`Usage stopped. Final price: NPR ${finalPrice.toFixed(2)}${refundMsg}`);
+      
+      // Update usage details
+      setUsageDetails(prev => ({
+        ...prev,
+        [bookingId]: {
+          isRunning: false,
+          currentMinutes: result.actualUsageMinutes || 0
+        }
+      }));
+      
+      // Refresh bookings to get updated refund information
+      const bookings = await getMyBookingsForUI();
+      setUserBookings(bookings);
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to stop usage timer';
+      toast.error(errorMessage);
+      console.error('Stop usage error:', error);
+    } finally {
+      setProcessingBookings(prev => {
+        const updated = new Set(prev);
+        updated.delete(bookingId);
+        return updated;
+      });
+    }
+  };
+
+  const formatMinutes = (minutes: number | null | undefined): string => {
+    if (minutes === null || minutes === undefined) return '0 min';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}m`;
+    } else if (hours > 0) {
+      return `${hours}h`;
+    } else {
+      return `${mins}m`;
+    }
+  };
 
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
@@ -375,9 +508,115 @@ const UserDashboard = () => {
 
                     {/* Price */}
                     <div className="border-t border-border pt-4 mb-4">
-                      <p className="text-3xl font-bold text-amber-500">NPR {booking.totalCost}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{t('dashboard.totalAmount') || 'Total amount'}</p>
+                      {booking.finalPrice ? (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            {booking.initialPrice && booking.initialPrice !== booking.finalPrice && (
+                              <p className="text-lg line-through text-muted-foreground">NPR {booking.initialPrice.toFixed(2)}</p>
+                            )}
+                            <p className="text-3xl font-bold text-amber-500">NPR {booking.finalPrice.toFixed(2)}</p>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Final amount (based on actual usage)</p>
+                          {booking.actualUsageMinutes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Used: {formatMinutes(booking.actualUsageMinutes)} | Booked: {formatMinutes(booking.bookedMinutes || 0)}
+                            </p>
+                          )}
+                          {booking.refundAmount && booking.refundAmount > 0 && (
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
+                              Refund: NPR {booking.refundAmount.toFixed(2)} (overpayment will be refunded)
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-3xl font-bold text-amber-500">NPR {booking.totalCost.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {booking.status === 'delivered' ? 'Initial amount (will be adjusted after usage)' : t('dashboard.totalAmount') || 'Total amount'}
+                          </p>
+                          {booking.bookedMinutes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Booked: {formatMinutes(booking.bookedMinutes)} (Minimum: 30 min)
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
+
+                    {/* Usage Timer - Only for delivered bookings with DELIVERED delivery status */}
+                    {(() => {
+                      const deliveryStatus = (booking as any).tractorDeliveryStatus;
+                      const canStartTimer = booking.status === 'delivered' && 
+                                           deliveryStatus === 'DELIVERED' &&
+                                           booking.status !== 'completed' &&
+                                           deliveryStatus !== 'RETURNED';
+                      const canUseTimer = booking.status === 'delivered' && deliveryStatus !== 'RETURNED';
+                      
+                      if (!canUseTimer) return null;
+                      
+                      return (
+                        <div className="border-t border-border pt-4 mb-4">
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-foreground">Usage Timer</span>
+                              {usageDetails[booking.id]?.isRunning && (
+                                <span className="text-sm font-bold text-amber-500 animate-pulse">
+                                  {formatMinutes(usageDetails[booking.id]?.currentMinutes || 0)}
+                                </span>
+                              )}
+                              {!usageDetails[booking.id]?.isRunning && booking.actualUsageMinutes && (
+                                <span className="text-sm text-muted-foreground">
+                                  {formatMinutes(booking.actualUsageMinutes)}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {!canStartTimer && !booking.actualUsageStartTime && (
+                              <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-xs text-muted-foreground">
+                                  {deliveryStatus === 'RETURNED' || booking.status === 'completed'
+                                    ? 'Tractor has been returned. Timer cannot be started.'
+                                    : deliveryStatus !== 'DELIVERED'
+                                    ? 'Waiting for tractor to be delivered to your location'
+                                    : 'Cannot start timer at this time'}
+                                </p>
+                              </div>
+                            )}
+                            
+                            {canStartTimer && !booking.actualUsageStartTime && (
+                              <Button
+                                onClick={() => handleStartUsage(booking.id)}
+                                disabled={processingBookings.has(booking.id)}
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                              >
+                                <Play className="h-4 w-4 mr-2" />
+                                Start Usage
+                              </Button>
+                            )}
+                            
+                            {booking.actualUsageStartTime && !booking.actualUsageStopTime && (
+                              <Button
+                                onClick={() => handleStopUsage(booking.id)}
+                                disabled={processingBookings.has(booking.id)}
+                                className="w-full bg-red-500 hover:bg-red-600 text-white"
+                              >
+                                <Square className="h-4 w-4 mr-2" />
+                                Stop Usage
+                              </Button>
+                            )}
+                            
+                            {booking.actualUsageStopTime && (
+                              <div className="p-3 bg-muted rounded-lg">
+                                <p className="text-xs text-muted-foreground">Usage completed</p>
+                                <p className="text-sm font-medium text-foreground mt-1">
+                                  Final price will be calculated by owner
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Status and Actions */}
                     <div className="space-y-3">
