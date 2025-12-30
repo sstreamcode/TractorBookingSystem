@@ -130,6 +130,20 @@ public final class TrackingMapper {
             // No booking provided - no delivery status
             payload.put("deliveryStatus", null);
         }
+        
+        // Include tractor owner information
+        if (tractor.getOwner() != null) {
+            Map<String, Object> owner = new HashMap<>();
+            owner.put("id", tractor.getOwner().getId());
+            owner.put("name", tractor.getOwner().getName());
+            owner.put("email", tractor.getOwner().getEmail());
+            owner.put("phone", tractor.getOwner().getPhone() != null ? tractor.getOwner().getPhone() : "");
+            owner.put("address", tractor.getOwner().getAddress() != null ? tractor.getOwner().getAddress() : "");
+            payload.put("tractorOwner", owner);
+        } else {
+            payload.put("tractorOwner", null);
+        }
+        
         return payload;
     }
 

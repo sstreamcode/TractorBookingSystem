@@ -53,6 +53,13 @@ export interface TrackingResponse {
   distanceKm?: number;
   etaMinutes?: number;
   route: Array<{ lat: number; lng: number }>;
+  tractorOwner?: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  } | null;
 }
 
 export interface LandingMetricsResponse {

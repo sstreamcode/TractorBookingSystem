@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +7,8 @@ import { getMyBookingsForUI, getBookingTracking, type TrackingResponse } from '@
 import type { Booking } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import LiveRouteMap from '@/components/LiveRouteMap';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Phone, Mail, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Tracking = () => {
@@ -48,9 +50,12 @@ const Tracking = () => {
     setSearchParams(initial ? { bookingId: initial } : {}, { replace: true });
   }, [trackableBookings, searchParams, setSearchParams]);
 
+  const previousDeliveryStatusRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!selectedBookingId) {
       setTrackingData(null);
+      previousDeliveryStatusRef.current = null;
       return;
     }
     let active = true;
@@ -59,6 +64,11 @@ const Tracking = () => {
         setTrackingLoading(true);
         const data = await getBookingTracking(selectedBookingId);
         if (active) {
+          // Check if delivery status changed - if so, we might want to refresh more frequently
+          const statusChanged = previousDeliveryStatusRef.current !== data.deliveryStatus;
+          if (statusChanged) {
+            previousDeliveryStatusRef.current = data.deliveryStatus;
+          }
           setTrackingData(data);
           setTrackingError(null);
         }
@@ -71,7 +81,8 @@ const Tracking = () => {
       }
     };
     fetchTracking();
-    const interval = setInterval(fetchTracking, 15000);
+    // Poll every 10 seconds for better sync with status changes
+    const interval = setInterval(fetchTracking, 10000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -297,45 +308,133 @@ const Tracking = () => {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-4 space-y-2 text-sm">
-              {trackingData.deliveryStatus === 'RETURNED' || trackingData.bookingStatus === 'COMPLETED' ? (
-                <>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Tractor Location</p>
-                    <p className="text-foreground font-medium">
-                      {trackingData.originalLocation?.address || 'Returned to original location'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Delivery Address</p>
-                    <p className="text-foreground font-medium">
-                      {trackingData.deliveryAddress || 'Not assigned'}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Current location</p>
-                    <p className="text-foreground font-medium">
-                      {trackingData.currentLocation?.address || 'Awaiting live update'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Destination</p>
-                    <p className="text-foreground font-medium">
-                      {trackingData.destination?.address || trackingData.deliveryAddress || 'Not assigned'}
-                    </p>
-                    {trackingData.deliveryWindow && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Window:{' '}
-                        {new Date(trackingData.deliveryWindow.startAt).toLocaleString()} -{' '}
-                        {new Date(trackingData.deliveryWindow.endAt).toLocaleString()}
-                      </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Tractor Owner Information */}
+              {trackingData.tractorOwner && (
+                <Card className="border border-border bg-card shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                      <User className="h-5 w-5 text-amber-500" />
+                      Tractor Owner Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-amber-500/10">
+                          <User className="h-4 w-4 text-amber-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Name</p>
+                          <p className="text-base font-semibold text-foreground break-words">
+                            {trackingData.tractorOwner.name || 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {trackingData.tractorOwner.phone && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-500/10">
+                            <Phone className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Phone Number</p>
+                            <a 
+                              href={`tel:${trackingData.tractorOwner.phone}`}
+                              className="text-base text-foreground hover:text-amber-500 transition-colors break-words"
+                            >
+                              {trackingData.tractorOwner.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {trackingData.tractorOwner.email && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-green-500/10">
+                            <Mail className="h-4 w-4 text-green-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Email</p>
+                            <a 
+                              href={`mailto:${trackingData.tractorOwner.email}`}
+                              className="text-base text-foreground hover:text-amber-500 transition-colors break-all"
+                            >
+                              {trackingData.tractorOwner.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {trackingData.tractorOwner.address && (
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-purple-500/10">
+                            <MapPin className="h-4 w-4 text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Address</p>
+                            <p className="text-base text-foreground break-words">
+                              {trackingData.tractorOwner.address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location Information */}
+              <Card className="border border-border bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                    <MapPin className="h-5 w-5 text-blue-500" />
+                    Location Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4 text-sm">
+                    {trackingData.deliveryStatus === 'RETURNED' || trackingData.bookingStatus === 'COMPLETED' ? (
+                      <>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Tractor Location</p>
+                          <p className="text-foreground font-medium">
+                            {trackingData.originalLocation?.address || 'Returned to original location'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Delivery Address</p>
+                          <p className="text-foreground font-medium">
+                            {trackingData.deliveryAddress || 'Not assigned'}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Current location</p>
+                          <p className="text-foreground font-medium">
+                            {trackingData.currentLocation?.address || 'Awaiting live update'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-1">Destination</p>
+                          <p className="text-foreground font-medium">
+                            {trackingData.destination?.address || trackingData.deliveryAddress || 'Not assigned'}
+                          </p>
+                          {trackingData.deliveryWindow && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Window:{' '}
+                              {new Date(trackingData.deliveryWindow.startAt).toLocaleString()} -{' '}
+                              {new Date(trackingData.deliveryWindow.endAt).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
-                </>
-              )}
+                </CardContent>
+              </Card>
             </div>
           </div>
           ) : trackableBookings.length > 0 ? (
