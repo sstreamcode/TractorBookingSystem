@@ -6,7 +6,8 @@ import {
   Package, Activity, BarChart3, PieChart, AlertCircle, CheckCircle2, X,
   Truck, Info, Settings, User
 } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import TractorOwnerSidebar from '@/components/TractorOwnerSidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,14 @@ import {
 } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -152,6 +161,9 @@ const TractorOwnerDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [adminStatusFilter, setAdminStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [bookingImageIndices, setBookingImageIndices] = useState<Record<string, number>>({});
   const [selectedActions, setSelectedActions] = useState<Record<string, string>>({});
   const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
@@ -349,14 +361,14 @@ const TractorOwnerDashboard = () => {
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <div className="flex items-center justify-center h-64">
+      <SidebarProvider>
+        <TractorOwnerSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
           </div>
-        </div>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -677,12 +689,45 @@ const TractorOwnerDashboard = () => {
     }
   };
 
-  const filteredBookings = bookings.filter(booking => {
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
-    const matchesPayment = paymentFilter === 'all' || booking.paymentStatus === paymentFilter;
-    const matchesAdminStatus = adminStatusFilter === 'all' || booking.adminStatus === adminStatusFilter;
-    return matchesStatus && matchesPayment && matchesAdminStatus;
-  });
+  // Filter, search, and sort bookings
+  const filteredBookings = bookings
+    .filter(booking => {
+      const bookingData = booking as any;
+      const tractorName = bookingData.tractor?.name || bookingData.tractorName || '';
+      const userName = bookingData.user?.name || bookingData.userName || '';
+      const bookingStatus = booking.status || '';
+      
+      // Status, payment, and admin status filters
+      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+      const matchesPayment = paymentFilter === 'all' || booking.paymentStatus === paymentFilter;
+      const matchesAdminStatus = adminStatusFilter === 'all' || booking.adminStatus === adminStatusFilter;
+      
+      // Search filter (by name or status)
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        tractorName.toLowerCase().includes(searchLower) ||
+        userName.toLowerCase().includes(searchLower) ||
+        bookingStatus.toLowerCase().includes(searchLower);
+      
+      return matchesStatus && matchesPayment && matchesAdminStatus && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Sort by most recent first (by start date)
+      const dateA = new Date((a as any).startDate || a.startDate || 0).getTime();
+      const dateB = new Date((b as any).startDate || b.startDate || 0).getTime();
+      return dateB - dateA; // Most recent first
+    });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, paymentFilter, adminStatusFilter, searchQuery]);
 
   // Reports generation
   const generatePDFReport = () => {
@@ -837,35 +882,35 @@ const TractorOwnerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <div className="flex items-center justify-center h-64">
+      <SidebarProvider>
+        <TractorOwnerSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
           </div>
-        </div>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 text-foreground">Tractor Owner Dashboard</h1>
-            <p className="text-muted-foreground">Manage your tractors, bookings, and analytics</p>
+    <SidebarProvider>
+      <TractorOwnerSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'tractors' && 'Tractors'}
+              {activeTab === 'bookings' && 'Bookings'}
+              {activeTab === 'reports' && 'Reports'}
+            </h1>
           </div>
-        </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8">
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="tractors">Tractors</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-6">
@@ -1441,10 +1486,20 @@ const TractorOwnerDashboard = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Filters</CardTitle>
+                <CardTitle>Filters & Search</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Search by Name or Status</Label>
+                    <Input
+                      placeholder="Search by tractor name, customer name, or status..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -1489,35 +1544,44 @@ const TractorOwnerDashboard = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Bookings ({filteredBookings.length})</CardTitle>
+                <CardTitle>
+                  Bookings ({filteredBookings.length})
+                  {filteredBookings.length > itemsPerPage && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      (Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length})
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {filteredBookings.length === 0 ? (
                   <p className="text-muted-foreground text-center py-8">No bookings found</p>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tractor</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Total Amount</TableHead>
-                        <TableHead>Commission (15%)</TableHead>
-                        <TableHead>Your Amount (85%)</TableHead>
-                        <TableHead>Customer Payment</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredBookings.map((booking) => {
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tractor</TableHead>
+                          <TableHead>Customer</TableHead>
+                          <TableHead>Start Date</TableHead>
+                          <TableHead>End Date</TableHead>
+                          <TableHead>Total Amount</TableHead>
+                          <TableHead>Commission (15%)</TableHead>
+                          <TableHead>Your Amount (85%)</TableHead>
+                          <TableHead>Customer Payment</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedBookings.map((booking) => {
                         const bookingData = booking as any;
                         const gallery = bookingData.tractor?.images || bookingData.tractorImages || (bookingData.tractor?.image ? [bookingData.tractor.image] : []) || (bookingData.tractorImage ? [bookingData.tractorImage] : []);
                         const currentIndex = bookingImageIndices[booking.id] || 0;
@@ -1620,6 +1684,66 @@ const TractorOwnerDashboard = () => {
                       })}
                     </TableBody>
                   </Table>
+                  {totalPages > 1 && (
+                    <div className="mt-4 flex justify-center">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (currentPage > 1) setCurrentPage(currentPage - 1);
+                              }}
+                              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                            // Show first page, last page, current page, and pages around current
+                            if (
+                              page === 1 ||
+                              page === totalPages ||
+                              (page >= currentPage - 1 && page <= currentPage + 1)
+                            ) {
+                              return (
+                                <PaginationItem key={page}>
+                                  <PaginationLink
+                                    href="#"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      setCurrentPage(page);
+                                    }}
+                                    isActive={currentPage === page}
+                                    className="cursor-pointer"
+                                  >
+                                    {page}
+                                  </PaginationLink>
+                                </PaginationItem>
+                              );
+                            } else if (page === currentPage - 2 || page === currentPage + 2) {
+                              return (
+                                <PaginationItem key={page}>
+                                  <span className="px-2">...</span>
+                                </PaginationItem>
+                              );
+                            }
+                            return null;
+                          })}
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                              }}
+                              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </>
                 )}
               </CardContent>
             </Card>
@@ -2274,8 +2398,9 @@ const TractorOwnerDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 

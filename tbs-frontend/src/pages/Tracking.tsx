@@ -198,12 +198,12 @@ const Tracking = () => {
                 const deliveryStatus = trackingData.deliveryStatus;
                 const bookingStatus = trackingData.bookingStatus;
                 
-                // For PENDING or CONFIRMED bookings, delivery status should be null
-                // Only show delivery status for PAID, DELIVERED, or COMPLETED bookings
-                const shouldShowDeliveryStatus = deliveryStatus && 
-                  (bookingStatus === 'PAID' || bookingStatus === 'DELIVERED' || bookingStatus === 'COMPLETED');
-                
-                const effectiveDeliveryStatus = shouldShowDeliveryStatus ? deliveryStatus : null;
+                // Show delivery status if it's explicitly set
+                // The backend TrackingMapper now includes deliveryStatus for:
+                // - PAID, DELIVERED, or COMPLETED bookings
+                // - Approved COD bookings (even if status is still PENDING)
+                // So if deliveryStatus is present in the response, we should display it
+                const effectiveDeliveryStatus = deliveryStatus || null;
                 
                 const statusConfig: Record<string, { label: string; icon: string; color: string; step: number }> = {
                   'ORDERED': { label: 'Ready to Deliver', icon: '📦', color: '!border-blue-500/30 !bg-blue-500/10 !text-blue-400', step: 1 },

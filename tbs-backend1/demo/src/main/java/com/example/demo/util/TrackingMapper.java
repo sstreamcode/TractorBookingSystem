@@ -117,13 +117,34 @@ public final class TrackingMapper {
         if (booking != null) {
             String bookingDeliveryStatus = booking.getDeliveryStatus();
             String bookingStatus = booking.getStatus();
-            // Only include delivery status if booking is PAID, DELIVERED, or COMPLETED
-            // For PENDING bookings, delivery status should be null
-            if (bookingDeliveryStatus != null && 
-                ("PAID".equals(bookingStatus) || "DELIVERED".equals(bookingStatus) || "COMPLETED".equals(bookingStatus))) {
-                payload.put("deliveryStatus", bookingDeliveryStatus);
+            String adminStatus = booking.getAdminStatus();
+            
+            // Check if this is a COD booking
+            boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
+                .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
+            
+            // Include delivery status if it's explicitly set AND booking is in a valid state
+            // The deliveryStatus is set by tractor owner, so if it exists, we should show it
+            // (unless booking is cancelled)
+            if (bookingDeliveryStatus != null && !"CANCELLED".equals(bookingStatus)) {
+                boolean isApproved = "APPROVED".equals(adminStatus);
+                boolean isPaidOrDelivered = "PAID".equals(bookingStatus) || 
+                                           "DELIVERED".equals(bookingStatus) || 
+                                           "COMPLETED".equals(bookingStatus);
+                
+                // Include deliveryStatus if:
+                // 1. Booking is approved (for COD) - allows showing deliveryStatus even if status is PENDING
+                // 2. Booking is paid/delivered/completed (for all bookings)
+                // This ensures deliveryStatus updates from tractor owner are always reflected
+                boolean shouldInclude = (isCOD && isApproved) || isPaidOrDelivered;
+                
+                if (shouldInclude) {
+                    payload.put("deliveryStatus", bookingDeliveryStatus);
+                } else {
+                    // Don't show deliveryStatus if booking is not in a valid state
+                    payload.put("deliveryStatus", null);
+                }
             } else {
-                // For PENDING or other early statuses, don't show delivery status
                 payload.put("deliveryStatus", null);
             }
         } else {

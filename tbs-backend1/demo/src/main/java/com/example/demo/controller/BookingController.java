@@ -429,12 +429,19 @@ public class BookingController {
         }
 
         booking.setAdminStatus("APPROVED");
+        
+        // For COD bookings: Set delivery status to ORDERED when approved
+        // This allows tracking to show the delivery journey starting from "Ordered"
+        if (isCOD && booking.getDeliveryStatus() == null) {
+            booking.setDeliveryStatus("ORDERED");
+            // Update tractor status to "Booked" when order is ready
+            tractor.setStatus("Booked");
+            tractor.setAvailable(false);
+        }
+        
         bookingRepository.save(booking);
         
-        // IMPORTANT: Do NOT automatically set delivery status when booking is approved
-        // Tractor owner must manually set delivery status step by step:
-        // ORDERED -> DELIVERING -> DELIVERED -> RETURNED
-        // Only set destination for tracking purposes, but don't change delivery status
+        // Set destination for tracking purposes
         applyDestinationFromBooking(tractor, booking);
         tractorRepository.save(tractor);
         
@@ -1100,7 +1107,6 @@ public class BookingController {
                     (isCOD || "PAID".equals(booking.getStatus()))) {
                     booking.setStatus("DELIVERED");
                 }
-                bookingRepository.save(booking); // Save booking with original location
                 break;
             case "RETURNED":
                 // Allow marking as returned even before booking end time (for testing purposes)
@@ -1149,6 +1155,9 @@ public class BookingController {
                 break;
         }
         
+        // IMPORTANT: Save booking after updating deliveryStatus for ALL cases
+        // This ensures deliveryStatus changes are persisted to database
+        bookingRepository.save(booking);
         tractorRepository.save(tractor);
 
         return ResponseEntity.ok(Map.of(

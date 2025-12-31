@@ -16,7 +16,8 @@ import {
   Loader2,
   Clock
 } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import SuperAdminSidebar from '@/components/SuperAdminSidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -268,14 +269,14 @@ const SuperAdminDashboard = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <Navbar />
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          <div className="flex items-center justify-center h-64">
+      <SidebarProvider>
+        <SuperAdminSidebar activeTab={activeTab} onTabChange={setActiveTab} pendingOwnersCount={0} />
+        <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
           </div>
-        </div>
-      </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -315,28 +316,24 @@ const SuperAdminDashboard = () => {
     }, 0);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-foreground">Super Admin Portal</h1>
-          <p className="text-muted-foreground">Manage users, tractor owners, and platform operations</p>
-        </div>
+    <SidebarProvider>
+      <SuperAdminSidebar activeTab={activeTab} onTabChange={setActiveTab} pendingOwnersCount={pendingOwners.length} />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">
+              {activeTab === 'overview' && 'Overview'}
+              {activeTab === 'users' && 'Users'}
+              {activeTab === 'tractor-owners' && 'Tractor Owners'}
+              {activeTab === 'tractors' && 'All Tractors'}
+              {activeTab === 'bookings' && 'Bookings & Payments'}
+            </h1>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8">
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="tractor-owners">
-              Tractor Owners
-              {pendingOwners.length > 0 && (
-                <Badge variant="destructive" className="ml-2">{pendingOwners.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="tractors">All Tractors</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings & Payments</TabsTrigger>
-          </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -1126,8 +1123,9 @@ const SuperAdminDashboard = () => {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 

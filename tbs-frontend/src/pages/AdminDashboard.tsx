@@ -1,6 +1,7 @@
 import { Navigate, Link } from 'react-router-dom';
 import { Tractor, Users, Calendar, DollarSign, ArrowRight } from 'lucide-react';
-import Navbar from '@/components/Navbar';
+import AdminSidebar from '@/components/AdminSidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -39,12 +40,14 @@ const AdminDashboard = () => {
   // Wait for auth to finish loading before redirecting
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <Navbar />
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-foreground">{t('admin.dashboard.loading')}</p>
-        </div>
-      </div>
+      <SidebarProvider>
+        <AdminSidebar />
+        <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
+            <p className="text-foreground">{t('admin.dashboard.loading')}</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -54,12 +57,14 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <Navbar />
-        <div className="mx-auto max-w-6xl px-4 py-8">
-          <p className="text-foreground">{t('admin.dashboard.loadingData')}</p>
-        </div>
-      </div>
+      <SidebarProvider>
+        <AdminSidebar />
+        <SidebarInset>
+          <div className="flex h-screen items-center justify-center">
+            <p className="text-foreground">{t('admin.dashboard.loadingData')}</p>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
     );
   }
 
@@ -90,14 +95,20 @@ const AdminDashboard = () => {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar />
-      
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-foreground">{t('admin.dashboard.title')}</h1>
-          <p className="text-muted-foreground">{t('admin.dashboard.subtitle')}</p>
-        </div>
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+          <SidebarTrigger className="-ml-1" />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">{t('admin.dashboard.title')}</h1>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:p-8">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold text-foreground">{t('admin.dashboard.title')}</h2>
+            <p className="text-muted-foreground">{t('admin.dashboard.subtitle')}</p>
+          </div>
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -262,8 +273,9 @@ const AdminDashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
