@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import java.security.Principal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -904,17 +905,19 @@ public class BookingController {
             ).toMinutes();
         }
         
-        return ResponseEntity.ok(Map.of(
-            "bookedMinutes", booking.getBookedMinutes() != null ? booking.getBookedMinutes() : 0,
-            "actualUsageMinutes", booking.getActualUsageMinutes(),
-            "currentUsageMinutes", currentUsageMinutes,
-            "minimumChargeMinutes", Booking.getMinimumChargeMinutes(),
-            "initialPrice", booking.getInitialPrice(),
-            "finalPrice", booking.getFinalPrice(),
-            "startTime", booking.getActualUsageStartTime(),
-            "stopTime", booking.getActualUsageStopTime(),
-            "isRunning", booking.getActualUsageStartTime() != null && booking.getActualUsageStopTime() == null
-        ));
+        // Build response map with null-safe values
+        Map<String, Object> response = new HashMap<>();
+        response.put("bookedMinutes", booking.getBookedMinutes() != null ? booking.getBookedMinutes() : 0);
+        response.put("actualUsageMinutes", booking.getActualUsageMinutes());
+        response.put("currentUsageMinutes", currentUsageMinutes);
+        response.put("minimumChargeMinutes", Booking.getMinimumChargeMinutes());
+        response.put("initialPrice", booking.getInitialPrice() != null ? booking.getInitialPrice() : 0.0);
+        response.put("finalPrice", booking.getFinalPrice());
+        response.put("startTime", booking.getActualUsageStartTime() != null ? booking.getActualUsageStartTime().toString() : null);
+        response.put("stopTime", booking.getActualUsageStopTime() != null ? booking.getActualUsageStopTime().toString() : null);
+        response.put("isRunning", booking.getActualUsageStartTime() != null && booking.getActualUsageStopTime() == null);
+        
+        return ResponseEntity.ok(response);
     }
 
     // Helper method to calculate final price based on actual usage

@@ -4,7 +4,7 @@ import {
   Plus, Edit, Trash2, MapPin, Loader2, Calendar, DollarSign, Tractor as TractorIcon, Users, 
   TrendingUp, Download, Eye, Filter, CheckCircle, XCircle, Play, Clock, 
   Package, Activity, BarChart3, PieChart, AlertCircle, CheckCircle2, X,
-  Truck, Info, Settings, User
+  Truck, Info, Settings, User, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import TractorOwnerSidebar from '@/components/TractorOwnerSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
@@ -712,10 +712,20 @@ const TractorOwnerDashboard = () => {
       return matchesStatus && matchesPayment && matchesAdminStatus && matchesSearch;
     })
     .sort((a, b) => {
-      // Sort by most recent first (by start date)
+      // Sort by most recent first (LIFO - Last In First Out)
+      // Use booking ID (higher ID = more recent) as primary sort
+      // If IDs are equal or unavailable, fall back to start date
+      const idA = parseInt(a.id) || 0;
+      const idB = parseInt(b.id) || 0;
+      
+      if (idA !== idB) {
+        return idB - idA; // Higher ID (more recent) first
+      }
+      
+      // Fallback to start date if IDs are same
       const dateA = new Date((a as any).startDate || a.startDate || 0).getTime();
       const dateB = new Date((b as any).startDate || b.startDate || 0).getTime();
-      return dateB - dateA; // Most recent first
+      return dateB - dateA; // Most recent date first
     });
 
   // Pagination
@@ -1684,19 +1694,26 @@ const TractorOwnerDashboard = () => {
                       })}
                     </TableBody>
                   </Table>
-                  {totalPages > 1 && (
-                    <div className="mt-4 flex justify-center">
+                  {filteredBookings.length > 0 && (
+                    <div className="mt-4 flex flex-col items-center gap-4">
+                      <div className="text-sm text-muted-foreground font-medium">
+                        Page {currentPage} of {totalPages} • Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
+                      </div>
                       <Pagination>
                         <PaginationContent>
                           <PaginationItem>
-                            <PaginationPrevious
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
+                            <Button
+                              variant="outline"
+                              size="default"
+                              onClick={() => {
                                 if (currentPage > 1) setCurrentPage(currentPage - 1);
                               }}
-                              className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
+                              disabled={currentPage === 1}
+                              className="h-9 px-4"
+                            >
+                              <ChevronLeft className="h-4 w-4 mr-1" />
+                              Previous
+                            </Button>
                           </PaginationItem>
                           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
                             // Show first page, last page, current page, and pages around current
@@ -1707,37 +1724,38 @@ const TractorOwnerDashboard = () => {
                             ) {
                               return (
                                 <PaginationItem key={page}>
-                                  <PaginationLink
-                                    href="#"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      setCurrentPage(page);
-                                    }}
-                                    isActive={currentPage === page}
-                                    className="cursor-pointer"
+                                  <Button
+                                    variant={currentPage === page ? "default" : "outline"}
+                                    size="default"
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`h-9 min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
                                   >
                                     {page}
-                                  </PaginationLink>
+                                  </Button>
                                 </PaginationItem>
                               );
                             } else if (page === currentPage - 2 || page === currentPage + 2) {
                               return (
                                 <PaginationItem key={page}>
-                                  <span className="px-2">...</span>
+                                  <span className="px-2 text-muted-foreground">...</span>
                                 </PaginationItem>
                               );
                             }
                             return null;
                           })}
                           <PaginationItem>
-                            <PaginationNext
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
+                            <Button
+                              variant="outline"
+                              size="default"
+                              onClick={() => {
                                 if (currentPage < totalPages) setCurrentPage(currentPage + 1);
                               }}
-                              className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                            />
+                              disabled={currentPage === totalPages}
+                              className="h-9 px-4"
+                            >
+                              Next
+                              <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
                           </PaginationItem>
                         </PaginationContent>
                       </Pagination>

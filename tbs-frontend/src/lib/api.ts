@@ -418,7 +418,14 @@ function normalizeTrackingResponse(payload: any): TrackingResponse {
     etaMinutes: payload.etaMinutes ?? undefined,
     route: Array.isArray(payload.route)
       ? payload.route.map((point: any) => ({ lat: point.lat, lng: point.lng }))
-      : []
+      : [],
+    tractorOwner: payload.tractorOwner ? {
+      id: payload.tractorOwner.id,
+      name: payload.tractorOwner.name || '',
+      email: payload.tractorOwner.email || '',
+      phone: payload.tractorOwner.phone || '',
+      address: payload.tractorOwner.address || ''
+    } : null
   };
 }
 
@@ -1277,6 +1284,30 @@ export async function getTractorOwnerBookingsForUIWithNested(): Promise<Array<Bo
 export async function getAllBookingsForUI(): Promise<Booking[]> {
   const items = await fetchAllBookings();
   return items.map(toUiBooking);
+}
+
+export interface OwnerDetails {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  address?: string;
+  profilePictureUrl?: string;
+  tractorOwnerApproved?: boolean;
+}
+
+export async function getOwnerById(ownerId: string | number): Promise<OwnerDetails> {
+  const res = await fetch(`${BASE_URL}/api/super-admin/users/${ownerId}`, {
+    headers: {
+      'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
+    }
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new ApiError(data.error || 'Failed to fetch owner details', res.status);
+  }
+  return res.json();
 }
 
 

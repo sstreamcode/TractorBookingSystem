@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import StarRating from '@/components/StarRating';
 import { getInitials, getAvatarColor, getImageUrlWithCacheBust } from '@/lib/utils';
+import { DatePicker } from '@/components/DatePicker';
+import { TimePicker } from '@/components/TimePicker';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -187,8 +189,8 @@ const TractorDetail = () => {
   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('17:00');
+  const [startTime, setStartTime] = useState('06:00'); // Default to 6 AM
+  const [endTime, setEndTime] = useState('18:00'); // Default to 6 PM
 
   if (loading) {
     return (
@@ -228,32 +230,47 @@ const TractorDetail = () => {
 
   const totalCost = calculateCost();
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by this browser.');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-          );
-          const data = await response.json();
-          if (data.display_name) {
-            address = data.display_name;
+  // Helper function to get current location
+  const getCurrentLocation = (): Promise<{ lat: number; lng: number; address: string }> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by this browser.'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+            );
+            const data = await response.json();
+            if (data.display_name) {
+              address = data.display_name;
+            }
+          } catch {
+            // ignore reverse geocode failure, fallback to coords
           }
-        } catch {
-          // ignore reverse geocode failure, fallback to coords
-        }
-        setDeliveryLocation({ lat: latitude, lng: longitude, address });
-        toast.success('Delivery location set to your current position.');
-      },
-      () => toast.error('Unable to access your location. Please allow location permission.'),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+          resolve({ lat: latitude, lng: longitude, address });
+        },
+        (error) => {
+          reject(new Error('Unable to access your location. Please allow location permission.'));
+        },
+        { enableHighAccuracy: true, timeout: 10000 },
+      );
+    });
+  };
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      const location = await getCurrentLocation();
+      setDeliveryLocation(location);
+      toast.success('Delivery location set to your current position.');
+    } catch (error: any) {
+      toast.error(error.message || 'Unable to access your location.');
+    }
   };
   const buildAvailabilityDialogData = () => {
     if (!tractor) {
@@ -314,8 +331,21 @@ const TractorDetail = () => {
       return;
     }
 
-    if (!deliveryLocation) {
-      toast.error('Please select a delivery location on the map');
+    // Validate times are within allowed range (6 AM to 6 PM)
+    const [startHours, startMins] = startTime.split(':').map(Number);
+    const [endHours, endMins] = endTime.split(':').map(Number);
+    const startTotalMinutes = startHours * 60 + startMins;
+    const endTotalMinutes = endHours * 60 + endMins;
+    const minMinutes = 6 * 60; // 6 AM
+    const maxMinutes = 18 * 60; // 6 PM
+
+    if (startTotalMinutes < minMinutes || startTotalMinutes > maxMinutes) {
+      toast.error('Start time must be between 6:00 AM and 6:00 PM');
+      return;
+    }
+
+    if (endTotalMinutes < minMinutes || endTotalMinutes > maxMinutes) {
+      toast.error('End time must be between 6:00 AM and 6:00 PM');
       return;
     }
 
@@ -331,6 +361,22 @@ const TractorDetail = () => {
 
     setIsCreatingBooking(true);
     try {
+      // If delivery location is not set, get current location automatically
+      let finalDeliveryLocation = deliveryLocation;
+      
+      if (!finalDeliveryLocation) {
+        toast.loading('Getting your current location...', { id: 'location-loading' });
+        try {
+          finalDeliveryLocation = await getCurrentLocation();
+          setDeliveryLocation(finalDeliveryLocation); // Update state for UI
+          toast.success('Using your current location as delivery address.', { id: 'location-loading' });
+        } catch (error: any) {
+          toast.error(error.message || 'Unable to access your location. Please select a delivery location on the map.', { id: 'location-loading' });
+          setIsCreatingBooking(false);
+          return;
+        }
+      }
+
       // Create booking with combined date and time
       const startAt = `${startDate}T${startTime}`;
       const endAt = `${endDate}T${endTime}`;
@@ -339,9 +385,9 @@ const TractorDetail = () => {
         tractor.id, 
         startAt, 
         endAt,
-        deliveryLocation.lat,
-        deliveryLocation.lng,
-        deliveryLocation.address
+        finalDeliveryLocation.lat,
+        finalDeliveryLocation.lng,
+        finalDeliveryLocation.address
       );
       setCreatedBookingId(String(booking.id));
       
@@ -519,65 +565,79 @@ const TractorDetail = () => {
               </CardHeader>
               <CardContent className="space-y-4 bg-card/50 dark:bg-slate-700/40">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="startDate" className="text-foreground">Start Date</Label>
-                    <Input
-                      id="startDate"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => {
-                        setStartDate(e.target.value);
-                        // If end date is before new start date, clear it
-                        if (endDate && e.target.value && endDate < e.target.value) {
-                          setEndDate('');
+                  <DatePicker
+                    label="Start Date"
+                    value={startDate}
+                    onChange={(value) => {
+                      setStartDate(value);
+                      // If end date is before new start date, clear it
+                      if (endDate && value && endDate < value) {
+                        setEndDate('');
+                      }
+                    }}
+                    minDate={new Date(today)}
+                    placeholder="Select start date"
+                  />
+
+                  <TimePicker
+                    label="Start Time"
+                    value={startTime}
+                    onChange={(value) => {
+                      // Validate time is between 6 AM and 6 PM
+                      if (value) {
+                        const [hours, minutes] = value.split(':').map(Number);
+                        const totalMinutes = hours * 60 + minutes;
+                        const minMinutes = 6 * 60; // 6 AM
+                        const maxMinutes = 18 * 60; // 6 PM
+                        
+                        if (totalMinutes >= minMinutes && totalMinutes <= maxMinutes) {
+                          setStartTime(value);
+                        } else {
+                          toast.error('Start time must be between 6:00 AM and 6:00 PM');
                         }
-                      }}
-                      min={today}
-                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
-                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
-                      required
-                    />
-                  </div>
+                      } else {
+                        setStartTime(value);
+                      }
+                    }}
+                    minTime="06:00"
+                    maxTime="18:00"
+                    placeholder="Select start time"
+                  />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="startTime" className="text-foreground">Start Time</Label>
-                    <Input
-                      id="startTime"
-                      type="time"
-                      value={startTime}
-                      onChange={(e) => setStartTime(e.target.value)}
-                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 [&::-webkit-calendar-picker-indicator]:opacity-100"
-                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
-                    />
-                  </div>
+                  <DatePicker
+                    label="End Date"
+                    value={endDate}
+                    onChange={setEndDate}
+                    minDate={startDate ? new Date(startDate) : new Date(today)}
+                    disabled={!startDate}
+                    placeholder="Select end date"
+                  />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="endDate" className="text-foreground">End Date</Label>
-                    <Input
-                      id="endDate"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate || today}
-                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:opacity-100"
-                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
-                      disabled={!startDate}
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="endTime" className="text-foreground">End Time</Label>
-                    <Input
-                      id="endTime"
-                      type="time"
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      className="cursor-pointer bg-background dark:bg-slate-600/50 border-input text-foreground placeholder:text-muted-foreground focus:border-amber-500 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-calendar-picker-indicator]:opacity-100"
-                      style={{ colorScheme: theme === 'dark' ? 'dark' : 'light' }}
-                      disabled={!endDate}
-                    />
-                  </div>
+                  <TimePicker
+                    label="End Time"
+                    value={endTime}
+                    onChange={(value) => {
+                      // Validate time is between 6 AM and 6 PM
+                      if (value) {
+                        const [hours, minutes] = value.split(':').map(Number);
+                        const totalMinutes = hours * 60 + minutes;
+                        const minMinutes = 6 * 60; // 6 AM
+                        const maxMinutes = 18 * 60; // 6 PM
+                        
+                        if (totalMinutes >= minMinutes && totalMinutes <= maxMinutes) {
+                          setEndTime(value);
+                        } else {
+                          toast.error('End time must be between 6:00 AM and 6:00 PM');
+                        }
+                      } else {
+                        setEndTime(value);
+                      }
+                    }}
+                    minTime="06:00"
+                    maxTime="18:00"
+                    disabled={!endDate}
+                    placeholder="Select end time"
+                  />
                 </div>
 
                 {/* Delivery Location Map */}

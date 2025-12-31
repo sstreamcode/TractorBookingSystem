@@ -1,10 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Calendar, Clock, CreditCard, XCircle, Play, Square } from 'lucide-react';
+import { Calendar, Clock, CreditCard, XCircle, Play, Square, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+} from '@/components/ui/pagination';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getMyBookingsForUI, requestBookingCancellation, startUsage, stopUsage, getUsageDetails } from '@/lib/api';
@@ -87,6 +101,13 @@ const UserDashboard = () => {
   // Track usage details for each booking
   const [usageDetails, setUsageDetails] = useState<Record<string, { isRunning: boolean; currentMinutes: number | null }>>({});
   const [processingBookings, setProcessingBookings] = useState<Set<string>>(new Set());
+  
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // Show 6 bookings per page for better grid layout
 
   useEffect(() => {
     if (!isAuthenticated || isAdmin || isSuperAdmin || isTractorOwner) {
@@ -122,6 +143,11 @@ const UserDashboard = () => {
       }
     })();
   }, [isAuthenticated, isAdmin, isSuperAdmin, isTractorOwner]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, paymentFilter, searchQuery]);
 
   // Update running timers every second
   useEffect(() => {
@@ -373,6 +399,48 @@ const UserDashboard = () => {
     }
   };
 
+  // Filter, search, and sort bookings
+  const filteredBookings = userBookings
+    .filter(booking => {
+      const bookingStatus = booking.status || '';
+      const paymentStatus = booking.paymentStatus || '';
+      const tractorName = booking.tractorName || '';
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+      
+      // Payment filter
+      const matchesPayment = paymentFilter === 'all' || booking.paymentStatus === paymentFilter;
+      
+      // Search filter (by tractor name or status)
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = !searchQuery || 
+        tractorName.toLowerCase().includes(searchLower) ||
+        bookingStatus.toLowerCase().includes(searchLower);
+      
+      return matchesStatus && matchesPayment && matchesSearch;
+    })
+    .sort((a, b) => {
+      // Sort by most recent first (by start date or booking ID)
+      const idA = parseInt(a.id) || 0;
+      const idB = parseInt(b.id) || 0;
+      
+      if (idA !== idB) {
+        return idB - idA; // Higher ID (more recent) first
+      }
+      
+      // Fallback to start date
+      const dateA = new Date(a.startDate || 0).getTime();
+      const dateB = new Date(b.startDate || 0).getTime();
+      return dateB - dateA; // Most recent first
+    });
+
+  // Pagination
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedBookings = filteredBookings.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar />
@@ -432,20 +500,100 @@ const UserDashboard = () => {
           </Card>
         </div>
 
-        {/* Bookings Grid */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-foreground">{t('dashboard.myBookings')}</h2>
-          {userBookings.length === 0 ? (
-            <Card className="border border-border bg-card shadow-sm">
-              <CardContent className="text-center py-12">
-                <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground text-lg">{t('dashboard.empty.title')}</p>
-                <p className="text-muted-foreground/80 text-sm mt-2">{t('dashboard.empty.subtitle')}</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {userBookings.map((booking) => {
+        {/* My Bookings Section */}
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">{t('dashboard.myBookings')}</h2>
+              <p className="text-muted-foreground">Manage and track your tractor bookings</p>
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <Card className="border border-border bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-foreground">
+                <Filter className="h-5 w-5" />
+                Search & Filters
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Search Bookings</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by tractor name or status..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Payment Status</Label>
+                    <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Payments</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="failed">Failed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Bookings Grid */}
+          <Card className="border border-border bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-foreground">
+                My Bookings ({filteredBookings.length})
+                {filteredBookings.length > itemsPerPage && (
+                  <span className="text-sm font-normal text-muted-foreground ml-2">
+                    (Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length})
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground text-lg">{t('dashboard.empty.title')}</p>
+                  <p className="text-muted-foreground/80 text-sm mt-2">
+                    {searchQuery || statusFilter !== 'all' || paymentFilter !== 'all'
+                      ? 'No bookings match your search criteria'
+                      : t('dashboard.empty.subtitle')}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedBookings.map((booking) => {
                 const galleryRaw = [booking.tractorImage, ...(booking.tractorImages || [])].filter(Boolean);
                 const gallery = Array.from(new Set(galleryRaw));
                 const hasMultipleImages = gallery.length > 1;
@@ -647,16 +795,90 @@ const UserDashboard = () => {
                       )}
                       {booking.status !== 'cancelled' && (
                         <Button variant="outline" className="w-full" asChild>
-                          <Link to={`/tracking?bookingId=${booking.id}`}>{t('dashboard.trackTractor')}</Link>
+                          <Link to={`/tracking?bookingId=${String(booking.id)}`}>{t('dashboard.trackTractor')}</Link>
                         </Button>
                       )}
                     </div>
                   </CardContent>
                 </Card>
-                );
-              })}
-            </div>
-          )}
+                    );
+                  })}
+                  </div>
+                  
+                  {/* Pagination */}
+                  {filteredBookings.length > 0 && (
+                    <div className="mt-6 flex flex-col items-center gap-4">
+                      <div className="text-sm text-muted-foreground font-medium">
+                        Page {currentPage} of {totalPages} • Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
+                      </div>
+                      {totalPages > 1 && (
+                        <Pagination>
+                          <PaginationContent>
+                            <PaginationItem>
+                              <Button
+                                variant="outline"
+                                size="default"
+                                onClick={() => {
+                                  if (currentPage > 1) setCurrentPage(currentPage - 1);
+                                }}
+                                disabled={currentPage === 1}
+                                className="h-9 px-4"
+                              >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Previous
+                              </Button>
+                            </PaginationItem>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                              // Show first page, last page, current page, and pages around current
+                              if (
+                                page === 1 ||
+                                page === totalPages ||
+                                (page >= currentPage - 1 && page <= currentPage + 1)
+                              ) {
+                                return (
+                                  <PaginationItem key={page}>
+                                    <Button
+                                      variant={currentPage === page ? "default" : "outline"}
+                                      size="default"
+                                      onClick={() => setCurrentPage(page)}
+                                      className={`h-9 min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
+                                    >
+                                      {page}
+                                    </Button>
+                                  </PaginationItem>
+                                );
+                              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                                return (
+                                  <PaginationItem key={page}>
+                                    <span className="px-2 text-muted-foreground">...</span>
+                                  </PaginationItem>
+                                );
+                              }
+                              return null;
+                            })}
+                            <PaginationItem>
+                              <Button
+                                variant="outline"
+                                size="default"
+                                onClick={() => {
+                                  if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+                                }}
+                                disabled={currentPage === totalPages}
+                                className="h-9 px-4"
+                              >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                              </Button>
+                            </PaginationItem>
+                          </PaginationContent>
+                        </Pagination>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 

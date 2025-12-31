@@ -54,10 +54,12 @@ import {
   rejectTractor,
   releasePayment,
   getAllBookingsForUI,
+  getOwnerById,
   type SuperAdminUser,
   type SuperAdminTractorOwner,
   type SuperAdminStats,
   type TractorApiModel,
+  type OwnerDetails,
 } from '@/lib/api';
 import type { Booking } from '@/types';
 
@@ -92,6 +94,10 @@ const SuperAdminDashboard = () => {
   
   // Tractor approval/rejection processing
   const [processingTractors, setProcessingTractors] = useState<Set<string | number>>(new Set());
+  
+  // Owner details dialog
+  const [selectedOwnerDetails, setSelectedOwnerDetails] = useState<OwnerDetails | null>(null);
+  const [loadingOwnerDetails, setLoadingOwnerDetails] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && isSuperAdmin) {
@@ -116,6 +122,8 @@ const SuperAdminDashboard = () => {
             tractorImages: b.tractor.imageUrls,
             userId: String(b.user.id),
             userName: b.user.name,
+            ownerId: b.tractor?.owner?.id ? String(b.tractor.owner.id) : null,
+            ownerName: b.tractor?.owner?.name || null,
             startDate: b.startAt,
             endDate: b.endAt,
             totalCost: b.totalAmount || 0,
@@ -173,6 +181,18 @@ const SuperAdminDashboard = () => {
         updated.delete(ownerId);
         return updated;
       });
+    }
+  };
+
+  const handleViewOwnerDetails = async (ownerId: string | number) => {
+    setLoadingOwnerDetails(true);
+    try {
+      const ownerDetails = await getOwnerById(ownerId);
+      setSelectedOwnerDetails(ownerDetails);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to fetch owner details');
+    } finally {
+      setLoadingOwnerDetails(false);
     }
   };
 
@@ -966,6 +986,7 @@ const SuperAdminDashboard = () => {
                       <TableHead>Booking ID</TableHead>
                       <TableHead>Customer</TableHead>
                       <TableHead>Tractor</TableHead>
+                      <TableHead>Owner ID</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Total Amount</TableHead>
                       <TableHead>Commission (15%)</TableHead>
@@ -978,12 +999,15 @@ const SuperAdminDashboard = () => {
                   <TableBody>
                     {filteredBookings.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                           No bookings found
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredBookings.map((booking, index) => (
+                      filteredBookings.map((booking, index) => {
+                        const bookingData = booking as any;
+                        const ownerId = bookingData.ownerId;
+                        return (
                         <TableRow key={booking.id}>
                         <TableCell className="font-medium text-muted-foreground">
                           {index + 1}
@@ -991,6 +1015,20 @@ const SuperAdminDashboard = () => {
                         <TableCell className="font-medium">#{booking.id}</TableCell>
                         <TableCell>{booking.userName}</TableCell>
                         <TableCell>{booking.tractorName}</TableCell>
+                        <TableCell>
+                          {ownerId ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewOwnerDetails(ownerId)}
+                              className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              {ownerId}
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <div className="flex flex-col text-sm">
                             <span className="text-foreground">{new Date(booking.startDate).toLocaleDateString()}</span>
@@ -1082,7 +1120,8 @@ const SuperAdminDashboard = () => {
                           )}
                         </TableCell>
                       </TableRow>
-                      ))
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -1090,6 +1129,69 @@ const SuperAdminDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Owner Details Dialog */}
+        <Dialog open={!!selectedOwnerDetails} onOpenChange={(open) => !open && setSelectedOwnerDetails(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Tractor Owner Details</DialogTitle>
+              <DialogDescription>
+                Complete information about the tractor owner
+              </DialogDescription>
+            </DialogHeader>
+            {loadingOwnerDetails ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+              </div>
+            ) : selectedOwnerDetails ? (
+              <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Owner ID</Label>
+                    <p className="text-base font-semibold text-foreground">{selectedOwnerDetails.id}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Name</Label>
+                    <p className="text-base font-semibold text-foreground">{selectedOwnerDetails.name}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Email</Label>
+                    <p className="text-base text-foreground break-all">{selectedOwnerDetails.email}</p>
+                  </div>
+                  {selectedOwnerDetails.phone && (
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Phone</Label>
+                      <a 
+                        href={`tel:${selectedOwnerDetails.phone}`}
+                        className="text-base text-foreground hover:text-amber-500 transition-colors"
+                      >
+                        {selectedOwnerDetails.phone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedOwnerDetails.address && (
+                    <div className="space-y-2 md:col-span-2">
+                      <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Address</Label>
+                      <p className="text-base text-foreground">{selectedOwnerDetails.address}</p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Role</Label>
+                    <Badge variant="secondary">{selectedOwnerDetails.role}</Badge>
+                  </div>
+                  {selectedOwnerDetails.tractorOwnerApproved !== undefined && (
+                    <div className="space-y-2">
+                      <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Approval Status</Label>
+                      <Badge variant={selectedOwnerDetails.tractorOwnerApproved ? "default" : "destructive"}>
+                        {selectedOwnerDetails.tractorOwnerApproved ? "Approved" : "Pending"}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
 
         {/* Owner Tractors Dialog */}
         <Dialog open={showOwnerTractors} onOpenChange={setShowOwnerTractors}>

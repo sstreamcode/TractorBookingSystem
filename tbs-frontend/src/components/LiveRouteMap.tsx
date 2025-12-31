@@ -84,6 +84,7 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
   const isLoadingRef = useRef(false);
   const animationRef = useRef<number | null>(null);
   const animationStartTimeRef = useRef<number | null>(null);
+  const currentAnimationProgressRef = useRef<number>(0); // Track animation progress for route trimming
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -184,10 +185,10 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
       layersRef.current.route = undefined;
     }
     
-    // Don't show route if showing tractor at original location (RETURNED status)
+    // Don't show route if showing tractor at original location (RETURNED status) or at destination (DELIVERED)
     let segments: Array<{ lat: number; lng: number }> = [];
     
-    if (!showTractorAtOriginalLocation) {
+    if (!showTractorAtOriginalLocation && !showTractorAtDestination) {
       // Use provided route, calculated route, or fallback to straight line
       // Only use calculated route if it has multiple points (actual road route)
       if (route && route.length >= 2) {
@@ -201,6 +202,20 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
         // Don't show straight line if we're still loading
         if (!routeLoading) {
           segments = [current, destination];
+        }
+      }
+      
+      // If animating, trim the route to only show the remaining path
+      if (animateDelivery && segments.length > 2 && currentAnimationProgressRef.current > 0) {
+        const progress = currentAnimationProgressRef.current;
+        const totalPoints = segments.length;
+        const passedPoints = Math.floor(progress * totalPoints);
+        // Show only the remaining route (from current position to destination)
+        if (passedPoints < totalPoints - 1) {
+          segments = segments.slice(passedPoints);
+        } else {
+          // If animation is complete, don't show route
+          segments = [];
         }
       }
     }
@@ -254,7 +269,7 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
     } else if (destination) {
       map.setView([destination.lat, destination.lng], 13, { animate: true });
     }
-  }, [current, destination, JSON.stringify(route), calculatedRoute, useTractorIcon, showTractorAtDestination, showTractorAtOriginalLocation, originalLocation]);
+  }, [current, destination, JSON.stringify(route), calculatedRoute, useTractorIcon, showTractorAtDestination, showTractorAtOriginalLocation, originalLocation, animateDelivery]);
 
   // Fetch route from OSRM - only once when both current and destination are available
   useEffect(() => {
@@ -406,9 +421,12 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 0.5); // Stop at 0.5 (50% / halfway)
+      const progress = Math.min(elapsed / duration, 1.0); // Go full route (0 to 1.0)
 
-      // Calculate position along route (only go halfway)
+      // Store progress for route trimming
+      currentAnimationProgressRef.current = progress;
+
+      // Calculate position along route
       const totalDistance = routeToAnimate.length - 1;
       const currentIndex = progress * totalDistance;
       const index1 = Math.floor(currentIndex);
@@ -427,16 +445,50 @@ const LiveRouteMap = ({ current, destination, route = [], className = 'h-80 w-fu
         layersRef.current.animatedTractor.setLatLng([lat, lng]);
       }
 
-      if (progress < 0.5) {
+      // Update route polyline to remove passed segments dynamically
+      if (map) {
+        // Calculate remaining route segments
+        const passedPoints = Math.floor(progress * routeToAnimate.length);
+        if (passedPoints < routeToAnimate.length - 1) {
+          const remainingRoute = routeToAnimate.slice(passedPoints);
+          if (remainingRoute.length >= 2) {
+            // Remove old route
+            if (layersRef.current.route) {
+              layersRef.current.route.remove();
+            }
+            // Add remaining route
+            const latLngs = remainingRoute.map((point) => [point.lat, point.lng]) as [number, number][];
+            layersRef.current.route = L.polyline(latLngs, {
+              color: '#0ea5e9',
+              weight: 5,
+              opacity: 0.85,
+              smoothFactor: 1,
+            }).addTo(map);
+          }
+        } else {
+          // All route passed, remove it
+          if (layersRef.current.route) {
+            layersRef.current.route.remove();
+            layersRef.current.route = undefined;
+          }
+        }
+      }
+
+      if (progress < 1.0) {
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        // Animation complete - keep tractor at halfway point
-        // Calculate the exact halfway point on the route
-        const halfwayIndex = Math.floor(routeToAnimate.length / 2);
-        const halfwayPoint = routeToAnimate[halfwayIndex];
-        if (layersRef.current.animatedTractor && halfwayPoint) {
-          layersRef.current.animatedTractor.setLatLng([halfwayPoint.lat, halfwayPoint.lng]);
+        // Animation complete - tractor reached destination
+        // Remove route completely
+        if (layersRef.current.route) {
+          layersRef.current.route.remove();
+          layersRef.current.route = undefined;
         }
+        // Move animated tractor to destination
+        const destinationPoint = routeToAnimate[routeToAnimate.length - 1];
+        if (layersRef.current.animatedTractor && destinationPoint) {
+          layersRef.current.animatedTractor.setLatLng([destinationPoint.lat, destinationPoint.lng]);
+        }
+        currentAnimationProgressRef.current = 1.0;
         animationRef.current = null;
       }
     };

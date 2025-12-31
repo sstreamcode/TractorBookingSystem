@@ -67,6 +67,27 @@ public class SuperAdminController {
         return ResponseEntity.ok(userList);
     }
 
+    @GetMapping("/users/{userId}")
+    public ResponseEntity<?> getUserById(@PathVariable Long userId, Principal principal) {
+        if (!isSuperAdmin(principal)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Only super admins can view user details"));
+        }
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+        }
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("name", user.getName() != null ? user.getName() : "");
+        userMap.put("email", user.getEmail());
+        userMap.put("role", user.getRole());
+        userMap.put("phone", user.getPhone() != null ? user.getPhone() : "");
+        userMap.put("address", user.getAddress() != null ? user.getAddress() : "");
+        userMap.put("profilePictureUrl", user.getProfilePictureUrl() != null ? user.getProfilePictureUrl() : "");
+        userMap.put("tractorOwnerApproved", user.getTractorOwnerApproved());
+        return ResponseEntity.ok(userMap);
+    }
+
     @GetMapping("/tractor-owners")
     public ResponseEntity<?> getAllTractorOwners(Principal principal) {
         if (!isSuperAdmin(principal)) {

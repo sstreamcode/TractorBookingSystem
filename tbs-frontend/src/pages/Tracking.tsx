@@ -38,17 +38,29 @@ const Tracking = () => {
     [bookings]
   );
 
+  // Update selectedBookingId when URL parameter changes
   useEffect(() => {
-    if (trackableBookings.length === 0) {
-      setSelectedBookingId(null);
-      setSearchParams({}, { replace: true });
-      return;
-    }
     const paramId = searchParams.get('bookingId');
-    const initial = paramId && trackableBookings.some((b) => b.id === paramId) ? paramId : trackableBookings[0].id;
-    setSelectedBookingId(initial);
-    setSearchParams(initial ? { bookingId: initial } : {}, { replace: true });
-  }, [trackableBookings, searchParams, setSearchParams]);
+    if (paramId) {
+      // Normalize both paramId and booking.id to strings for comparison
+      const matchingBooking = trackableBookings.find((b) => String(b.id) === String(paramId));
+      if (matchingBooking) {
+        setSelectedBookingId(String(matchingBooking.id));
+        return;
+      }
+    }
+    
+    // If no valid param or no match, set to first booking if available
+    if (trackableBookings.length > 0) {
+      const firstBookingId = String(trackableBookings[0].id);
+      setSelectedBookingId(firstBookingId);
+      if (!paramId || String(paramId) !== firstBookingId) {
+        setSearchParams({ bookingId: firstBookingId }, { replace: true });
+      }
+    } else {
+      setSelectedBookingId(null);
+    }
+  }, [searchParams, trackableBookings, setSearchParams]);
 
   const previousDeliveryStatusRef = useRef<string | null>(null);
 
@@ -58,6 +70,10 @@ const Tracking = () => {
       previousDeliveryStatusRef.current = null;
       return;
     }
+    
+    // Reset previous status when booking changes
+    previousDeliveryStatusRef.current = null;
+    
     let active = true;
     const fetchTracking = async () => {
       try {
@@ -133,7 +149,7 @@ const Tracking = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {trackableBookings.map((booking) => (
-                    <SelectItem key={booking.id} value={booking.id}>
+                    <SelectItem key={String(booking.id)} value={String(booking.id)}>
                       {booking.tractorName} · {new Date(booking.startDate).toLocaleDateString()}
                     </SelectItem>
                   ))}
@@ -151,7 +167,9 @@ const Tracking = () => {
           <div className="space-y-4">
             <LiveRouteMap
               current={
-                trackingData.currentLocation && trackingData.deliveryStatus !== 'RETURNED'
+                trackingData.deliveryStatus === 'RETURNED'
+                  ? undefined
+                  : trackingData.currentLocation
                   ? {
                       lat: trackingData.currentLocation.lat,
                       lng: trackingData.currentLocation.lng,
@@ -219,25 +237,44 @@ const Tracking = () => {
                   { key: 'RETURNED', label: 'Returned', icon: '🏠' }
                 ];
                 
-                const currentStep = effectiveDeliveryStatus ? (statusConfig[effectiveDeliveryStatus]?.step || 0) : 0;
+                // Determine current step based on delivery status
+                // If no deliveryStatus, check if booking is approved/paid to show ORDERED state
+                let currentStep = 0;
+                if (effectiveDeliveryStatus) {
+                  currentStep = statusConfig[effectiveDeliveryStatus]?.step || 0;
+                } else if (bookingStatus === 'PAID' || bookingStatus === 'APPROVED' || bookingStatus === 'CONFIRMED') {
+                  // For paid/approved bookings without deliveryStatus, show ORDERED as first step
+                  currentStep = 1;
+                }
+                
                 const isCompleted = bookingStatus === 'COMPLETED' || effectiveDeliveryStatus === 'RETURNED';
+                
+                // Determine current status label
+                let currentStatusLabel = 'Not Started';
+                let currentStatusIcon = '⏳';
+                let currentStatusColor = 'bg-muted text-muted-foreground';
+                
+                if (effectiveDeliveryStatus && statusConfig[effectiveDeliveryStatus]) {
+                  currentStatusLabel = statusConfig[effectiveDeliveryStatus].label;
+                  currentStatusIcon = statusConfig[effectiveDeliveryStatus].icon;
+                  currentStatusColor = statusConfig[effectiveDeliveryStatus].color;
+                } else if (bookingStatus === 'PAID' || bookingStatus === 'APPROVED' || bookingStatus === 'CONFIRMED') {
+                  currentStatusLabel = 'Ready to Deliver';
+                  currentStatusIcon = '📦';
+                  currentStatusColor = '!border-blue-500/30 !bg-blue-500/10 !text-blue-400';
+                } else if (bookingStatus === 'PENDING') {
+                  currentStatusLabel = 'Awaiting Approval';
+                  currentStatusIcon = '⏳';
+                  currentStatusColor = 'bg-muted text-muted-foreground';
+                }
                 
                 return (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-4">
-                      {!effectiveDeliveryStatus ? (
-                        <span className="text-sm px-3 py-1.5 rounded-md bg-muted text-muted-foreground">
-                          <span className="mr-1">⏳</span>
-                          {bookingStatus === 'PENDING' || bookingStatus === 'CONFIRMED' 
-                            ? 'Awaiting Tractor Owner Action' 
-                            : 'Not Started'}
-                        </span>
-                      ) : (
-                        <span className={`text-sm px-3 py-1.5 rounded-md border ${statusConfig[effectiveDeliveryStatus]?.color || 'border-border bg-muted text-muted-foreground'}`}>
-                          <span className="mr-1">{statusConfig[effectiveDeliveryStatus]?.icon}</span>
-                          {statusConfig[effectiveDeliveryStatus]?.label}
-                        </span>
-                      )}
+                      <span className={`text-sm px-3 py-1.5 rounded-md border ${currentStatusColor}`}>
+                        <span className="mr-1">{currentStatusIcon}</span>
+                        {currentStatusLabel}
+                      </span>
                       {isCompleted && (
                         <span className="text-sm px-3 py-1.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/30">
                           <span className="mr-1">✓</span>
@@ -251,8 +288,10 @@ const Tracking = () => {
                       <div className="flex items-center justify-between">
                         {steps.map((step, index) => {
                           const stepConfig = statusConfig[step.key];
-                          const isActive = currentStep >= (index + 1);
-                          const isCurrent = effectiveDeliveryStatus === step.key;
+                          const stepNumber = index + 1;
+                          const isActive = currentStep >= stepNumber;
+                          const isCurrent = effectiveDeliveryStatus === step.key || 
+                            (!effectiveDeliveryStatus && stepNumber === 1 && currentStep >= 1);
                           
                           return (
                             <div key={step.key} className="flex flex-col items-center flex-1 relative">
@@ -269,8 +308,8 @@ const Tracking = () => {
                                 {step.label}
                               </p>
                               {index < steps.length - 1 && (
-                                <div className={`absolute top-5 left-[60%] w-full h-0.5 ${
-                                  currentStep > (index + 1) ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-muted'
+                                <div className={`absolute top-5 left-[60%] w-full h-0.5 transition-colors ${
+                                  currentStep > stepNumber ? 'bg-gradient-to-r from-amber-500 to-orange-600' : 'bg-muted'
                                 }`} style={{ width: 'calc(100% - 2.5rem)' }} />
                               )}
                             </div>
@@ -309,16 +348,16 @@ const Tracking = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Tractor Owner Information */}
-              {trackingData.tractorOwner && (
-                <Card className="border border-border bg-card shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2 text-foreground">
-                      <User className="h-5 w-5 text-amber-500" />
-                      Tractor Owner Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              {/* Tractor Owner Information - Always show if tracking data exists */}
+              <Card className="border border-border bg-card shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+                    <User className="h-5 w-5 text-amber-500" />
+                    Tractor Owner Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {trackingData.tractorOwner ? (
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-amber-500/10">
@@ -380,9 +419,13 @@ const Tracking = () => {
                         </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p className="text-sm">Owner information not available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Location Information */}
               <Card className="border border-border bg-card shadow-sm">
