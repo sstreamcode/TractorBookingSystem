@@ -390,13 +390,13 @@ const TractorOwnerDashboard = () => {
 
   // Calculate stats for dashboard
   // Total revenue after commission (85% of paid bookings)
-  const totalRevenue = bookings
+  const totalRevenue = Math.round((bookings
     .filter(isBookingPaid)
     .reduce((sum, b) => {
       const total = (b as any).totalAmount || b.totalCost || 0;
       const commission = (b as any).commissionAmount || total * 0.15;
       return sum + (total - commission);
-    }, 0);
+    }, 0)) * 100) / 100;
   
   const paidBookings = bookings.filter(isBookingPaid);
   const completedBookings = bookings.filter(b => b.status === 'completed');

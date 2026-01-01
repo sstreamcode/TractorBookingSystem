@@ -94,22 +94,7 @@ public class PaymentController {
     }
     
     private void sendPaymentConfirmedEmail(Booking booking) {
-        try {
-            String userName = booking.getUser().getName();
-            String subject = "Payment Confirmed - Booking Approved - Tractor Sewa";
-            String message = "Your eSewa payment has been confirmed and your booking has been automatically approved! Your booking is now active. We will notify you when your tractor is on the way.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                userName,
-                "Payment Confirmed & Booking Approved",
-                message,
-                "PAID",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(booking.getUser().getEmail(), userName, subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send payment confirmed email", e);
-        }
+        emailService.sendBookingPaidEmail(booking);
     }
     
     private String formatBookingDetails(Booking booking) {

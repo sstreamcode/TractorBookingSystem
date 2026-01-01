@@ -1078,7 +1078,9 @@ export function toUiBooking(apiBooking: BookingApiModel): Booking {
     const minutes = (end.getTime() - start.getTime()) / (1000 * 60);
     const hours = minutes / 60.0; // Convert to hours as decimal (e.g., 0.75 for 45 minutes)
     const hourlyRate = apiBooking.tractor.hourlyRate || 0;
-    return hours * hourlyRate;
+    const cost = hours * hourlyRate;
+    // Round to 2 decimal places to avoid floating point precision issues
+    return Math.round(cost * 100) / 100;
   })();
 
   // Map backend status to frontend status
@@ -1279,6 +1281,32 @@ export async function getTractorOwnerBookingsForUIWithNested(): Promise<Array<Bo
 }>> {
   const items = await getTractorOwnerBookings();
   return items.map(mapTractorOwnerBookingToUI);
+}
+
+export interface ContactFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}
+
+export async function submitContactForm(data: ContactFormData): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${BASE_URL}/api/contact/submit`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiError(errorData.error || 'Failed to send contact form', res.status);
+  }
+  
+  return res.json();
 }
 
 export async function getAllBookingsForUI(): Promise<Booking[]> {

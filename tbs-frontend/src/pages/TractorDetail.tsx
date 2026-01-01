@@ -225,7 +225,9 @@ const TractorDetail = () => {
     const chargeableMinutes = Math.max(minutes, 30);
     const hours = chargeableMinutes / 60.0; // Convert to hours as decimal
     
-    return hours > 0 ? hours * tractor.hourlyRate : 0;
+    const cost = hours > 0 ? hours * tractor.hourlyRate : 0;
+    // Round to 2 decimal places to avoid floating point precision issues
+    return Math.round(cost * 100) / 100;
   };
 
   const totalCost = calculateCost();

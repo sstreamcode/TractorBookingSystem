@@ -965,22 +965,7 @@ public class BookingController {
     }
     
     private void sendBookingCompletedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Booking Completed - Tractor Sewa";
-            String message = "Your booking has been successfully completed! Thank you for using Tractor Sewa. We hope you had a great experience. We look forward to serving you again!";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Booking Completed",
-                message,
-                "COMPLETED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking completed email", e);
-        }
+        emailService.sendBookingCompletedEmail(booking);
     }
 
     @PutMapping("/{bookingId}/tractor-delivery-status")
@@ -1163,6 +1148,9 @@ public class BookingController {
         bookingRepository.save(booking);
         tractorRepository.save(tractor);
 
+        // Send email notification for delivery status change
+        emailService.sendDeliveryStatusChangeEmail(booking, previousStatus != null ? previousStatus : "null", deliveryStatus);
+
         return ResponseEntity.ok(Map.of(
             "deliveryStatus", deliveryStatus,
             "tractorStatus", tractor.getStatus(),
@@ -1263,202 +1251,39 @@ public class BookingController {
     }
     
     private void sendBookingCreatedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            // Check payment method to customize message
-            boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
-                .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
-            
-            String subject = "Booking Request Received - Tractor Sewa";
-            String message;
-            if (isCOD) {
-                message = "Thank you for your booking request with Cash on Delivery! Your booking has been received and is pending admin approval. Once approved, you can proceed with payment upon delivery.";
-            } else {
-                message = "Thank you for your booking request! Your booking has been received and is pending admin approval. Once approved, please proceed with the payment to confirm your booking.";
-            }
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Booking Request Received",
-                message,
-                "PENDING_APPROVAL",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking created email", e);
-        }
+        emailService.sendBookingCreatedEmail(booking);
     }
     
     private void sendBookingApprovedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            // Check payment method to customize message
-            boolean isCOD = booking.getPayments() != null && booking.getPayments().stream()
-                .anyMatch(p -> "CASH_ON_DELIVERY".equals(p.getMethod()));
-            
-            String subject = "Booking Approved - Tractor Sewa";
-            String message;
-            if (isCOD) {
-                message = "Great news! Your booking has been approved by our admin team. Your tractor will be delivered to the specified location, and you can pay upon delivery. We will notify you when your tractor is on the way.";
-            } else {
-                message = "Great news! Your booking has been approved by our admin team. Please proceed with the payment to confirm your booking. Once payment is confirmed, we will notify you when your tractor is on the way.";
-            }
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Booking Approved",
-                message,
-                "APPROVED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking approved email", e);
-        }
+        emailService.sendBookingApprovedEmail(booking);
     }
     
     private void sendBookingDeniedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Booking Denied - Tractor Sewa";
-            String message = "We regret to inform you that your booking request has been denied. If you have any questions, please contact our support team.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Booking Denied",
-                message,
-                "DENIED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking denied email", e);
-        }
+        emailService.sendBookingDeniedEmail(booking);
     }
     
     private void sendBookingPaidEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Payment Confirmed - Tractor Sewa";
-            String message = "Your payment has been confirmed! Your booking is now active and ready for delivery. We will notify you when your tractor is on the way to your location.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Payment Confirmed",
-                message,
-                "PAID",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking paid email", e);
-        }
+        emailService.sendBookingPaidEmail(booking);
     }
     
     private void sendBookingDeliveredEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Tractor Delivered - Tractor Sewa";
-            String message = "Your tractor has been delivered to the specified location and is ready for use. Please ensure to return it on time as per your booking schedule. Thank you for choosing Tractor Sewa!";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Tractor Delivered",
-                message,
-                "DELIVERED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking delivered email", e);
-        }
+        emailService.sendBookingDeliveredEmail(booking);
     }
     
     private void sendBookingCancelledEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Booking Cancelled - Tractor Sewa";
-            String message = "Your booking has been cancelled successfully. If you have any questions or need assistance, please contact our support team.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Booking Cancelled",
-                message,
-                "CANCELLED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send booking cancelled email", e);
-        }
+        emailService.sendBookingCancelledEmail(booking);
     }
     
     private void sendRefundRequestedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Refund Request Submitted - Tractor Sewa";
-            String message = "Your refund request has been submitted and is pending admin approval. We will process your request and notify you once it's reviewed.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Refund Request Submitted",
-                message,
-                "REFUND_REQUESTED",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send refund requested email", e);
-        }
+        emailService.sendRefundRequestedEmail(booking);
     }
     
     private void sendRefundApprovedEmail(Booking booking, double refundAmount, double fee) {
-        try {
-            User user = booking.getUser();
-            String subject = "Refund Approved - Tractor Sewa";
-            String message = String.format(
-                "Your refund request has been approved! A refund of Rs. %.2f (after a 3%% processing fee of Rs. %.2f) will be processed to your original payment method within 5-7 business days.",
-                refundAmount, fee
-            );
-            String bookingDetails = formatBookingDetails(booking);
-            String refundInfo = String.format(
-                "<div style='background-color: #d1fae5; border-left: 4px solid #059669; padding: 15px 20px; margin: 20px 0; border-radius: 4px;'>" +
-                "<p style='margin: 0; color: #065f46; font-size: 14px;'><strong>Refund Amount:</strong> Rs. %.2f</p>" +
-                "<p style='margin: 5px 0 0 0; color: #065f46; font-size: 14px;'><strong>Processing Fee:</strong> Rs. %.2f</p>" +
-                "</div>",
-                refundAmount, fee
-            );
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Refund Approved",
-                message,
-                "CANCELLED",
-                bookingDetails + refundInfo
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send refund approved email", e);
-        }
+        emailService.sendRefundApprovedEmail(booking, refundAmount, fee);
     }
     
     private void sendRefundRejectedEmail(Booking booking) {
-        try {
-            User user = booking.getUser();
-            String subject = "Refund Request Rejected - Tractor Sewa";
-            String message = "We regret to inform you that your refund request has been rejected. Your booking remains active. If you have any questions, please contact our support team.";
-            String bookingDetails = formatBookingDetails(booking);
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName(),
-                "Refund Request Rejected",
-                message,
-                "PAID",
-                bookingDetails
-            );
-            emailService.sendBookingNotification(user.getEmail(), user.getName(), subject, htmlContent);
-        } catch (Exception e) {
-            logger.error("Failed to send refund rejected email", e);
-        }
+        emailService.sendRefundRejectedEmail(booking);
     }
 
     @PostMapping("/{bookingId}/release-payment")
@@ -1493,6 +1318,9 @@ public class BookingController {
         // Mark payment as released
         booking.setPaymentReleased(true);
         bookingRepository.save(booking);
+
+        // Send payment release email to tractor owner
+        emailService.sendPaymentReleaseEmail(booking, commissionAmount, ownerAmount);
 
         return ResponseEntity.ok(Map.of(
             "status", "SUCCESS",

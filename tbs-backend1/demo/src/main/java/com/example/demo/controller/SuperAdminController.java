@@ -242,32 +242,7 @@ public class SuperAdminController {
     }
     
     private void sendTractorOwnerApprovalEmail(User owner) {
-        try {
-            String subject = "Tractor Owner Account Approved - Tractor Sewa";
-            String message = "Great news! Your tractor owner account has been approved by our super admin. " +
-                           "You can now log in to the platform and start listing your tractors. " +
-                           "Welcome to Tractor Sewa!";
-            
-            String htmlContent = emailService.buildEmailTemplate(
-                owner.getName() != null ? owner.getName() : "Tractor Owner",
-                "Account Approved",
-                message,
-                "APPROVED",
-                "<div style='margin: 20px 0; padding: 20px; background-color: #d1fae5; border-radius: 8px;'>" +
-                "<p style='margin: 0 0 10px 0; color: #065f46; font-size: 15px; line-height: 1.7;'><strong>Next Steps:</strong></p>" +
-                "<ul style='margin: 0; padding-left: 20px; color: #065f46; font-size: 15px; line-height: 1.7;'>" +
-                "<li>Log in to your account</li>" +
-                "<li>Add your tractors to the platform</li>" +
-                "<li>Start receiving booking requests</li>" +
-                "</ul>" +
-                "</div>"
-            );
-            
-            emailService.sendBookingNotification(owner.getEmail(), owner.getName() != null ? owner.getName() : "Tractor Owner", subject, htmlContent);
-        } catch (Exception e) {
-            // Log error but don't fail the approval
-            System.err.println("Failed to send approval email: " + e.getMessage());
-        }
+        emailService.sendTractorOwnerApprovalEmail(owner);
     }
 
     @PostMapping("/tractor-owners/{ownerId}/reject")

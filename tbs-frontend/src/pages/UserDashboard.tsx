@@ -489,7 +489,7 @@ const UserDashboard = () => {
                 <div>
                   <p className="text-sm text-muted-foreground mb-1 font-medium">{t('dashboard.stats.totalSpent')}</p>
                   <p className="text-4xl font-bold text-foreground">
-                    NPR {userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)}
+                    NPR {Math.round((userBookings.filter(b => b.paymentStatus === 'paid').reduce((sum, b) => sum + b.totalCost, 0)) * 100) / 100}
                   </p>
                 </div>
                 <div className="w-14 h-14 bg-amber-500/10 rounded-xl flex items-center justify-center">

@@ -26,6 +26,7 @@ import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.FeedbackRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TractorRepository;
+import com.example.demo.util.EmailService;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
@@ -36,13 +37,15 @@ public class TractorController {
     private final FeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final TractorRepository tractorRepository;
+    private final EmailService emailService;
 
-    public TractorController(TractorService tractorService, BookingRepository bookingRepository, FeedbackRepository feedbackRepository, UserRepository userRepository, TractorRepository tractorRepository) {
+    public TractorController(TractorService tractorService, BookingRepository bookingRepository, FeedbackRepository feedbackRepository, UserRepository userRepository, TractorRepository tractorRepository, EmailService emailService) {
         this.tractorService = tractorService;
         this.bookingRepository = bookingRepository;
         this.feedbackRepository = feedbackRepository;
         this.userRepository = userRepository;
         this.tractorRepository = tractorRepository;
+        this.emailService = emailService;
     }
 
     @GetMapping
@@ -85,6 +88,10 @@ public class TractorController {
         tractor.setApprovalStatus("PENDING"); // Requires super admin approval
         
         Tractor created = tractorService.create(tractor);
+        
+        // Send email notification to tractor owner
+        emailService.sendNewTractorAddedEmail(created, user);
+        
         return ResponseEntity.created(URI.create("/api/tractors/" + created.getId())).body(created);
     }
 
@@ -350,6 +357,11 @@ public class TractorController {
         tractor.setApprovalStatus("APPROVED");
         tractorRepository.save(tractor);
         
+        // Send email notification to tractor owner
+        if (tractor.getOwner() != null) {
+            emailService.sendTractorApprovedEmail(tractor, tractor.getOwner());
+        }
+        
         return ResponseEntity.ok(Map.of("status", "APPROVED", "message", "Tractor approved successfully"));
     }
 
@@ -375,6 +387,11 @@ public class TractorController {
         
         tractor.setApprovalStatus("REJECTED");
         tractorRepository.save(tractor);
+        
+        // Send email notification to tractor owner
+        if (tractor.getOwner() != null) {
+            emailService.sendTractorRejectedEmail(tractor, tractor.getOwner());
+        }
         
         return ResponseEntity.ok(Map.of("status", "REJECTED", "message", "Tractor rejected"));
     }

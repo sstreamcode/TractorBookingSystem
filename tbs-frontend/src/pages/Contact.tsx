@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { submitContactForm } from '@/lib/api';
 
 const Contact = () => {
     const { t } = useLanguage();
@@ -26,9 +27,17 @@ const Contact = () => {
         e.preventDefault();
         setIsSubmitting(true);
         
-        // Simulate form submission
-        setTimeout(() => {
-            toast.success(t('contact.form.success'));
+        try {
+            const result = await submitContactForm({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                phone: formData.phone,
+                subject: formData.subject,
+                message: formData.message,
+            });
+            
+            toast.success(result.message || t('contact.form.success'));
             setFormData({
                 firstName: '',
                 lastName: '',
@@ -37,8 +46,11 @@ const Contact = () => {
                 subject: '',
                 message: '',
             });
+        } catch (error: any) {
+            toast.error(error?.message || 'Failed to send message. Please try again.');
+        } finally {
             setIsSubmitting(false);
-        }, 1000);
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

@@ -318,22 +318,22 @@ const SuperAdminDashboard = () => {
     return matchesStatus && matchesPayment;
   });
   
-  // Calculate totals
-  const totalCommissionEarned = bookings
+  // Calculate totals - round to 2 decimal places
+  const totalCommissionEarned = Math.round((bookings
     .filter(b => b.status === 'completed')
-    .reduce((sum, b) => sum + ((b as any).commissionAmount || (b.totalCost || 0) * 0.15), 0);
+    .reduce((sum, b) => sum + ((b as any).commissionAmount || (b.totalCost || 0) * 0.15), 0)) * 100) / 100;
   
-  const totalReleasedCommission = bookings
+  const totalReleasedCommission = Math.round((bookings
     .filter(b => b.status === 'completed' && b.paymentReleased)
-    .reduce((sum, b) => sum + ((b as any).commissionAmount || (b.totalCost || 0) * 0.15), 0);
+    .reduce((sum, b) => sum + ((b as any).commissionAmount || (b.totalCost || 0) * 0.15), 0)) * 100) / 100;
   
-  const totalReleasedToOwners = bookings
+  const totalReleasedToOwners = Math.round((bookings
     .filter(b => b.status === 'completed' && b.paymentReleased)
     .reduce((sum, b) => {
       const total = b.totalCost || 0;
       const commission = (b as any).commissionAmount || total * 0.15;
       return sum + (total - commission);
-    }, 0);
+    }, 0)) * 100) / 100;
 
   return (
     <SidebarProvider>

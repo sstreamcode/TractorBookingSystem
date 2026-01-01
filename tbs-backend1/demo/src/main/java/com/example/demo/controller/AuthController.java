@@ -81,39 +81,15 @@ public class AuthController {
 
         userRepository.save(user);
 
+        // Send customer registration email
+        emailService.sendCustomerRegistrationEmail(user);
+
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
         return ResponseEntity.ok(Map.of("token", token));
     }
     
     private void sendTractorOwnerRegistrationEmail(User user) {
-        try {
-            String subject = "Tractor Owner Registration Received - Tractor Sewa";
-            String message = "Thank you for registering as a tractor owner on Tractor Sewa! " +
-                           "Your registration request has been received and is currently pending approval by our super admin. " +
-                           "You will receive an email notification once your account has been approved. " +
-                           "Until then, you will not be able to log in to the platform. " +
-                           "We appreciate your patience during the review process.";
-            
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName() != null ? user.getName() : "Tractor Owner",
-                "Registration Received",
-                message,
-                "PENDING_APPROVAL",
-                "<div style='margin: 20px 0; padding: 20px; background-color: #f9fafb; border-radius: 8px;'>" +
-                "<p style='margin: 0 0 10px 0; color: #4b5563; font-size: 15px; line-height: 1.7;'><strong>What happens next?</strong></p>" +
-                "<ul style='margin: 0; padding-left: 20px; color: #4b5563; font-size: 15px; line-height: 1.7;'>" +
-                "<li>Our super admin will review your registration details</li>" +
-                "<li>You will receive an email notification once approved</li>" +
-                "<li>After approval, you can log in and start listing your tractors</li>" +
-                "</ul>" +
-                "</div>"
-            );
-            
-            emailService.sendBookingNotification(user.getEmail(), user.getName() != null ? user.getName() : "Tractor Owner", subject, htmlContent);
-        } catch (Exception e) {
-            // Log error but don't fail the registration
-            System.err.println("Failed to send registration email: " + e.getMessage());
-        }
+        emailService.sendTractorOwnerRegistrationEmail(user);
     }
 
     @PostMapping("/login")
@@ -138,29 +114,7 @@ public class AuthController {
     }
     
     private void sendTractorOwnerPendingApprovalEmail(User user) {
-        try {
-            String subject = "Tractor Owner Account Pending Approval - Tractor Sewa";
-            String message = "Your tractor owner registration request is currently pending approval by our super admin. " +
-                           "You will receive an email notification once your account has been approved. " +
-                           "Until then, you will not be able to log in to the platform. " +
-                           "Thank you for your patience!";
-            
-            String htmlContent = emailService.buildEmailTemplate(
-                user.getName() != null ? user.getName() : "Tractor Owner",
-                "Account Pending Approval",
-                message,
-                "PENDING_APPROVAL",
-                "<p style='margin: 20px 0; color: #4b5563; font-size: 15px; line-height: 1.7;'>" +
-                "We have received your registration request and it is currently under review. " +
-                "Our team will verify your details and notify you via email once the approval process is complete." +
-                "</p>"
-            );
-            
-            emailService.sendBookingNotification(user.getEmail(), user.getName() != null ? user.getName() : "Tractor Owner", subject, htmlContent);
-        } catch (Exception e) {
-            // Log error but don't fail the login attempt
-            System.err.println("Failed to send pending approval email: " + e.getMessage());
-        }
+        emailService.sendTractorOwnerRegistrationEmail(user);
     }
 
     @GetMapping("/me")
