@@ -58,6 +58,33 @@ public class EmailService {
         sendEmail(toEmail, toName, subject, htmlContent);
     }
     
+    // ========== PASSWORD RESET EMAILS ==========
+    
+    public void sendPasswordResetCodeEmail(String email, String resetCode) {
+        try {
+            String subject = "Password Reset Code - Tractor Sewa";
+            String htmlContent = buildBrandedTemplate(
+                "User",
+                "Password Reset Request",
+                "You have requested to reset your password. Use the verification code below to proceed with resetting your password. " +
+                "This code will expire in 10 minutes.",
+                "🔐",
+                "#fef3c7",
+                "<div style='background-color: #f9fafb; border-radius: 6px; padding: 30px; margin: 20px 0; text-align: center;'>" +
+                "<h3 style='margin: 0 0 15px 0; color: #1f2937; font-size: 18px; font-weight: 600;'>Your Verification Code</h3>" +
+                "<div style='background-color: #ffffff; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; display: inline-block;'>" +
+                "<p style='margin: 0; color: #1f2937; font-size: 32px; font-weight: 700; letter-spacing: 8px; font-family: monospace;'>" +
+                escapeHtml(resetCode) + "</p></div>" +
+                "<p style='margin: 15px 0 0 0; color: #6b7280; font-size: 14px;'>This code expires in 10 minutes.</p>" +
+                "<p style='margin: 10px 0 0 0; color: #dc2626; font-size: 13px;'>If you didn't request this code, please ignore this email.</p>" +
+                "</div>"
+            );
+            sendEmail(email, "User", subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send password reset code email", e);
+        }
+    }
+    
     // ========== REGISTRATION EMAILS ==========
     
     public void sendCustomerRegistrationEmail(User user) {
@@ -139,6 +166,32 @@ public class EmailService {
             sendEmail(owner.getEmail(), owner.getName(), subject, htmlContent);
         } catch (Exception e) {
             logger.error("Failed to send tractor owner approval email", e);
+        }
+    }
+    
+    public void sendTractorOwnerRejectionEmail(User owner) {
+        try {
+            String subject = "Tractor Owner Account Rejected - Tractor Sewa";
+            String htmlContent = buildBrandedTemplate(
+                owner.getName() != null ? owner.getName() : "Tractor Owner",
+                "Account Rejected",
+                "We regret to inform you that your tractor owner account registration has been rejected by our super admin. " +
+                "This may be due to incomplete information, invalid documents, or not meeting our requirements. " +
+                "If you believe this is an error, please contact our support team for assistance.",
+                "❌",
+                "#fee2e2",
+                "<div style='background-color: #f9fafb; border-radius: 6px; padding: 20px; margin: 20px 0;'>" +
+                "<h3 style='margin: 0 0 15px 0; color: #1f2937; font-size: 16px; font-weight: 600;'>What you can do:</h3>" +
+                "<ul style='margin: 0; padding-left: 20px; color: #4b5563; font-size: 15px; line-height: 1.7;'>" +
+                "<li>Contact our support team if you have questions</li>" +
+                "<li>Review your registration information</li>" +
+                "<li>Ensure all documents are clear and valid</li>" +
+                "<li>You may re-register with corrected information</li>" +
+                "</ul></div>"
+            );
+            sendEmail(owner.getEmail(), owner.getName(), subject, htmlContent);
+        } catch (Exception e) {
+            logger.error("Failed to send tractor owner rejection email", e);
         }
     }
     
@@ -244,6 +297,39 @@ public class EmailService {
             sendEmail(user.getEmail(), user.getName(), subject, htmlContent);
         } catch (Exception e) {
             logger.error("Failed to send booking created email", e);
+        }
+    }
+    
+    public void sendTractorOwnerNewBookingEmail(Booking booking) {
+        try {
+            Tractor tractor = booking.getTractor();
+            if (tractor == null || tractor.getOwner() == null) {
+                logger.warn("Cannot send new booking email: tractor or owner is null for booking {}", booking.getId());
+                return;
+            }
+            
+            User owner = tractor.getOwner();
+            User customer = booking.getUser();
+            
+            if (owner.getEmail() == null || owner.getEmail().isEmpty()) {
+                logger.warn("Cannot send new booking email: tractor owner email is null or empty for booking {}", booking.getId());
+                return;
+            }
+            
+            String subject = "New Booking Received - Tractor Sewa";
+            String htmlContent = buildBrandedTemplate(
+                owner.getName() != null ? owner.getName() : "Tractor Owner",
+                "New Booking Received",
+                "You have received a new booking for your tractor. " +
+                "The booking is pending approval. You will be notified once it's approved and payment is confirmed.",
+                "📋",
+                "#dbeafe",
+                formatTractorOwnerBookingDetails(booking, tractor, customer)
+            );
+            sendEmail(owner.getEmail(), owner.getName(), subject, htmlContent);
+            logger.info("New booking email sent successfully to tractor owner: {} for booking {}", owner.getEmail(), booking.getId());
+        } catch (Exception e) {
+            logger.error("Failed to send tractor owner new booking email for booking {}", booking.getId(), e);
         }
     }
     
@@ -529,6 +615,67 @@ public class EmailService {
         
         details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Total Amount:</td>");
         details.append("<td style='padding: 8px 0; color: #059669; font-size: 16px; font-weight: 700;'>Rs. ").append(String.format("%.2f", booking.getTotalAmount())).append("</td></tr>");
+        
+        details.append("</table></div>");
+        return details.toString();
+    }
+    
+    private String formatTractorOwnerBookingDetails(Booking booking, Tractor tractor, User customer) {
+        StringBuilder details = new StringBuilder();
+        details.append("<div style='background-color: #f9fafb; border-radius: 6px; padding: 20px; margin: 20px 0;'>");
+        details.append("<h3 style='margin: 0 0 15px 0; color: #1f2937; font-size: 16px; font-weight: 600;'>New Booking Details</h3>");
+        details.append("<table style='width: 100%%; border-collapse: collapse;'>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Booking ID:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>#").append(booking.getId()).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Tractor:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(escapeHtml(tractor.getName())).append("</td></tr>");
+        
+        if (customer != null) {
+            details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Customer Name:</td>");
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(escapeHtml(customer.getName() != null ? customer.getName() : "N/A")).append("</td></tr>");
+            
+            details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Customer Email:</td>");
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(escapeHtml(customer.getEmail() != null ? customer.getEmail() : "N/A")).append("</td></tr>");
+            
+            if (customer.getPhone() != null && !customer.getPhone().isEmpty()) {
+                details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Customer Phone:</td>");
+                details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(escapeHtml(customer.getPhone())).append("</td></tr>");
+            }
+        }
+        
+        long hours = java.time.Duration.between(booking.getStartAt(), booking.getEndAt()).toHours();
+        long minutes = java.time.Duration.between(booking.getStartAt(), booking.getEndAt()).toMinutes() % 60;
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Duration:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(hours).append(" hour(s)");
+        if (minutes > 0) details.append(" ").append(minutes).append(" minute(s)");
+        details.append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Start Date:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getStartAt().format(DATE_FORMATTER)).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>End Date:</td>");
+        details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(booking.getEndAt().format(DATE_FORMATTER)).append("</td></tr>");
+        
+        if (booking.getDeliveryAddress() != null) {
+            details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Delivery Address:</td>");
+            details.append("<td style='padding: 8px 0; color: #1f2937; font-size: 14px;'>").append(escapeHtml(booking.getDeliveryAddress())).append("</td></tr>");
+        }
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Total Amount:</td>");
+        details.append("<td style='padding: 8px 0; color: #059669; font-size: 16px; font-weight: 700;'>Rs. ").append(String.format("%.2f", booking.getTotalAmount())).append("</td></tr>");
+        
+        double commissionAmount = booking.getCommissionAmount() != null ? booking.getCommissionAmount() : booking.getTotalAmount() * 0.15;
+        double ownerAmount = booking.getTotalAmount() - commissionAmount;
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Commission (15%%):</td>");
+        details.append("<td style='padding: 8px 0; color: #dc2626; font-size: 14px;'>- Rs. ").append(String.format("%.2f", commissionAmount)).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Your Amount:</td>");
+        details.append("<td style='padding: 8px 0; color: #059669; font-size: 16px; font-weight: 700;'>Rs. ").append(String.format("%.2f", ownerAmount)).append("</td></tr>");
+        
+        details.append("<tr><td style='padding: 8px 0; color: #6b7280; font-size: 14px; font-weight: 600;'>Status:</td>");
+        details.append("<td style='padding: 8px 0; color: #f59e0b; font-size: 14px; font-weight: 600;'>").append(escapeHtml(booking.getStatus() != null ? booking.getStatus() : "PENDING")).append("</td></tr>");
         
         details.append("</table></div>");
         return details.toString();

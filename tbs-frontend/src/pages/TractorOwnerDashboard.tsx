@@ -37,7 +37,7 @@ import {
   type TractorApiModel,
   type TrackingResponse,
 } from '@/lib/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
   Pagination,
@@ -1435,6 +1435,9 @@ const TractorOwnerDashboard = () => {
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Track Tractor</DialogTitle>
+                  <DialogDescription>
+                    View the live location and route of the selected tractor
+                  </DialogDescription>
                 </DialogHeader>
                 {trackingTractor ? (
                   <div className="space-y-4">
@@ -1575,129 +1578,134 @@ const TractorOwnerDashboard = () => {
                   <p className="text-muted-foreground text-center py-8">No bookings found</p>
                 ) : (
                   <>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Tractor</TableHead>
-                          <TableHead>Customer</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>End Date</TableHead>
-                          <TableHead>Total Amount</TableHead>
-                          <TableHead>Commission (15%)</TableHead>
-                          <TableHead>Your Amount (85%)</TableHead>
-                          <TableHead>Customer Payment</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedBookings.map((booking) => {
-                        const bookingData = booking as any;
-                        const gallery = bookingData.tractor?.images || bookingData.tractorImages || (bookingData.tractor?.image ? [bookingData.tractor.image] : []) || (bookingData.tractorImage ? [bookingData.tractorImage] : []);
-                        const currentIndex = bookingImageIndices[booking.id] || 0;
-                        const hasMultipleImages = gallery.length > 1;
-                        const tractorName = bookingData.tractor?.name || bookingData.tractorName || 'N/A';
-                        const userName = bookingData.user?.name || bookingData.userName || 'N/A';
-                        const totalAmount = bookingData.totalAmount || bookingData.totalCost || 0;
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="whitespace-nowrap">Tractor</TableHead>
+                              <TableHead className="whitespace-nowrap">Customer</TableHead>
+                              <TableHead className="whitespace-nowrap">Start Date</TableHead>
+                              <TableHead className="whitespace-nowrap">End Date</TableHead>
+                              <TableHead className="whitespace-nowrap">Total Amount</TableHead>
+                              <TableHead className="whitespace-nowrap">Commission (15%)</TableHead>
+                              <TableHead className="whitespace-nowrap">Your Amount (85%)</TableHead>
+                              <TableHead className="whitespace-nowrap">Customer Payment</TableHead>
+                              <TableHead className="whitespace-nowrap">Status</TableHead>
+                              <TableHead className="whitespace-nowrap">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedBookings.map((booking) => {
+                            const bookingData = booking as any;
+                            const gallery = bookingData.tractor?.images || bookingData.tractorImages || (bookingData.tractor?.image ? [bookingData.tractor.image] : []) || (bookingData.tractorImage ? [bookingData.tractorImage] : []);
+                            const currentIndex = bookingImageIndices[booking.id] || 0;
+                            const hasMultipleImages = gallery.length > 1;
+                            const tractorName = bookingData.tractor?.name || bookingData.tractorName || 'N/A';
+                            const userName = bookingData.user?.name || bookingData.userName || 'N/A';
+                            const totalAmount = bookingData.totalAmount || bookingData.totalCost || 0;
 
-                        return (
-                          <TableRow key={booking.id} className="hover:bg-muted/50">
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {gallery.length > 0 ? (
-                                  <SmallImageCarousel
-                                    id={booking.id}
-                                    gallery={gallery}
-                                    hasMultipleImages={hasMultipleImages}
-                                    onIndexChange={(idx) => setBookingImageIndices(prev => ({ ...prev, [booking.id]: idx }))}
-                                    currentIndex={currentIndex}
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded border border-border bg-muted flex items-center justify-center">
-                                    <TractorIcon className="h-5 w-5 text-muted-foreground" />
+                            return (
+                              <TableRow key={booking.id} className="hover:bg-muted/50">
+                                <TableCell className="whitespace-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    {gallery.length > 0 ? (
+                                      <SmallImageCarousel
+                                        id={booking.id}
+                                        gallery={gallery}
+                                        hasMultipleImages={hasMultipleImages}
+                                        onIndexChange={(idx) => setBookingImageIndices(prev => ({ ...prev, [booking.id]: idx }))}
+                                        currentIndex={currentIndex}
+                                      />
+                                    ) : (
+                                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded border border-border bg-muted flex items-center justify-center">
+                                        <TractorIcon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+                                      </div>
+                                    )}
+                                    <span className="text-xs sm:text-sm font-medium text-foreground">{tractorName}</span>
                                   </div>
-                                )}
-                                <span className="text-sm font-medium text-foreground">{tractorName}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-foreground">{userName}</TableCell>
-                            <TableCell className="text-foreground">{new Date(booking.startDate).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-foreground">{new Date(booking.endDate).toLocaleDateString()}</TableCell>
-                            <TableCell className="font-semibold text-foreground">
-                              <div className="flex flex-col">
-                                <span>Rs. {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                <span className="text-xs text-muted-foreground">Booking Total</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-red-500 font-semibold">
-                                  -Rs. {(bookingData.commissionAmount || totalAmount * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-xs text-muted-foreground">Platform Fee</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-col">
-                                <span className="text-green-600 font-bold text-lg">
-                                  Rs. {((totalAmount || 0) - (bookingData.commissionAmount || totalAmount * 0.15)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                                <span className="text-xs text-green-500/80 font-medium">Your Earnings</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {(() => {
-                                const isPaid = booking.paymentStatus === 'paid' || 
-                                              booking.status === 'paid' || 
-                                              booking.status === 'confirmed' || 
-                                              booking.status === 'delivered' || 
-                                              booking.status === 'completed' ||
-                                              (bookingData.payments && bookingData.payments.some((p: any) => p.status === 'SUCCESS'));
-                                
-                                return isPaid ? (
-                                  <Badge className="bg-green-600">
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Paid
+                                </TableCell>
+                                <TableCell className="text-foreground whitespace-nowrap text-xs sm:text-sm">{userName}</TableCell>
+                                <TableCell className="text-foreground whitespace-nowrap text-xs sm:text-sm">{new Date(booking.startDate).toLocaleDateString()}</TableCell>
+                                <TableCell className="text-foreground whitespace-nowrap text-xs sm:text-sm">{new Date(booking.endDate).toLocaleDateString()}</TableCell>
+                                <TableCell className="font-semibold text-foreground whitespace-nowrap">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs sm:text-sm">Rs. {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span className="text-xs text-muted-foreground hidden sm:inline">Booking Total</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  <div className="flex flex-col">
+                                    <span className="text-red-500 font-semibold text-xs sm:text-sm">
+                                      -Rs. {(bookingData.commissionAmount || totalAmount * 0.15).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground hidden sm:inline">Platform Fee</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  <div className="flex flex-col">
+                                    <span className="text-green-600 font-bold text-sm sm:text-lg">
+                                      Rs. {((totalAmount || 0) - (bookingData.commissionAmount || totalAmount * 0.15)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-xs text-green-500/80 font-medium hidden sm:inline">Your Earnings</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  {(() => {
+                                    const isPaid = booking.paymentStatus === 'paid' || 
+                                                  booking.status === 'paid' || 
+                                                  booking.status === 'confirmed' || 
+                                                  booking.status === 'delivered' || 
+                                                  booking.status === 'completed' ||
+                                                  (bookingData.payments && bookingData.payments.some((p: any) => p.status === 'SUCCESS'));
+                                    
+                                    return isPaid ? (
+                                      <Badge className="bg-green-600 text-xs">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        <span className="hidden sm:inline">Paid</span>
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="destructive" className="text-xs">
+                                        <XCircle className="h-3 w-3 mr-1" />
+                                        <span className="hidden sm:inline">Unpaid</span>
+                                      </Badge>
+                                    );
+                                  })()}
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  <Badge variant={
+                                    booking.status === 'completed' ? 'default' :
+                                    booking.status === 'delivered' ? 'default' :
+                                    booking.status === 'paid' ? 'default' :
+                                    booking.status === 'cancelled' ? 'destructive' :
+                                    'secondary'
+                                  } className="text-xs">
+                                    {booking.status}
                                   </Badge>
-                                ) : (
-                                  <Badge variant="destructive">
-                                    <XCircle className="h-3 w-3 mr-1" />
-                                    Unpaid
-                                  </Badge>
-                                );
-                              })()}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                booking.status === 'completed' ? 'default' :
-                                booking.status === 'delivered' ? 'default' :
-                                booking.status === 'paid' ? 'default' :
-                                booking.status === 'cancelled' ? 'destructive' :
-                                'secondary'
-                              }>
-                                {booking.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedBooking(booking)}
-                                className="hover:bg-amber-500/10 hover:border-amber-500"
-                              >
-                                <Eye className="h-4 w-4 mr-2" />
-                                View
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setSelectedBooking(booking)}
+                                    className="hover:bg-amber-500/10 hover:border-amber-500 text-xs sm:text-sm px-2 sm:px-3"
+                                  >
+                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">View</span>
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                      </div>
+                    </div>
                   {filteredBookings.length > 0 && (
-                    <div className="mt-4 flex flex-col items-center gap-4">
-                      <div className="text-sm text-muted-foreground font-medium">
-                        Page {currentPage} of {totalPages} • Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
+                    <div className="mt-4 flex flex-col items-center gap-2 sm:gap-4">
+                      <div className="text-xs sm:text-sm text-muted-foreground font-medium text-center">
+                        <span className="hidden sm:inline">Page {currentPage} of {totalPages} • </span>
+                        Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
                       </div>
                       <Pagination>
                         <PaginationContent>
@@ -1709,10 +1717,10 @@ const TractorOwnerDashboard = () => {
                                 if (currentPage > 1) setCurrentPage(currentPage - 1);
                               }}
                               disabled={currentPage === 1}
-                              className="h-9 px-4"
+                              className="h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm"
                             >
-                              <ChevronLeft className="h-4 w-4 mr-1" />
-                              Previous
+                              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Previous</span>
                             </Button>
                           </PaginationItem>
                           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
@@ -1723,12 +1731,12 @@ const TractorOwnerDashboard = () => {
                               (page >= currentPage - 1 && page <= currentPage + 1)
                             ) {
                               return (
-                                <PaginationItem key={page}>
+                                <PaginationItem key={page} className="hidden sm:block">
                                   <Button
                                     variant={currentPage === page ? "default" : "outline"}
                                     size="default"
                                     onClick={() => setCurrentPage(page)}
-                                    className={`h-9 min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
+                                    className={`h-8 sm:h-9 min-w-8 sm:min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
                                   >
                                     {page}
                                   </Button>
@@ -1736,7 +1744,7 @@ const TractorOwnerDashboard = () => {
                               );
                             } else if (page === currentPage - 2 || page === currentPage + 2) {
                               return (
-                                <PaginationItem key={page}>
+                                <PaginationItem key={page} className="hidden sm:block">
                                   <span className="px-2 text-muted-foreground">...</span>
                                 </PaginationItem>
                               );
@@ -1751,10 +1759,10 @@ const TractorOwnerDashboard = () => {
                                 if (currentPage < totalPages) setCurrentPage(currentPage + 1);
                               }}
                               disabled={currentPage === totalPages}
-                              className="h-9 px-4"
+                              className="h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm"
                             >
-                              Next
-                              <ChevronRight className="h-4 w-4 ml-1" />
+                              <span className="hidden sm:inline">Next</span>
+                              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-1" />
                             </Button>
                           </PaginationItem>
                         </PaginationContent>
@@ -1771,12 +1779,14 @@ const TractorOwnerDashboard = () => {
                 setSelectedBooking(null);
               }
             }}>
-              <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto">
                 {selectedBooking && (
                   <>
                     <DialogHeader className="pb-4 border-b border-border">
                       <DialogTitle className="text-2xl font-bold text-foreground">Booking Details</DialogTitle>
-                      <p className="text-sm text-muted-foreground mt-1">Booking ID: #{selectedBooking.id}</p>
+                      <DialogDescription className="text-sm text-muted-foreground mt-1">
+                        Booking ID: #{selectedBooking.id}
+                      </DialogDescription>
                     </DialogHeader>
                     <Tabs defaultValue="details" className="w-full mt-4">
                       <TabsList className="grid w-full grid-cols-2">
@@ -1793,8 +1803,8 @@ const TractorOwnerDashboard = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="grid md:grid-cols-3 gap-4">
-                              <div className="md:col-span-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div className="sm:col-span-1">
                                 {(() => {
                                   const bookingData = selectedBooking as any;
                                   const images = bookingData.tractor?.images || bookingData.tractorImages || [];
@@ -1841,7 +1851,7 @@ const TractorOwnerDashboard = () => {
                                   );
                                 })()}
                               </div>
-                              <div className="md:col-span-2 space-y-3">
+                              <div className="sm:col-span-2 space-y-3">
                                 <div>
                                   <p className="text-sm font-medium text-muted-foreground mb-1">Name</p>
                                   <p className="text-base font-semibold text-foreground">{(selectedBooking as any).tractor?.name || selectedBooking.tractorName || 'N/A'}</p>
@@ -1870,7 +1880,7 @@ const TractorOwnerDashboard = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
-                            <div className="grid md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground mb-1">Name</p>
                                 <p className="text-base font-semibold text-foreground">{(selectedBooking as any).user?.name || selectedBooking.userName || 'N/A'}</p>
@@ -1896,7 +1906,7 @@ const TractorOwnerDashboard = () => {
                             </CardTitle>
                           </CardHeader>
                           <CardContent className="space-y-4">
-                            <div className="grid md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <p className="text-sm font-medium text-muted-foreground mb-1">Start Date & Time</p>
                                 <p className="text-base text-foreground">{new Date(selectedBooking.startDate).toLocaleString('en-US', { 
@@ -1921,7 +1931,7 @@ const TractorOwnerDashboard = () => {
                             
                             <div className="pt-4 border-t border-border">
                               <div className="space-y-4">
-                                <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   <div>
                                     <p className="text-sm font-medium text-muted-foreground mb-1">Payment Method</p>
                                     <Badge variant="outline" className="text-base px-3 py-1">
@@ -2300,7 +2310,7 @@ const TractorOwnerDashboard = () => {
               </Button>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">

@@ -5,14 +5,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { requestPasswordReset, verifyResetCode, resetPassword } from '@/lib/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'code' | 'password'>('email');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
   const { login, isAuthenticated, isSuperAdmin, isAdmin, isTractorOwner, loading: authLoading } = useAuth();
   const { t } = useLanguage();
 
@@ -62,6 +71,79 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPasswordEmail = async () => {
+    if (!resetEmail || !resetEmail.includes('@')) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await requestPasswordReset(resetEmail);
+      toast.success('Verification code sent to your email!');
+      setForgotPasswordStep('code');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send verification code');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!resetCode || resetCode.length !== 6) {
+      toast.error('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await verifyResetCode(resetEmail, resetCode);
+      toast.success('Code verified! Please set your new password.');
+      setForgotPasswordStep('password');
+    } catch (error: any) {
+      toast.error(error.message || 'Invalid verification code');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await resetPassword(resetEmail, resetCode, newPassword);
+      toast.success('Password reset successfully! You can now login.');
+      setShowForgotPassword(false);
+      setForgotPasswordStep('email');
+      setResetEmail('');
+      setResetCode('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to reset password');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false);
+    setForgotPasswordStep('email');
+    setResetEmail('');
+    setResetCode('');
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   return (
@@ -129,6 +211,16 @@ const Login = () => {
                 {isLoading ? t('auth.signingIn') : t('auth.signIn')}
               </Button>
 
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-amber-500 font-semibold hover:text-amber-400 hover:underline transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+
               <p className="text-center text-sm text-muted-foreground pt-2 font-medium">
                 {t('auth.dontHaveAccount')}{' '}
                 <Link to="/register" className="text-amber-500 font-bold hover:text-amber-400 hover:underline transition-colors">
@@ -139,6 +231,141 @@ const Login = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Reset Password</DialogTitle>
+            <DialogDescription>
+              {forgotPasswordStep === 'email' && 'Enter your email address to receive a verification code.'}
+              {forgotPasswordStep === 'code' && 'Enter the 6-digit code sent to your email.'}
+              {forgotPasswordStep === 'password' && 'Enter your new password.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {/* Step 1: Email */}
+            {forgotPasswordStep === 'email' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email Address</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="h-12"
+                    required
+                  />
+                </div>
+                <Button
+                  onClick={handleForgotPasswordEmail}
+                  disabled={isResetting || !resetEmail}
+                  className="w-full h-12 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                >
+                  {isResetting ? 'Sending...' : 'Send Verification Code'}
+                </Button>
+              </>
+            )}
+
+            {/* Step 2: Verification Code */}
+            {forgotPasswordStep === 'code' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="reset-code">6-Digit Verification Code</Label>
+                  <Input
+                    id="reset-code"
+                    type="text"
+                    placeholder="000000"
+                    value={resetCode}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setResetCode(value);
+                    }}
+                    className="h-12 text-center text-2xl font-mono tracking-widest"
+                    maxLength={6}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Enter the 6-digit code sent to {resetEmail}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setForgotPasswordStep('email');
+                      setResetCode('');
+                    }}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleVerifyCode}
+                    disabled={isResetting || resetCode.length !== 6}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                  >
+                    {isResetting ? 'Verifying...' : 'Verify Code'}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Step 3: New Password */}
+            {forgotPasswordStep === 'password' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input
+                    id="new-password"
+                    type="password"
+                    placeholder="Enter new password (min. 6 characters)"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="h-12"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="h-12"
+                    required
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setForgotPasswordStep('code');
+                      setNewPassword('');
+                      setConfirmPassword('');
+                    }}
+                    className="flex-1"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleResetPassword}
+                    disabled={isResetting || !newPassword || newPassword !== confirmPassword}
+                    className="flex-1 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold"
+                  >
+                    {isResetting ? 'Resetting...' : 'Reset Password'}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

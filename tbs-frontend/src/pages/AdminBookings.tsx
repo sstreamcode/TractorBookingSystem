@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Calendar, Filter, CheckCircle, XCircle, Play, Loader2, Eye, MapPin, Clock, DollarSign, User, Truck, Info, Settings, Activity, Package, CheckCircle2, X } from 'lucide-react';
+import { Calendar, Filter, CheckCircle, XCircle, Play, Loader2, Eye, MapPin, Clock, DollarSign, User, Truck, Info, Settings, Activity, Package, CheckCircle2, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +94,9 @@ const AdminBookings = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [adminStatusFilter, setAdminStatusFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   // Track active image index for each booking
@@ -143,8 +156,22 @@ const AdminBookings = () => {
     const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
     const matchesPayment = paymentFilter === 'all' || booking.paymentStatus === paymentFilter;
     const matchesAdminStatus = adminStatusFilter === 'all' || booking.adminStatus === adminStatusFilter;
-    return matchesStatus && matchesPayment && matchesAdminStatus;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery ||
+      booking.userName?.toLowerCase().includes(searchLower) ||
+      booking.tractorName?.toLowerCase().includes(searchLower) ||
+      booking.id?.toString().includes(searchLower) ||
+      booking.tractorId?.toString().includes(searchLower);
+    return matchesStatus && matchesPayment && matchesAdminStatus && matchesSearch;
   });
+  
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const paginatedBookings = filteredBookings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, paymentFilter, adminStatusFilter, searchQuery]);
 
   const handleApproveRefund = async (bookingId: string) => {
     setProcessingBookings(prev => new Set(prev).add(bookingId));
@@ -460,73 +487,127 @@ const AdminBookings = () => {
             <CardTitle className="text-foreground">All Bookings ({filteredBookings.length})</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by customer, tractor, booking ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
             {filteredBookings.length === 0 ? (
               <div className="text-center py-12">
                 <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No bookings found</p>
+                <p className="text-muted-foreground">
+                  {searchQuery || statusFilter !== 'all' || paymentFilter !== 'all' || adminStatusFilter !== 'all'
+                    ? 'No bookings found matching your filters'
+                    : 'No bookings found'}
+                </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border">
-                      <TableHead className="w-[80px] text-foreground">ID</TableHead>
-                    <TableHead className="text-foreground">Customer</TableHead>
-                    <TableHead className="text-foreground">Tractor</TableHead>
-                      <TableHead className="text-foreground">Date</TableHead>
-                      <TableHead className="w-[100px] text-foreground">Cost</TableHead>
-                      <TableHead className="w-[120px] text-foreground">Status</TableHead>
-                      <TableHead className="w-[120px] text-foreground">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBookings.map((booking) => (
-                      <TableRow key={booking.id} className="hover:bg-muted border-border">
-                        <TableCell className="font-mono text-sm text-foreground">#{booking.id}</TableCell>
-                        <TableCell className="font-medium text-foreground">{booking.userName}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                            <img 
-                              src={booking.tractorImage} 
-                              alt={booking.tractorName}
-                              className="w-10 h-10 rounded object-cover"
-                            />
-                            <span className="text-sm text-foreground">{booking.tractorName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                            <p className="font-medium text-foreground">{new Date(booking.startDate).toLocaleDateString()}</p>
-                            <p className="text-muted-foreground text-xs">
-                            {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
-                            {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                      </TableCell>
-                        <TableCell className="font-semibold text-foreground">रू {booking.totalCost.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={getStatusColor(booking.status)}
-                          className={getStatusBadgeClassName(booking.status)}
-                        >
-                            {booking.status === 'refund_requested' ? 'Refund' : booking.status === 'delivered' ? 'Delivered' : booking.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedBooking(booking)}
-                            className="w-full"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Button>
-                        </TableCell>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border">
+                        <TableHead className="w-[80px] text-foreground whitespace-nowrap">ID</TableHead>
+                        <TableHead className="text-foreground whitespace-nowrap">Customer</TableHead>
+                        <TableHead className="text-foreground whitespace-nowrap">Tractor</TableHead>
+                        <TableHead className="text-foreground whitespace-nowrap">Date</TableHead>
+                        <TableHead className="w-[100px] text-foreground whitespace-nowrap">Cost</TableHead>
+                        <TableHead className="w-[120px] text-foreground whitespace-nowrap">Status</TableHead>
+                        <TableHead className="w-[120px] text-foreground whitespace-nowrap">Actions</TableHead>
                       </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedBookings.map((booking) => (
+                        <TableRow key={booking.id} className="hover:bg-muted border-border">
+                          <TableCell className="font-mono text-sm text-foreground whitespace-nowrap">#{booking.id}</TableCell>
+                          <TableCell className="font-medium text-foreground whitespace-nowrap">{booking.userName}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <img 
+                                src={booking.tractorImage} 
+                                alt={booking.tractorName}
+                                className="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover"
+                              />
+                              <span className="text-xs sm:text-sm text-foreground">{booking.tractorName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <div className="text-xs sm:text-sm">
+                              <p className="font-medium text-foreground">{new Date(booking.startDate).toLocaleDateString()}</p>
+                              <p className="text-muted-foreground text-xs hidden sm:block">
+                                {new Date(booking.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                                {new Date(booking.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-semibold text-foreground whitespace-nowrap text-xs sm:text-sm">रू {booking.totalCost.toLocaleString()}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <Badge 
+                              variant={getStatusColor(booking.status)}
+                              className={getStatusBadgeClassName(booking.status) + " text-xs"}
+                            >
+                              {booking.status === 'refund_requested' ? 'Refund' : booking.status === 'delivered' ? 'Delivered' : booking.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedBooking(booking)}
+                              className="w-full text-xs sm:text-sm"
+                            >
+                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">View Details</span>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+            
+            {totalPages > 1 && (
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                  <span className="hidden sm:inline">Page {currentPage} of {totalPages} • </span>
+                  Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredBookings.length)} of {filteredBookings.length} bookings
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                      <PaginationItem key={page} className="hidden sm:block">
+                        <PaginationLink
+                          onClick={() => setCurrentPage(page)}
+                          isActive={currentPage === page}
+                          className="cursor-pointer"
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
                     ))}
-                  </TableBody>
-                </Table>
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
               </div>
             )}
           </CardContent>
@@ -534,7 +615,7 @@ const AdminBookings = () => {
 
         {/* Booking Details Modal */}
         <Dialog open={!!selectedBooking} onOpenChange={(open) => !open && setSelectedBooking(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0 bg-background border-border">
+        <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0 bg-background border-border">
             {selectedBooking && (
               <>
               <DialogHeader className="px-6 pt-6 pb-4 border-b border-border bg-card relative pr-20">
@@ -581,7 +662,7 @@ const AdminBookings = () => {
                     {/* Overview Tab */}
                     <TabsContent value="overview" className="space-y-4 mt-0">
                       {/* Quick Summary Cards */}
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Card className="border-2 border-amber-500/30 bg-card">
                           <CardContent className="pt-6">
                             <div className="flex items-center justify-between mb-2">
@@ -679,7 +760,7 @@ const AdminBookings = () => {
                     {/* Status & Tracking Tab */}
                     <TabsContent value="status" className="space-y-4 mt-0">
                       {/* Status Overview */}
-                      <div className="grid grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <Card className="border border-border bg-card">
                           <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-medium text-muted-foreground">Booking Status</CardTitle>

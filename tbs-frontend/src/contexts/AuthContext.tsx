@@ -214,10 +214,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     role: 'customer' | 'tractor_owner',
     phone?: string,
-    address?: string
+    address?: string,
+    citizenshipImageUrl?: string
   ) => {
     try {
-      const result = await apiRegister(email, password, name, role, phone, address);
+      const result = await apiRegister(email, password, name, role, phone, address, citizenshipImageUrl);
       
       // Check if registration returned pending approval (for tractor owners)
       if ('pendingApproval' in result && result.pendingApproval) {

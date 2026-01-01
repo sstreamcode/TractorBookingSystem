@@ -32,6 +32,10 @@ public class User {
     @Column(length = 500)
     private String profilePictureUrl;
 
+    // For tractor owners only: citizenship document image URL
+    @Column(length = 500)
+    private String citizenshipImageUrl;
+
     // For tractor owners only: whether this owner has been verified/approved by super admin
     @Column(nullable = false)
     private Boolean tractorOwnerApproved = false;
@@ -63,6 +67,9 @@ public class User {
 
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public String getCitizenshipImageUrl() { return citizenshipImageUrl; }
+    public void setCitizenshipImageUrl(String citizenshipImageUrl) { this.citizenshipImageUrl = citizenshipImageUrl; }
 
     public Boolean getTractorOwnerApproved() { return tractorOwnerApproved != null ? tractorOwnerApproved : false; }
     public void setTractorOwnerApproved(Boolean tractorOwnerApproved) { this.tractorOwnerApproved = tractorOwnerApproved; }

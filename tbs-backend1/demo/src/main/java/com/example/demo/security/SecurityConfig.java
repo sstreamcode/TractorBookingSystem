@@ -32,7 +32,9 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/me").permitAll()
+                .requestMatchers("/api/auth/forgot-password", "/api/auth/verify-reset-code", "/api/auth/reset-password").permitAll()
                 .requestMatchers("/api/contact/**").permitAll()
+                .requestMatchers("/api/uploads").permitAll()
                 .requestMatchers("/api/tractors/*/feedback").authenticated()
                 .requestMatchers("/api/tractors/**", "/uploads/**").permitAll()
                 .anyRequest().authenticated()

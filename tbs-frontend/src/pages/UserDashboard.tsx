@@ -446,13 +446,13 @@ const UserDashboard = () => {
       <Navbar />
       
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-foreground">{t('dashboard.title')}</h1>
-          <p className="text-muted-foreground">{t('dashboard.welcome')}, {user?.name}!</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-foreground">{t('dashboard.title')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('dashboard.welcome')}, {user?.name}!</p>
         </div>
 
         {/* Stats - Simple Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <Card className="card-hover border border-border bg-card shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -502,10 +502,10 @@ const UserDashboard = () => {
 
         {/* My Bookings Section */}
         <div className="space-y-6 mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">{t('dashboard.myBookings')}</h2>
-              <p className="text-muted-foreground">Manage and track your tractor bookings</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t('dashboard.myBookings')}</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">Manage and track your tractor bookings</p>
             </div>
           </div>
 
@@ -592,7 +592,7 @@ const UserDashboard = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {paginatedBookings.map((booking) => {
                 const galleryRaw = [booking.tractorImage, ...(booking.tractorImages || [])].filter(Boolean);
                 const gallery = Array.from(new Set(galleryRaw));
@@ -807,9 +807,10 @@ const UserDashboard = () => {
                   
                   {/* Pagination */}
                   {filteredBookings.length > 0 && (
-                    <div className="mt-6 flex flex-col items-center gap-4">
-                      <div className="text-sm text-muted-foreground font-medium">
-                        Page {currentPage} of {totalPages} • Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
+                    <div className="mt-6 flex flex-col items-center gap-2 sm:gap-4">
+                      <div className="text-xs sm:text-sm text-muted-foreground font-medium text-center">
+                        <span className="hidden sm:inline">Page {currentPage} of {totalPages} • </span>
+                        Showing {startIndex + 1}-{Math.min(endIndex, filteredBookings.length)} of {filteredBookings.length} bookings
                       </div>
                       {totalPages > 1 && (
                         <Pagination>
@@ -822,10 +823,10 @@ const UserDashboard = () => {
                                   if (currentPage > 1) setCurrentPage(currentPage - 1);
                                 }}
                                 disabled={currentPage === 1}
-                                className="h-9 px-4"
+                                className="h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm"
                               >
-                                <ChevronLeft className="h-4 w-4 mr-1" />
-                                Previous
+                                <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Previous</span>
                               </Button>
                             </PaginationItem>
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
@@ -836,12 +837,12 @@ const UserDashboard = () => {
                                 (page >= currentPage - 1 && page <= currentPage + 1)
                               ) {
                                 return (
-                                  <PaginationItem key={page}>
+                                  <PaginationItem key={page} className="hidden sm:block">
                                     <Button
                                       variant={currentPage === page ? "default" : "outline"}
                                       size="default"
                                       onClick={() => setCurrentPage(page)}
-                                      className={`h-9 min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
+                                      className={`h-8 sm:h-9 min-w-8 sm:min-w-9 ${currentPage === page ? 'bg-primary text-primary-foreground' : ''}`}
                                     >
                                       {page}
                                     </Button>
@@ -849,7 +850,7 @@ const UserDashboard = () => {
                                 );
                               } else if (page === currentPage - 2 || page === currentPage + 2) {
                                 return (
-                                  <PaginationItem key={page}>
+                                  <PaginationItem key={page} className="hidden sm:block">
                                     <span className="px-2 text-muted-foreground">...</span>
                                   </PaginationItem>
                                 );
@@ -864,10 +865,10 @@ const UserDashboard = () => {
                                   if (currentPage < totalPages) setCurrentPage(currentPage + 1);
                                 }}
                                 disabled={currentPage === totalPages}
-                                className="h-9 px-4"
+                                className="h-8 sm:h-9 px-2 sm:px-4 text-xs sm:text-sm"
                               >
-                                Next
-                                <ChevronRight className="h-4 w-4 ml-1" />
+                                <span className="hidden sm:inline">Next</span>
+                                <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 sm:ml-1" />
                               </Button>
                             </PaginationItem>
                           </PaginationContent>

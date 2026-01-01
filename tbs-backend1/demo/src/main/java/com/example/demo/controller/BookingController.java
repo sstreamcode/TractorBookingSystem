@@ -193,8 +193,11 @@ public class BookingController {
 
         Booking saved = bookingRepository.save(booking);
         
-        // Send booking confirmation email
+        // Send booking confirmation email to customer
         sendBookingCreatedEmail(saved);
+        
+        // Send new booking notification email to tractor owner
+        sendTractorOwnerNewBookingEmail(saved);
         
         return ResponseEntity.ok(saved);
     }
@@ -1252,6 +1255,10 @@ public class BookingController {
     
     private void sendBookingCreatedEmail(Booking booking) {
         emailService.sendBookingCreatedEmail(booking);
+    }
+    
+    private void sendTractorOwnerNewBookingEmail(Booking booking) {
+        emailService.sendTractorOwnerNewBookingEmail(booking);
     }
     
     private void sendBookingApprovedEmail(Booking booking) {

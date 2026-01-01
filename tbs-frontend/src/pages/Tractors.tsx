@@ -82,7 +82,7 @@ const Tractors = () => {
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(5000);
   const [hpMin, setHpMin] = useState(0);
-  const [hpMax, setHpMax] = useState(300);
+  const [hpMax, setHpMax] = useState(5000);
   const [minRating, setMinRating] = useState(0);
   const { t } = useLanguage();
   const [showFilters, setShowFilters] = useState(true);
@@ -154,7 +154,7 @@ const Tractors = () => {
     if (availabilityFilter !== 'all') count++;
     if (minRating > 0) count++;
     if (minPrice > 0 || maxPrice < 5000) count++;
-    if (hpMin > 0 || hpMax < 300) count++;
+    if (hpMin > 0 || hpMax < 5000) count++;
     if (Object.values(typeFilter).some(Boolean)) count++;
     return count;
   }, [searchQuery, locationFilter, availabilityFilter, minRating, minPrice, maxPrice, hpMin, hpMax, typeFilter]);
@@ -406,7 +406,7 @@ const Tractors = () => {
                     <div className="pt-2">
                       <RangeSlider
                         min={0}
-                        max={300}
+                        max={5000}
                         value={[hpMin, hpMax]}
                         onChange={([min, max]) => {
                           setHpMin(min);
@@ -436,7 +436,7 @@ const Tractors = () => {
                   size="sm"
                   onClick={() => {
                     setTypeFilter({compact:false,row:false,speciality:false,utility:false,orchard:false});
-                    setMinPrice(0); setMaxPrice(5000); setHpMin(0); setHpMax(300); setMinRating(0);
+                    setMinPrice(0); setMaxPrice(5000); setHpMin(0); setHpMax(5000); setMinRating(0);
                     setLocationFilter('all'); setAvailabilityFilter('all'); setSearchQuery('');
                   }}
                   className="text-xs"

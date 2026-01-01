@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,11 +25,20 @@ import {
   getTractorTracking,
   type TrackingResponse,
 } from '@/lib/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import type { Tractor, Booking } from '@/types';
 import { toast } from 'sonner';
 import DeliveryMapPicker from '@/components/DeliveryMapPicker';
@@ -75,6 +84,9 @@ const AdminTractors = () => {
   const [trackingDetails, setTrackingDetails] = useState<TrackingResponse | null>(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const reverseGeocode = useCallback(async (lat: number, lng: number) => {
     const fallback = `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
@@ -229,6 +241,24 @@ const AdminTractors = () => {
   if (!isAuthenticated || !isAdmin) {
     return <Navigate to="/" replace />;
   }
+  
+  // Filter and paginate tractors
+  const filteredTractors = tractors.filter(tractor => {
+    const searchLower = searchQuery.toLowerCase();
+    return !searchQuery ||
+      tractor.name?.toLowerCase().includes(searchLower) ||
+      tractor.model?.toLowerCase().includes(searchLower) ||
+      tractor.location?.toLowerCase().includes(searchLower) ||
+      tractor.status?.toLowerCase().includes(searchLower);
+  });
+  
+  const totalPages = Math.ceil(filteredTractors.length / itemsPerPage);
+  const paginatedTractors = filteredTractors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  
+  // Reset page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handleAdd = async () => {
     try {
@@ -502,11 +532,11 @@ const AdminTractors = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:py-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Manage Tractors</h1>
-            <p className="text-muted-foreground">Add, edit, or remove tractors from your fleet</p>
+            <h1 className="text-2xl sm:text-4xl font-bold mb-2">Manage Tractors</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Add, edit, or remove tractors from your fleet</p>
           </div>
           <Dialog
             open={open}
@@ -518,12 +548,12 @@ const AdminTractors = () => {
             }}
           >
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Tractor
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+            <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingId ? 'Edit Tractor' : 'Add Tractor'}</DialogTitle>
               </DialogHeader>
@@ -790,76 +820,142 @@ const AdminTractors = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Tractors ({tractors.length})</CardTitle>
+            <CardTitle>All Tractors ({filteredTractors.length})</CardTitle>
           </CardHeader>
           <CardContent>
             {loading && <p className="text-sm text-muted-foreground">Loading...</p>}
             {error && <p className="text-sm text-red-500">{error}</p>}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Images</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Rate/Hour</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tractors.map((tractor) => (
-                  <TableRow key={tractor.id}>
-                    <TableCell>
-                      <div className="flex gap-2 items-center">
-                        <img src={tractor.image} alt={tractor.name} className="w-16 h-16 object-cover rounded border" />
-                        {tractor.images?.slice(1, 4).map((u, i) => (
-                          <img key={i} src={u} alt={`img-${i}`} className="w-12 h-12 object-cover rounded border" />
+            
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, model, location, or status..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {filteredTractors.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {searchQuery ? 'No tractors found matching your search' : 'No tractors found'}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap">Images</TableHead>
+                          <TableHead className="whitespace-nowrap">Name</TableHead>
+                          <TableHead className="whitespace-nowrap">Model</TableHead>
+                          <TableHead className="whitespace-nowrap">Location</TableHead>
+                          <TableHead className="whitespace-nowrap">Rate/Hour</TableHead>
+                          <TableHead className="whitespace-nowrap">Status</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedTractors.map((tractor) => (
+                          <TableRow key={tractor.id}>
+                            <TableCell className="whitespace-nowrap">
+                              <div className="flex gap-1 sm:gap-2 items-center">
+                                <img src={tractor.image} alt={tractor.name} className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded border" />
+                                {tractor.images?.slice(1, 2).map((u, i) => (
+                                  <img key={i} src={u} alt={`img-${i}`} className="hidden sm:block w-10 h-10 sm:w-12 sm:h-12 object-cover rounded border" />
+                                ))}
+                                {tractor.images && tractor.images.length > 3 && (
+                                  <span className="text-xs text-muted-foreground hidden sm:inline">+{tractor.images.length - 3}</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium whitespace-nowrap">{tractor.name}</TableCell>
+                            <TableCell className="whitespace-nowrap">{tractor.model}</TableCell>
+                            <TableCell className="whitespace-nowrap text-xs sm:text-sm">{tractor.location}</TableCell>
+                            <TableCell className="whitespace-nowrap text-xs sm:text-sm">रू {tractor.hourlyRate}</TableCell>
+                            <TableCell className="whitespace-nowrap">
+                              <Badge variant={tractor.available ? 'default' : 'secondary'} className="text-xs">
+                                {tractor.available ? 'Available' : 'Unavailable'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right whitespace-nowrap">
+                              <div className="flex justify-end space-x-1 sm:space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleTrack(tractor)}
+                                  title="Track tractor"
+                                  className="px-2 sm:px-3"
+                                >
+                                  <MapPin className="h-4 w-4 text-amber-600" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(tractor.id)}
+                                  className="px-2 sm:px-3"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(tractor.id)}
+                                  className="px-2 sm:px-3"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                        {tractor.images && tractor.images.length > 4 && (
-                          <span className="text-xs text-muted-foreground">+{tractor.images.length - 4}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{tractor.name}</TableCell>
-                    <TableCell>{tractor.model}</TableCell>
-                    <TableCell>{tractor.location}</TableCell>
-                    <TableCell>रू {tractor.hourlyRate}</TableCell>
-                    <TableCell>
-                      <Badge variant={tractor.available ? 'default' : 'secondary'}>
-                        {tractor.available ? 'Available' : 'Unavailable'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleTrack(tractor)}
-                          title="Track tractor"
-                        >
-                          <MapPin className="h-4 w-4 text-amber-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(tractor.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(tractor.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+                
+                {totalPages > 1 && (
+                  <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                      <span className="hidden sm:inline">Page {currentPage} of {totalPages} • </span>
+                      Showing {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredTractors.length)} of {filteredTractors.length} tractors
+                    </p>
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                          <PaginationItem key={page} className="hidden sm:block">
+                            <PaginationLink
+                              onClick={() => setCurrentPage(page)}
+                              isActive={currentPage === page}
+                              className="cursor-pointer"
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        ))}
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
         <Dialog
@@ -873,9 +969,12 @@ const AdminTractors = () => {
             }
           }}
         >
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Track Tractor</DialogTitle>
+              <DialogDescription>
+                View the live location and route of the selected tractor
+              </DialogDescription>
             </DialogHeader>
             {trackingTractor ? (
               <div className="space-y-4">

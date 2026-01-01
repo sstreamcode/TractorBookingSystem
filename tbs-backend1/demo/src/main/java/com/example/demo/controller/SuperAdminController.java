@@ -84,6 +84,7 @@ public class SuperAdminController {
         userMap.put("phone", user.getPhone() != null ? user.getPhone() : "");
         userMap.put("address", user.getAddress() != null ? user.getAddress() : "");
         userMap.put("profilePictureUrl", user.getProfilePictureUrl() != null ? user.getProfilePictureUrl() : "");
+        userMap.put("citizenshipImageUrl", user.getCitizenshipImageUrl() != null ? user.getCitizenshipImageUrl() : "");
         userMap.put("tractorOwnerApproved", user.getTractorOwnerApproved());
         return ResponseEntity.ok(userMap);
     }
@@ -109,6 +110,7 @@ public class SuperAdminController {
                 ownerMap.put("address", o.getAddress() != null ? o.getAddress() : "");
                 ownerMap.put("approved", o.getTractorOwnerApproved());
                 ownerMap.put("profilePictureUrl", o.getProfilePictureUrl() != null ? o.getProfilePictureUrl() : "");
+                ownerMap.put("citizenshipImageUrl", o.getCitizenshipImageUrl() != null ? o.getCitizenshipImageUrl() : "");
                 return ownerMap;
             })
             .collect(Collectors.toList());
@@ -254,8 +256,23 @@ public class SuperAdminController {
         if (owner == null || !"TRACTOR_OWNER".equals(owner.getRole())) {
             return ResponseEntity.badRequest().body(Map.of("error", "Tractor owner not found"));
         }
-        owner.setTractorOwnerApproved(false);
-        userRepository.save(owner);
-        return ResponseEntity.ok(Map.of("status", "REJECTED", "message", "Tractor owner rejected"));
+        
+        // Delete all tractors owned by this user first (cascade delete)
+        List<Tractor> ownerTractors = tractorRepository.findByOwner(owner);
+        for (Tractor tractor : ownerTractors) {
+            tractorRepository.delete(tractor);
+        }
+        
+        // Send rejection email before deleting
+        sendTractorOwnerRejectionEmail(owner);
+        
+        // Delete the user account
+        userRepository.delete(owner);
+        
+        return ResponseEntity.ok(Map.of("status", "REJECTED", "message", "Tractor owner rejected and account deleted"));
+    }
+    
+    private void sendTractorOwnerRejectionEmail(User owner) {
+        emailService.sendTractorOwnerRejectionEmail(owner);
     }
 }

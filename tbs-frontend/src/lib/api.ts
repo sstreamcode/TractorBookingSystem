@@ -106,13 +106,14 @@ export async function apiRegister(
   name?: string,
   role: 'customer' | 'tractor_owner' = 'customer',
   phone?: string,
-  address?: string
+  address?: string,
+  citizenshipImageUrl?: string
 ): Promise<AuthResponse | { message: string; pendingApproval: boolean }> {
   try {
     const res = await fetch(`${BASE_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, role, phone, address })
+      body: JSON.stringify({ email, password, name, role, phone, address, citizenshipImageUrl })
     });
     if (!res.ok) {
       let message = 'Registration failed';
@@ -162,6 +163,66 @@ export async function apiLogin(email: string, password: string): Promise<AuthRes
       (error as any).pendingApproval = true;
     }
     throw error;
+  }
+  return res.json();
+}
+
+// ========== PASSWORD RESET API ==========
+
+export async function requestPasswordReset(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email })
+  });
+  if (!res.ok) {
+    let errorMessage = 'Failed to request password reset';
+    try {
+      const data = await res.json();
+      errorMessage = data.error || data.message || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = res.statusText || errorMessage;
+    }
+    throw new ApiError(errorMessage, res.status);
+  }
+  return res.json();
+}
+
+export async function verifyResetCode(email: string, code: string): Promise<{ message: string; verified: boolean }> {
+  const res = await fetch(`${BASE_URL}/api/auth/verify-reset-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code })
+  });
+  if (!res.ok) {
+    let errorMessage = 'Invalid verification code';
+    try {
+      const data = await res.json();
+      errorMessage = data.error || data.message || errorMessage;
+    } catch {
+      errorMessage = res.statusText || errorMessage;
+    }
+    throw new ApiError(errorMessage, res.status);
+  }
+  return res.json();
+}
+
+export async function resetPassword(email: string, code: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, newPassword })
+  });
+  if (!res.ok) {
+    let errorMessage = 'Failed to reset password';
+    try {
+      const data = await res.json();
+      errorMessage = data.error || data.message || errorMessage;
+    } catch {
+      errorMessage = res.statusText || errorMessage;
+    }
+    throw new ApiError(errorMessage, res.status);
   }
   return res.json();
 }
@@ -831,6 +892,7 @@ export interface SuperAdminTractorOwner {
   tractorCount: number;
   approved: boolean;
   profilePictureUrl?: string;
+  citizenshipImageUrl?: string;
 }
 
 export interface SuperAdminStats {
@@ -1322,6 +1384,7 @@ export interface OwnerDetails {
   phone?: string;
   address?: string;
   profilePictureUrl?: string;
+  citizenshipImageUrl?: string;
   tractorOwnerApproved?: boolean;
 }
 
