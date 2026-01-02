@@ -60,6 +60,32 @@ const TractorTrackingMap = ({ points, className = 'h-96 w-full rounded-xl border
       panes.tooltipPane.style.zIndex = `${baseZ + 4}`;
     }
 
+    // Set z-index for zoom controls to be below sidebar (sidebar has z-50)
+    // Set all Leaflet controls to have very low z-index
+    const setZIndex = () => {
+      const zoomControlElement = containerRef.current?.querySelector('.leaflet-control-zoom') as HTMLElement;
+      if (zoomControlElement) {
+        zoomControlElement.style.zIndex = '1';
+        zoomControlElement.style.position = 'relative';
+      }
+      // Also set z-index for the map container itself
+      if (containerRef.current) {
+        const mapContainer = containerRef.current.querySelector('.leaflet-container') as HTMLElement;
+        if (mapContainer) {
+          mapContainer.style.zIndex = `${mapZIndex}`;
+        }
+      }
+      // Set z-index for all leaflet controls
+      const allControls = containerRef.current?.querySelectorAll('.leaflet-control') as NodeListOf<HTMLElement>;
+      allControls?.forEach((control) => {
+        control.style.zIndex = '1';
+      });
+    };
+    
+    setTimeout(setZIndex, 100);
+    setTimeout(setZIndex, 500);
+    setTimeout(setZIndex, 1000);
+
     markerLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 

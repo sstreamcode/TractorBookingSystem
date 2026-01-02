@@ -79,6 +79,32 @@ const DeliveryMapPicker = ({ value, onChange, readOnly, className = 'h-64 w-full
       panes.tooltipPane.style.zIndex = `${baseZ + 4}`;
     }
 
+    // Set z-index for zoom controls to be below sidebar and form elements
+    // Leaflet adds zoom controls automatically, we need to find them in the DOM
+    const setZIndex = () => {
+      const zoomControlElement = containerRef.current?.querySelector('.leaflet-control-zoom') as HTMLElement;
+      if (zoomControlElement) {
+        zoomControlElement.style.zIndex = '1';
+        zoomControlElement.style.position = 'relative';
+      }
+      // Also set z-index for the map container itself
+      if (containerRef.current) {
+        const mapContainer = containerRef.current.querySelector('.leaflet-container') as HTMLElement;
+        if (mapContainer) {
+          mapContainer.style.zIndex = `${mapZIndex}`;
+        }
+      }
+      // Set z-index for all leaflet controls
+      const allControls = containerRef.current?.querySelectorAll('.leaflet-control') as NodeListOf<HTMLElement>;
+      allControls?.forEach((control) => {
+        control.style.zIndex = '1';
+      });
+    };
+    
+    setTimeout(setZIndex, 100);
+    setTimeout(setZIndex, 500);
+    setTimeout(setZIndex, 1000);
+
     mapRef.current = map;
     setTimeout(() => map.invalidateSize(), 200);
 

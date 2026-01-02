@@ -67,7 +67,7 @@ const Navbar = () => {
   const isEnglish = language === 'en';
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
+    <header className="sticky top-0 z-50 bg-background border-b border-border">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-6 h-16">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">

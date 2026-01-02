@@ -1208,7 +1208,7 @@ const TractorOwnerDashboard = () => {
                           setForm((s) => ({ ...s, location: value.address }));
                         }}
                         className="h-64 w-full rounded-lg border"
-                        mapZIndex={50}
+                        mapZIndex={0}
                       />
                     </div>
 

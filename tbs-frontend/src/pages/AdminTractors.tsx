@@ -683,7 +683,7 @@ const AdminTractors = () => {
                         setForm((s) => ({ ...s, location: value.address }));
                       }}
                       className="h-64 w-full rounded-lg border"
-                      mapZIndex={50}
+                      mapZIndex={0}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
